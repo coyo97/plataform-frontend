@@ -3,10 +3,12 @@ type Payload = any; // Puedes definir un tipo más específico si sabes la estru
 type Headers = { [key: string]: string };
 
 const getHeaders = (): Headers => {
-	const headers: Headers = {
-		"Content-Type": "application/json",
-	};
-	return headers;
+    const token = localStorage.getItem('token'); // O la forma en que guardas el token
+    const headers: Headers = {
+        "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` }) // Añade el token si está presente
+    };
+    return headers;
 };
 
 const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean): RequestInit => {
