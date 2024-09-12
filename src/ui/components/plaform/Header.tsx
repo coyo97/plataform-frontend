@@ -17,10 +17,11 @@ const Header: React.FC = () => {
           <nav>
             <ul>
               <li><Link to='/' className="highlight">Administrador</Link></li>
-              <li><Link to='/caracteristicas'>Estudiante</Link></li>
-              <li><Link to='/ayuda-academica'>Material</Link></li>
+              <li><Link to='/profile'>Estudiante</Link></li>
+              <li><Link to='/material-user'>Material</Link></li>
               <li><Link to='/contacto'>Mensajería</Link></li>
               <li><Link to='/register'>Ayuda Académica</Link></li>
+              <li><Link to='/publications'>Home</Link></li>
             </ul>
           </nav>
         </div>

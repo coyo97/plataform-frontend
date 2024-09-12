@@ -11,4 +11,8 @@ export const getPublications = async (endpoint: string, payload: Payload): Promi
 export const createPublication = async (endpoint: string, payload: Payload): Promise<void> => {
     return await post<void>(endpoint, payload);
 };
+// Función para obtener las publicaciones del usuario autenticado
+export const getUserPublications = async (endpoint: string): Promise<{ publications: any[] }> => {
+    return await get<{ publications: any[] }>(endpoint, {});
+};
 

@@ -9,6 +9,10 @@ import Canvas from './ui/components/canvas/Canvas';
 import UserForm from './ui/components/auth/regiterForm/UserForm';
 import Plataform from './ui/components/plaform/Publica';
 import ProtectedRoute from './routes/ProtectedRoute';
+import HomePublications from './ui/components/publications/HomePublications';
+import HomeProfile from './ui/components/profile/HomeProfile';
+import Home from './ui/components/plaform/Home';
+import UserMaterials from './ui/components/publications/user/UserMaterials';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -22,6 +26,10 @@ function App() {
 						<Route path="/login" element={<FormLogin />} />
 						<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
 						<Route path='/register' element={<UserForm/>}></Route>
+						<Route path='/publications' element={<HomePublications/>}></Route>
+						<Route path='/profile' element={<HomeProfile/>}></Route>
+						<Route path='/publications' element={<Home/>}></Route>
+						<Route path='/material-user' element={<UserMaterials/>}></Route>
 					</Routes>
 				</Router>
 			</QueryClientProvider>
