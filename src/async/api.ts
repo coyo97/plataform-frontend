@@ -1,4 +1,4 @@
-type HttpMethod = "GET" | "POST";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 type Payload = any; // Puedes definir un tipo más específico si sabes la estructura del payload
 type Headers = { [key: string]: string };
 
@@ -16,7 +16,7 @@ const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean): Re
 		method,
 		headers: isFile ? undefined : getHeaders(),
 	};
-	if (method === "POST") {
+	if (method === "POST" || method === "PUT") {
 		options.body = isFile ? payload : JSON.stringify(payload);
 	}
 	return options;
@@ -45,3 +45,9 @@ export const post = async <T>(endpoint: string, payload: Payload, isFile: boolea
 export const get = async <T>(endpoint: string, payload: Payload, isFile: boolean = false): Promise<T> =>
 	request<T>(endpoint, payload, "GET", isFile);
 
+
+export const put = async <T>(endpoint: string, payload: Payload, isFile: boolean = false): Promise<T> =>
+    request<T>(endpoint, payload, "PUT", isFile);
+
+export const del = async <T>(endpoint: string): Promise<T> =>
+    request<T>(endpoint, {}, "DELETE", false);

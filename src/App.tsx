@@ -13,6 +13,11 @@ import HomePublications from './ui/components/publications/HomePublications';
 import HomeProfile from './ui/components/profile/HomeProfile';
 import Home from './ui/components/plaform/Home';
 import UserMaterials from './ui/components/publications/user/UserMaterials';
+import CreatePublication from './ui/components/publications/CreatePublication';
+
+import AuthorProfile from './ui/components/profile/AuthorProfile';
+import ViewProfile from './ui/components/profile/ViewProfile';
+import UpdateProfile from './ui/components/profile/UpdateProfile';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -30,6 +35,9 @@ function App() {
 						<Route path='/profile' element={<HomeProfile/>}></Route>
 						<Route path='/publications' element={<Home/>}></Route>
 						<Route path='/material-user' element={<UserMaterials/>}></Route>
+						  <Route path="/profile/:id" element={<AuthorProfile />} />
+                <Route path="/profile" element={<ViewProfile />} />
+                <Route path="/profile/update" element={<UpdateProfile />} />
 					</Routes>
 				</Router>
 			</QueryClientProvider>

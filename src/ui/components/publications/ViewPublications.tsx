@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPublications } from '../../../async/services/publicationService';
+import { useNavigate } from 'react-router-dom';
 
 interface Publication {
     _id: string;
@@ -7,6 +8,7 @@ interface Publication {
     content: string;
     tags: string[];
     author: {
+		 _id: string; // Agrega el campo _id aquí
         username: string;
     };
     filePath?: string; // Ruta al archivo
@@ -15,6 +17,7 @@ interface Publication {
 
 const ViewPublications: React.FC = () => {
     const [publications, setPublications] = useState<Publication[]>([]);
+	const navigate = useNavigate();
 
     useEffect(() => {
         const fetchPublications = async () => {
@@ -62,6 +65,16 @@ const ViewPublications: React.FC = () => {
         }
     };
 
+	// Función para manejar el clic en el nombre del autor
+    const handleAuthorClick = (authorId: string, authorUsername: string) => {
+        // Navega a la página de perfil del autor, puedes cambiar la ruta según tu configuración
+        //navigate(`/profile/${authorId}`);
+
+		// Almacena el ID en una variable o en una capa de estado local si necesitas usarla en otra parte
+        const userProfileId = authorId;
+		navigate(`/profile/${authorUsername}`, { state: { userProfileId } });
+    };
+
     return (
         <div>
             <h1>Publicaciones</h1>
@@ -69,7 +82,21 @@ const ViewPublications: React.FC = () => {
                 <div key={publication._id} style={{ marginBottom: '20px' }}>
                     <h2>{publication.title}</h2>
                     <p>{publication.content}</p>
-                    <p><strong>Autor:</strong> {publication.author.username}</p>
+					 <p>
+                        <strong>Autor:</strong>{' '}
+                        <button
+                            onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}
+                            style={{
+                                color: 'blue',
+                                textDecoration: 'underline',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {publication.author.username}
+                        </button>
+                    </p>
                     <p><strong>Etiquetas:</strong> {publication.tags.join(', ')}</p>
                     {renderFile(publication)}
                 </div>
