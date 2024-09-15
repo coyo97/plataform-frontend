@@ -1,108 +1,144 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios'; // Asegúrate de tener axios importado para hacer solicitudes HTTP
 import { getPublications } from '../../../async/services/publicationService';
 import { useNavigate } from 'react-router-dom';
 
+import CommentSection from '../comments/CommentSection';
+
 interface Publication {
-    _id: string;
-    title: string;
-    content: string;
-    tags: string[];
-    author: {
-		 _id: string; // Agrega el campo _id aquí
-        username: string;
-    };
-    filePath?: string; // Ruta al archivo
-    fileType?: string; // Tipo de archivo (opcional)
+	_id: string;
+	title: string;
+	content: string;
+	tags: string[];
+	author: {
+		_id: string;
+		username: string;
+	};
+	filePath?: string;
+	fileType?: string;
+}
+
+interface Career {
+	_id: string;
+	name: string;
 }
 
 const ViewPublications: React.FC = () => {
-    const [publications, setPublications] = useState<Publication[]>([]);
+	const [publications, setPublications] = useState<Publication[]>([]);
+	const [careers, setCareers] = useState<Career[]>([]);
+	const [selectedCareer, setSelectedCareer] = useState<string>('');
 	const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchPublications = async () => {
-            try {
-                const data = await getPublications('http://localhost:8000/v1.0/api/publications', {});
-                setPublications(data.publications); // Asegúrate de que data.publications sea un array
-            } catch (error) {
-                console.error('Error fetching publications:', error);
-            }
-        };
+	useEffect(() => {
+		const fetchCareers = async () => {
+			try {
+				const token = localStorage.getItem('token');
+				const response = await axios.get('http://localhost:8000/v1.0/api/careers', {
+					headers: { 'Authorization': `Bearer ${token}` },
+				});
+				setCareers(response.data.careers);
+			} catch (error) {
+				console.error('Error fetching careers:', error);
+			}
+		};
 
-        fetchPublications();
-    }, []);
+		fetchCareers();
+	}, []);
 
-    const renderFile = (publication: Publication) => {
-        if (!publication.filePath || !publication.fileType) return null;
+	useEffect(() => {
+		const fetchPublications = async () => {
+			try {
+				const endpoint = selectedCareer
+					? `http://localhost:8000/v1.0/api/publications/career/${selectedCareer}`
+					: 'http://localhost:8000/v1.0/api/publications';
 
-        const fileUrl = `http://localhost:8000/${publication.filePath}`;
+				const data = await getPublications(endpoint, {});
+				setPublications(data.publications);
+			} catch (error) {
+				console.error('Error fetching publications:', error);
+			}
+		};
 
-        if (publication.fileType.startsWith('image/')) {
-            // Renderizar imagen
-            return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;
-        } else if (publication.fileType.startsWith('video/')) {
-            // Renderizar video
-            return (
-                <video controls style={{ width: '300px', height: 'auto' }}>
-                    <source src={fileUrl} type={publication.fileType} />
-                    Tu navegador no soporta la reproducción de video.
-                </video>
-            );
-        } else if (publication.fileType === 'application/pdf') {
-            // Enlace para visualizar PDF
-            return (
-                <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                    Ver PDF
-                </a>
-            );
-        } else {
-            // Enlace de descarga para otros tipos de archivo
-            return (
-                <a href={fileUrl} download>
-                    Descargar archivo
-                </a>
-            );
-        }
-    };
+		fetchPublications();
+	}, [selectedCareer]); // Dependencia de selectedCareer para actualizar cuando cambia
 
-	// Función para manejar el clic en el nombre del autor
-    const handleAuthorClick = (authorId: string, authorUsername: string) => {
-        // Navega a la página de perfil del autor, puedes cambiar la ruta según tu configuración
-        //navigate(`/profile/${authorId}`);
+	const renderFile = (publication: Publication) => {
+		if (!publication.filePath || !publication.fileType) return null;
 
-		// Almacena el ID en una variable o en una capa de estado local si necesitas usarla en otra parte
-        const userProfileId = authorId;
+		const fileUrl = `http://localhost:8000/${publication.filePath}`;
+
+		if (publication.fileType.startsWith('image/')) {
+			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;
+		} else if (publication.fileType.startsWith('video/')) {
+			return (
+				<video controls style={{ width: '300px', height: 'auto' }}>
+					<source src={fileUrl} type={publication.fileType} />
+					Tu navegador no soporta la reproducción de video.
+				</video>
+			);
+		} else if (publication.fileType === 'application/pdf') {
+			return (
+				<a href={fileUrl} target="_blank" rel="noopener noreferrer">
+					Ver PDF
+				</a>
+			);
+		} else {
+			return (
+				<a href={fileUrl} download>
+					Descargar archivo
+				</a>
+			);
+		}
+	};
+
+	const handleAuthorClick = (authorId: string, authorUsername: string) => {
+		const userProfileId = authorId;
 		navigate(`/profile/${authorUsername}`, { state: { userProfileId } });
-    };
+	};
 
-    return (
-        <div>
-            <h1>Publicaciones</h1>
-            {publications.map((publication) => (
-                <div key={publication._id} style={{ marginBottom: '20px' }}>
-                    <h2>{publication.title}</h2>
-                    <p>{publication.content}</p>
-					 <p>
-                        <strong>Autor:</strong>{' '}
-                        <button
-                            onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}
-                            style={{
-                                color: 'blue',
-                                textDecoration: 'underline',
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {publication.author.username}
-                        </button>
-                    </p>
-                    <p><strong>Etiquetas:</strong> {publication.tags.join(', ')}</p>
-                    {renderFile(publication)}
-                </div>
-            ))}
-        </div>
-    );
+	return (
+		<div>
+			<h1>Publicaciones</h1>
+			{careers.length > 0 && (
+				<select
+					value={selectedCareer}
+					onChange={(e) => setSelectedCareer(e.target.value)}
+				>
+					<option value="">Filtrar por carrera (opcional)</option>
+					{careers.map(career => (
+						<option key={career._id} value={career._id}>
+							{career.name}
+						</option>
+					))}
+				</select>
+			)}
+			{publications.map((publication) => (
+				<div key={publication._id} style={{ marginBottom: '20px' }}>
+					<h2>{publication.title}</h2>
+					<p>{publication.content}</p>
+					<p>
+						<strong>Autor:</strong>{' '}
+						<button
+							onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}
+							style={{
+								color: 'blue',
+								textDecoration: 'underline',
+								background: 'none',
+								border: 'none',
+								cursor: 'pointer',
+							}}
+						>
+							{publication.author.username}
+						</button>
+					</p>
+					<p><strong>Etiquetas:</strong> {publication.tags.join(', ')}</p>
+					{renderFile(publication)}
+
+					<CommentSection publicationId={publication._id} />
+				</div>
+			))}
+		</div>
+	);
 };
 
 export default ViewPublications;
