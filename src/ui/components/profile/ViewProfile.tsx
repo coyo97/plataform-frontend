@@ -1,6 +1,7 @@
 // src/components/ViewProfile.tsx
 import React, { useEffect, useState } from 'react';
 import { getUserProfile } from '../../../async/services/profileService';
+import getEnvVariables from '../../../config/configEnvs';
 
 interface Profile {
 	bio?: string;
@@ -12,6 +13,8 @@ const ViewProfile: React.FC = () => {
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
+
+	const {HOST} = getEnvVariables();
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -46,7 +49,7 @@ const ViewProfile: React.FC = () => {
 					<p><strong>Interests:</strong> {profile.interests ? profile.interests.join(', ') : 'No interests listed'}</p>
 					{profile.profilePicture && (
 						<img
-							src={`http://localhost:8000/${profile.profilePicture}`} // Asegúrate de que la ruta del backend esté correcta
+							src={`${HOST}/${profile.profilePicture}`} // Asegúrate de que la ruta del backend esté correcta
 							alt="Profile"
 							style={{ width: '150px', height: '150px', objectFit: 'cover' }}
 						/>

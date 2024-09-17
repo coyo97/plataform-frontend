@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Importa useNavigate de React Router
 import { post } from '../../../../async/api';
 import { FormWrapper, FormTitle, FormInput, SubmitButton, FormLabel } from './formLogin.styles';
+import getEnvVariables from '../../../../config/configEnvs';
+
+// Define una interfaz para la respuesta del inicio de sesión
+interface LoginResponse {
+    token: string;
+    userId: string;
+}
 
 const FormLogin: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -9,21 +16,27 @@ const FormLogin: React.FC = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate(); // Usa useNavigate para redirección
 
+	const {HOST, SERVICE} = getEnvVariables();
+
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         try {
-            const response = await post<{ token: string }>('http://localhost:8000/v1.0/api/users/login', {
+            // Actualiza el tipo genérico para reflejar la estructura correcta de la respuesta
+            //const response = await post<LoginResponse>('localhost:8000/v1.0/api/users/login', {
+            const response = await post<LoginResponse>(`${HOST}${SERVICE}/users/login`, {
                 email,
                 password
             });
-            localStorage.setItem('token', response.token);  // Almacena el token JWT en localStorage
-            console.log('Logged in successfully!');
+            // Almacena el token y el userId en localStorage
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('userId', response.userId);
+            console.log('¡Inicio de sesión exitoso!');
 
             // Redirigir al usuario después de un inicio de sesión exitoso
             navigate('/plataform');
         } catch (err) {
             setError('Error al iniciar sesión: Verifica tus credenciales.');
-            console.error('Login error:', err);
+            console.error('Error de inicio de sesión:', err);
         }
     };
 
@@ -49,7 +62,7 @@ const FormLogin: React.FC = () => {
                     required 
                 />
             </div>
-            <SubmitButton type="submit">Iniciar sesión</SubmitButton> {/* Botón de submit normal */}
+            <SubmitButton type="submit">Iniciar sesión</SubmitButton>
         </FormWrapper>
     );
 };

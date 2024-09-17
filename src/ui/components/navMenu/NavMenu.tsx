@@ -1,5 +1,4 @@
 import React from 'react';
-import useStyles from './NavMenu.styles';
 import { useQuery } from 'react-query';
 import { getUser } from '../../../async/services/userService';
 import List from './list/List';

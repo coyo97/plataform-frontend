@@ -1,25 +1,27 @@
-import Reat from 'react';
-import Header from './Header';
-import PostList from './post/PostList';
-import CreatePublication from '../publications/CreatePublication';
-import ViewPublications from '../publications/ViewPublications';
-import UpdateProfile from '../profile/UpdateProfile';
-import ViewProfile from '../profile/ViewProfile';
-import ViewUserPublications from '../publications/user/UserMaterials';
+// src/ui/components/platform/Publica.tsx
+import React from 'react';
 import CareerManager from '../careers/CareerManager';
-//<CreatePublication/>
-	//		<UpdateProfile/>
-		//	<ViewProfile/>
+import Chat from '../chat/Chat';
+import Header from './Header';
+import GroupManager from '../groups/GroupManager';
 
-const Plataform: React.FC = () => {
-	return(
-		<>
+const Publica: React.FC = () => {
+    // Supongamos que el userId está almacenado en localStorage
+    const userId = localStorage.getItem('userId'); // O usa el contexto de tu app si está disponible
+
+    if (!userId) {
+        // Manejar caso en que no haya userId (usuario no autenticado, por ejemplo)
+        return <div>Necesitas estar autenticado para usar el chat.</div>;
+    }
+
+    return (
+        <>
 			<Header/>
-			<div>
+           {/* Pasa el userId como prop al componente Chat */}
+			<Chat userId={userId} />
+        </>
+    );
+};
 
-			<CareerManager/>
-			</div>
-		</>
-	);
-}
-export default Plataform;
+export default Publica;
+

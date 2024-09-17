@@ -12,3 +12,20 @@ export const createUser = async (endpoint: string, payload: Payload): Promise<vo
 	return await post<void>(endpoint, payload);
 }
 
+// Define el tipo de respuesta para el inicio de sesión
+interface LoginResponse {
+  token: string;
+  userId: string;
+}
+
+// Define el tipo de payload para el inicio de sesión
+interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+// Función para iniciar sesión
+export const loginUser = async (endpoint: string, payload: LoginPayload): Promise<LoginResponse> => {
+  return await post<LoginResponse>(endpoint, payload);
+};
+

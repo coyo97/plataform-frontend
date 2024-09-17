@@ -18,9 +18,13 @@ import CreatePublication from './ui/components/publications/CreatePublication';
 import AuthorProfile from './ui/components/profile/AuthorProfile';
 import ViewProfile from './ui/components/profile/ViewProfile';
 import UpdateProfile from './ui/components/profile/UpdateProfile';
+import Notifications from './ui/components/notifications/Notifications';
+import Chat from './ui/components/chat/Chat';
+import CareerManager from './ui/components/careers/CareerManager';
 
 function App() {
 	const queryClient = new QueryClient();
+	 // Ejemplo: Obtener userId del localStorage o contexto
 
 	return (
 		<Theme>
@@ -35,10 +39,13 @@ function App() {
 						<Route path='/profile' element={<HomeProfile/>}></Route>
 						<Route path='/publications' element={<Home/>}></Route>
 						<Route path='/material-user' element={<UserMaterials/>}></Route>
-						  <Route path="/profile/:id" element={<AuthorProfile />} />
-                <Route path="/profile" element={<ViewProfile />} />
-                <Route path="/profile/update" element={<UpdateProfile />} />
+						<Route path="/profile/:id" element={<AuthorProfile />} />
+						<Route path="/profile" element={<ViewProfile />} />
+						<Route path="/profile/update" element={<UpdateProfile />} />
+						<Route path='/administrator' element={<CareerManager/>}></Route>
 					</Routes>
+					{//<Notifications/>
+					}
 				</Router>
 			</QueryClientProvider>
 		</Theme>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPublications, updatePublication, deletePublication } from '../../../../async/services/publicationService';
+import getEnvVariables from '../../../../config/configEnvs';
 
 interface Publication {
 	_id: string;
@@ -21,10 +22,12 @@ const ViewUserPublications: React.FC = () => {
 	const [tags, setTags] = useState('');
 	const [newImage, setNewImage] = useState<File | null>(null);
 
+	const {HOST, SERVICE} = getEnvVariables();
+
 	useEffect(() => {
 		const fetchUserPublications = async () => {
 			try {
-				const data = await getPublications('http://localhost:8000/v1.0/api/user-publications', {});
+				const data = await getPublications(`${HOST}${SERVICE}/user-publications`, {});
 				setPublications(data.publications);
 			} catch (error) {
 				console.error('Error fetching user publications:', error);
@@ -63,11 +66,11 @@ const ViewUserPublications: React.FC = () => {
 			console.log('FormData para actualizar:', formData);
 
 			// Actualiza la publicación
-			await updatePublication(`http://localhost:8000/v1.0/api/user-publications/${selectedPublication._id}`, formData);
+			await updatePublication(`${HOST}${SERVICE}/user-publications/${selectedPublication._id}`, formData);
 				alert('Publicación actualizada con éxito');
 
 			// Refrescar las publicaciones para ver los cambios
-			const data = await getPublications('http://localhost:8000/v1.0/api/user-publications', {});
+			const data = await getPublications(`${HOST}${SERVICE}/user-publications`, {});
 			console.log('Publicaciones después de actualizar:', data.publications);
 			setPublications(data.publications);
 
@@ -81,7 +84,7 @@ const ViewUserPublications: React.FC = () => {
 
 	const handleDelete = async (id: string) => {
 		try {
-			await deletePublication(`http://localhost:8000/v1.0/api/publications/${id}`);
+			await deletePublication(`${HOST}${SERVICE}/publications/${id}`);
 				alert('Publicación eliminada con éxito');
 			setPublications(publications.filter(pub => pub._id !== id));
 		} catch (error) {
@@ -93,7 +96,7 @@ const ViewUserPublications: React.FC = () => {
 	const renderFile = (publication: Publication) => {
 		if (!publication.filePath || !publication.fileType) return null;
 
-		const fileUrl = `http://localhost:8000/${publication.filePath}`;
+		const fileUrl = `${HOST}/${publication.filePath}`;
 
 			if (publication.fileType.startsWith('image/')) {
 			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;

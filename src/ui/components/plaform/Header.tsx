@@ -16,10 +16,10 @@ const Header: React.FC = () => {
 				<div>
 					<nav>
 						<ul>
-							<li><Link to='/' className="highlight">Administrador</Link></li>
+							<li><Link to='/administrator' className="highlight">Administrador</Link></li>
 							<li><Link to='/profile'>Estudiante</Link></li>
 							<li><Link to='/material-user'>Material</Link></li>
-							<li><Link to='/contacto'>Mensajería</Link></li>
+							<li><Link to='/message'>Mensajería</Link></li>
 							<li><Link to='/register'>Ayuda Académica</Link></li>
 							<li><Link to='/publications'>Home</Link></li>
 						</ul>

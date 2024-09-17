@@ -1,6 +1,7 @@
 // src/ui/components/careers/CareerManager.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import getEnvVariables from '../../../config/configEnvs';
 
 interface Career {
     _id: string;
@@ -14,13 +15,15 @@ const CareerManager: React.FC = () => {
     const [description, setDescription] = useState('');
     const [selectedCareer, setSelectedCareer] = useState<Career | null>(null);
 
+	const {HOST, SERVICE} = getEnvVariables();
+
     useEffect(() => {
         fetchCareers();
     }, []);
 
     const fetchCareers = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/v1.0/api/careers');
+            const response = await axios.get(`${HOST}${SERVICE}/careers`);
             setCareers(response.data.careers);
         } catch (error) {
             console.error('Error fetching careers:', error);
@@ -37,7 +40,7 @@ const CareerManager: React.FC = () => {
             if (selectedCareer) {
                 // Actualizar una carrera existente
                 await axios.put(
-                    `http://localhost:8000/v1.0/api/careers/${selectedCareer._id}`,
+                    `${HOST}{SERVICE}/careers/${selectedCareer._id}`,
                     { name, description },
                     { headers }
                 );
@@ -45,7 +48,7 @@ const CareerManager: React.FC = () => {
             } else {
                 // Crear una nueva carrera
                 await axios.post(
-                    'http://localhost:8000/v1.0/api/careers',
+                    `${HOST}${SERVICE}/careers`,
                     { name, description },
                     { headers }
                 );
@@ -63,7 +66,7 @@ const CareerManager: React.FC = () => {
     const handleDeleteCareer = async (id: string) => {
         try {
             const token = localStorage.getItem('token'); // Obtén el token del localStorage
-            await axios.delete(`http://localhost:8000/v1.0/api/careers/${id}`, {
+            await axios.delete(`${HOST}${SERVICE}/careers/${id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Añade el token al encabezado
                 },

@@ -1,6 +1,7 @@
 // src/ui/components/comments/CommentSection.tsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import getEnvVariables from '../../../config/configEnvs';
 
 interface Comment {
     _id: string;
@@ -19,11 +20,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
     const [editingComment, setEditingComment] = useState<Comment | null>(null);
     const [editedContent, setEditedContent] = useState('');
 
+	const {HOST, SERVICE} = getEnvVariables();
+
     useEffect(() => {
         const fetchComments = async () => {
             try {
                 const response = await axios.get(
-                    `http://localhost:8000/v1.0/api/publications/${publicationId}/comments`,
+                    `${HOST}${SERVICE}/publications/${publicationId}/comments`,
                     {
                         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                     }
@@ -43,7 +46,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 
         try {
             const response = await axios.post(
-                `http://localhost:8000/v1.0/api/publications/${publicationId}/comments`,
+                `${HOST}${SERVICE}/publications/${publicationId}/comments`,
                 { content: newComment },
                 { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
             );
@@ -58,7 +61,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 
     const handleDeleteComment = async (commentId: string) => {
         try {
-            await axios.delete(`http://localhost:8000/v1.0/api/comments/${commentId}`, {
+            await axios.delete(`${HOST}${SERVICE}/comments/${commentId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             });
 
@@ -78,7 +81,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 
         try {
             const response = await axios.put(
-                `http://localhost:8000/v1.0/api/comments/${editingComment._id}`,
+                `${HOST}${SERVICE}/comments/${editingComment._id}`,
                 { content: editedContent },
                 { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
             );

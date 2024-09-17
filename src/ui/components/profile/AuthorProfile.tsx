@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import getEnvVariables from '../../../config/configEnvs';
 
 interface Profile {
 	username: string;
@@ -23,6 +24,8 @@ const AuthorProfile: React.FC = () => {
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
 
+	const {HOST, SERVICE} = getEnvVariables();
+
 	// Utiliza el ID del estado si está disponible, de lo contrario utiliza el ID de la URL
 	const userProfileId = locationState?.userProfileId || id;
 
@@ -35,7 +38,7 @@ const AuthorProfile: React.FC = () => {
 			}
 
 			try {
-				const response = await axios.get(`http://localhost:8000/v1.0/api/authors/${userProfileId}`, {
+				const response = await axios.get(`${HOST}${SERVICE}/authors/${userProfileId}`, {
 					headers: {
 					Authorization: `Bearer ${localStorage.getItem('token')}`,
 				},
@@ -71,7 +74,7 @@ const AuthorProfile: React.FC = () => {
 					<p><strong>Interests:</strong> {profile.interests ? profile.interests.join(', ') : 'No interests listed'}</p>
 					{profile.profilePicture && (
 						<img
-							src={`http://localhost:8000/${profile.profilePicture}`} // Asegúrate de que la ruta del backend esté correcta
+							src={`${HOST}/${profile.profilePicture}`} // Asegúrate de que la ruta del backend esté correcta
 							alt="Profile"
 							style={{ width: '150px', height: '150px', objectFit: 'cover' }}
 						/>

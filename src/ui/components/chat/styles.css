@@ -1,0 +1,159 @@
+/* src/ui/components/chat/styles.css */
+
+.middle-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+}
+
+.alert-info {
+    text-align: center;
+    padding: 20px;
+    border: 1px solid #d1ecf1;
+    border-radius: 4px;
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.inbox_people {
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.msg_history {
+    overflow-y: auto;
+    max-height: 400px;
+    padding: 10px;
+}
+
+.write_msg {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.msg_send_btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.msg_send_btn:hover {
+    background-color: #0056b3;
+}
+
+/* Ajusta el tamaño de los iconos de usuario */
+.incoming_msg_img img {
+    width: 50px;  /* Ajusta el tamaño a tu preferencia */
+    height: 50px;
+    border-radius: 50%;  /* Para mantener las imágenes redondas */
+}
+
+/* Estilos Generales */
+.messaging {
+    display: flex;
+    height: 80vh;
+    border: 1px solid #ddd;
+}
+
+.inbox_msg {
+    display: flex;
+    width: 100%;
+}
+
+/* Panel de Usuarios */
+.inbox_people {
+    flex: 0 0 30%;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.inbox_people img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+/* Lista de Mensajes */
+.msg_history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    max-height: calc(100% - 60px); /* Ajuste de la altura para dejar espacio para el input de mensajes */
+}
+
+/* Mensajes Entrantes */
+.incoming_msg {
+    display: flex;
+    margin: 10px 0;
+}
+
+.incoming_msg_img img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.received_msg {
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    text-align: left;
+}
+
+/* Mensajes Salientes */
+.outgoing_msg {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 0;
+}
+
+.sent_msg {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    text-align: right;
+}
+
+/* Input de Mensajes */
+.write_msg {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.msg_send_btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.msg_send_btn:hover {
+    background-color: #0056b3;
+}
+
+.type_msg {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+

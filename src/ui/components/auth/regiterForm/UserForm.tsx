@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import getEnvVariables from '../../../../config/configEnvs';
 
 interface Career {
     _id: string;
@@ -16,11 +17,13 @@ const UserForm: React.FC = () => {
     const [error, setError] = useState<string>('');
     const navigate = useNavigate();
 
+	const {HOST, SERVICE} = getEnvVariables();
+
     // Cargar las carreras disponibles desde la API al montar el componente
     useEffect(() => {
         const fetchCareers = async () => {
             try {
-                const response = await axios.get('http://localhost:8000/v1.0/api/careers', {
+                const response = await axios.get(`${HOST}${SERVICE}/careers`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                 });
                 setAvailableCareers(response.data.careers);
@@ -44,7 +47,7 @@ const UserForm: React.FC = () => {
         };
 
         try {
-            const response = await axios.post('http://localhost:8000/v1.0/api/users', userData);
+            const response = await axios.post(`${HOST}${SERVICE}/users`, userData);
             console.log(response.data);
             navigate('/register'); // Asegúrate de que esta ruta exista
         } catch (error: any) {

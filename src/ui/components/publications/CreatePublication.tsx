@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import getEnvVariables from '../../../config/configEnvs';
 
 interface Career {
 	_id: string;
@@ -17,12 +18,14 @@ const CreatePublication: React.FC = () => {
 	const [selectedCareer, setSelectedCareer] = useState<string>('');
 	const navigate = useNavigate();
 
+	const {HOST, SERVICE} = getEnvVariables();
+
 	useEffect(() => {
 		// Fetch careers associated with the user
 		const fetchCareers = async () => {
 			try {
 				const token = localStorage.getItem('token');
-				const response = await axios.get('http://localhost:8000/v1.0/api/careers', {
+				const response = await axios.get(`${HOST}${SERVICE}/careers`, {
 					headers: { 'Authorization': `Bearer ${token}` },
 				});
 				setCareers(response.data.careers);
@@ -60,7 +63,7 @@ const CreatePublication: React.FC = () => {
 
 		try {
 			const token = localStorage.getItem('token');
-			await axios.post('http://localhost:8000/v1.0/api/publications', formData, {
+			await axios.post(`${HOST}${SERVICE}/publications`, formData, {
 				headers: {
 					'Content-Type': 'multipart/form-data',
 					'Authorization': `Bearer ${token}`,

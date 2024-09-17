@@ -4,6 +4,7 @@ import { getPublications } from '../../../async/services/publicationService';
 import { useNavigate } from 'react-router-dom';
 
 import CommentSection from '../comments/CommentSection';
+import getEnvVariables from '../../../config/configEnvs';
 
 interface Publication {
 	_id: string;
@@ -29,11 +30,13 @@ const ViewPublications: React.FC = () => {
 	const [selectedCareer, setSelectedCareer] = useState<string>('');
 	const navigate = useNavigate();
 
+	const {HOST, SERVICE} = getEnvVariables();
+
 	useEffect(() => {
 		const fetchCareers = async () => {
 			try {
 				const token = localStorage.getItem('token');
-				const response = await axios.get('http://localhost:8000/v1.0/api/careers', {
+				const response = await axios.get(`${HOST}${SERVICE}/careers`, {
 					headers: { 'Authorization': `Bearer ${token}` },
 				});
 				setCareers(response.data.careers);
@@ -49,8 +52,8 @@ const ViewPublications: React.FC = () => {
 		const fetchPublications = async () => {
 			try {
 				const endpoint = selectedCareer
-					? `http://localhost:8000/v1.0/api/publications/career/${selectedCareer}`
-					: 'http://localhost:8000/v1.0/api/publications';
+					? `${HOST}${SERVICE}/publications/career/${selectedCareer}`
+					: `${HOST}${SERVICE}/publications`;
 
 				const data = await getPublications(endpoint, {});
 				setPublications(data.publications);
@@ -65,7 +68,7 @@ const ViewPublications: React.FC = () => {
 	const renderFile = (publication: Publication) => {
 		if (!publication.filePath || !publication.fileType) return null;
 
-		const fileUrl = `http://localhost:8000/${publication.filePath}`;
+		const fileUrl = `${HOST}/${publication.filePath}`;
 
 		if (publication.fileType.startsWith('image/')) {
 			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;

@@ -1,6 +1,11 @@
 // src/async/services/profileService.ts
+
+import getEnvVariables from "../../config/configEnvs";
+
+const {HOST, SERVICE} = getEnvVariables();
+
 export const getUserProfile = async (): Promise<any> => {
-    const response = await fetch('http://localhost:8000/v1.0/api/profile', {
+    const response = await fetch(`${HOST}${SERVICE}/profile`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
@@ -16,7 +21,7 @@ export const getUserProfile = async (): Promise<any> => {
 };
 
 export const updateUserProfile = async (formData: FormData): Promise<void> => {
-    const response = await fetch('http://localhost:8000/v1.0/api/profile', {
+    const response = await fetch(`${HOST}${SERVICE}/profile`, {
         method: 'PUT',
         body: formData,
         headers: {
