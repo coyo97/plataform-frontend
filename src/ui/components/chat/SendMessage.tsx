@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import { FormContainer, InputMsgWrite, MsgSendBtn } from './sendMessage.styles';
+
 interface SendMessageProps {
     handleSendMessage: (messageContent: string) => void;
 }
@@ -15,25 +17,16 @@ export const SendMessage: React.FC<SendMessageProps> = ({ handleSendMessage }) =
         }
     };
 
-    return (
-        <form onSubmit={onSubmit}>
-            <div className="type_msg row">
-                <div className="input_msg_write col-sm-9">
-                    <input
-                        type="text"
-                        className="write_msg"
-                        placeholder="Mensaje..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                    />
-                </div>
-                <div className="col-sm-3 text-center">
-                    <button className="msg_send_btn mt-3" type="submit">
-                        Enviar
-                    </button>
-                </div>
-            </div>
-        </form>
+return (
+        <FormContainer onSubmit={onSubmit}>
+            <InputMsgWrite
+                type="text"
+                placeholder="Escribe tu mensaje..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+            />
+            <MsgSendBtn type="submit">Enviar</MsgSendBtn>
+        </FormContainer>
     );
 };
 

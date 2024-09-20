@@ -2,6 +2,8 @@ import React from 'react';
 import { Searchbox } from './Searchbox';
 import { Sidebar } from './Sidebar';
 
+import { InboxPeopleContainer, } from './inboxPeoble.styles';
+
 interface User {
     _id: string;
     username: string;
@@ -27,8 +29,8 @@ export const InboxPeople: React.FC<InboxPeopleProps> = ({
     onSelectUser,
     onSelectGroup,
 }) => {
-    return (
-        <div className="inbox_people">
+return (
+        <InboxPeopleContainer>
             <Searchbox />
             <Sidebar
                 users={users}
@@ -37,7 +39,6 @@ export const InboxPeople: React.FC<InboxPeopleProps> = ({
                 onSelectUser={onSelectUser}
                 onSelectGroup={onSelectGroup}
             />
-        </div>
+        </InboxPeopleContainer>
     );
 };
-

@@ -1,0 +1,48 @@
+/* Estilos para el botón de enviar mensaje */
+.msg_send_btn {
+    background-color: #007bff;  /* Color de fondo */
+    color: #fff;  /* Color del texto */
+    border: none;  /* Sin bordes */
+    border-radius: 5px;  /* Bordes redondeados */
+    padding: 10px 15px;  /* Asegura suficiente padding */
+    cursor: pointer;  /* Cambia el cursor al pasar sobre el botón */
+    width: 100%;  /* Asegura que el botón ocupe todo el ancho disponible */
+    text-align: center;  /* Alinea el texto al centro */
+    font-size: 16px;  /* Tamaño del texto */
+}
+
+.msg_send_btn:hover {
+    background-color: #0056b3;  /* Cambia de color al hacer hover */
+}
+
+.msg_send_btn:focus {
+    outline: none;  /* Elimina el borde de enfoque predeterminado */
+}
+
+.msg_send_btn:active {
+    transform: scale(0.98);  /* Efecto de clic (botón más pequeño al hacer clic) */
+}
+
+/* Asegura que el contenedor del formulario tenga el tamaño correcto */
+.form_container {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    width: 100%;  /* Ocupa todo el ancho */
+}
+
+/* Input de mensaje para alinearlo bien */
+.input_msg_write {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-right: 10px;  /* Añade un espacio entre el input y el botón */
+}
+
+.input_msg_write::placeholder {
+    color: #999;
+}
+

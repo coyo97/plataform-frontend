@@ -1,6 +1,8 @@
 import React from 'react';
 import { SidebarChatItem } from './SidebarChatItem';
 
+import { SidebarContainer, SectionTitle, } from './sidebar.styles';
+
 interface User {
     _id: string;
     username: string;
@@ -21,9 +23,9 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ users, groups, currentChatId, onSelectUser, onSelectGroup }) => {
-    return (
-        <div className="inbox_chat">
-            <h5>Usuarios</h5>
+	return (
+        <SidebarContainer>
+            <SectionTitle>Usuarios</SectionTitle>
             {users.map((user) => (
                 <SidebarChatItem
                     key={user._id}
@@ -32,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ users, groups, currentChatId, 
                     onClick={() => onSelectUser(user._id)}
                 />
             ))}
-            <h5>Grupos</h5>
+            <SectionTitle>Grupos</SectionTitle>
             {groups.map((group) => (
                 <SidebarChatItem
                     key={group._id}
@@ -41,7 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ users, groups, currentChatId, 
                     onClick={() => onSelectGroup(group._id)}
                 />
             ))}
-        </div>
+        </SidebarContainer>
     );
 };
-

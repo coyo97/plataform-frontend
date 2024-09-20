@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios'; // Asegúrate de tener axios importado para hacer solicitudes HTTP
 import { getPublications } from '../../../async/services/publicationService';
 import { useNavigate } from 'react-router-dom';
@@ -28,9 +28,12 @@ const ViewPublications: React.FC = () => {
 	const [publications, setPublications] = useState<Publication[]>([]);
 	const [careers, setCareers] = useState<Career[]>([]);
 	const [selectedCareer, setSelectedCareer] = useState<string>('');
+	const [page, setPage] = useState<number>(1);
+	const [hasMore, setHasMore] = useState<boolean>(true);
+	const observer = useRef<IntersectionObserver | null>(null);
 	const navigate = useNavigate();
 
-	const {HOST, SERVICE} = getEnvVariables();
+	const { HOST, SERVICE } = getEnvVariables();
 
 	useEffect(() => {
 		const fetchCareers = async () => {
@@ -46,24 +49,43 @@ const ViewPublications: React.FC = () => {
 		};
 
 		fetchCareers();
-	}, []);
+	}, [HOST, SERVICE]);
+
+	const fetchPublications = useCallback(async () => {
+		try {
+			const endpoint = selectedCareer
+				? `${HOST}${SERVICE}/publications/career/${selectedCareer}?page=${page}`
+				: `${HOST}${SERVICE}/publications?page=${page}`;
+
+			console.log(`Fetching from: ${endpoint}`); // Log para ver qué URL se está llamando
+			const data = await getPublications(endpoint, {});
+			console.log('Fetched publications:', data.publications); // Log para ver las publicaciones obtenidas
+			setPublications((prevPublications) => [...prevPublications, ...data.publications]);
+			setHasMore(data.publications.length > 0); // Si no hay más publicaciones, detén la carga
+		} catch (error) {
+			console.error('Error fetching publications:', error);
+		}
+	}, [HOST, SERVICE, selectedCareer, page]);
 
 	useEffect(() => {
-		const fetchPublications = async () => {
-			try {
-				const endpoint = selectedCareer
-					? `${HOST}${SERVICE}/publications/career/${selectedCareer}`
-					: `${HOST}${SERVICE}/publications`;
-
-				const data = await getPublications(endpoint, {});
-				setPublications(data.publications);
-			} catch (error) {
-				console.error('Error fetching publications:', error);
-			}
-		};
-
 		fetchPublications();
-	}, [selectedCareer]); // Dependencia de selectedCareer para actualizar cuando cambia
+	}, [fetchPublications]);
+
+	const lastPublicationRef = useRef<HTMLDivElement | null>(null);
+
+	const lastPublicationElementRef = useCallback(
+		(node: HTMLDivElement) => {
+			if (observer.current) observer.current.disconnect();
+			observer.current = new IntersectionObserver((entries) => {
+				if (entries[0].isIntersecting && hasMore) {
+					console.log('IntersectionObserver triggered - loading more...'); // Log para ver si se activa el observer
+					setPage((prevPage) => prevPage + 1);
+				}
+			});
+			if (node) observer.current.observe(node);
+		},
+		[hasMore]
+	);
 
 	const renderFile = (publication: Publication) => {
 		if (!publication.filePath || !publication.fileType) return null;
@@ -105,7 +127,11 @@ const ViewPublications: React.FC = () => {
 			{careers.length > 0 && (
 				<select
 					value={selectedCareer}
-					onChange={(e) => setSelectedCareer(e.target.value)}
+					onChange={(e) => {
+						setSelectedCareer(e.target.value);
+						setPublications([]);
+						setPage(1);
+					}}
 				>
 					<option value="">Filtrar por carrera (opcional)</option>
 					{careers.map(career => (
@@ -115,31 +141,74 @@ const ViewPublications: React.FC = () => {
 					))}
 				</select>
 			)}
-			{publications.map((publication) => (
-				<div key={publication._id} style={{ marginBottom: '20px' }}>
-					<h2>{publication.title}</h2>
-					<p>{publication.content}</p>
-					<p>
-						<strong>Autor:</strong>{' '}
-						<button
-							onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}
-							style={{
-								color: 'blue',
-								textDecoration: 'underline',
-								background: 'none',
-								border: 'none',
-								cursor: 'pointer',
-							}}
+			{publications.map((publication, index) => {
+				const key = `${publication._id}-${index}`; // Agrega el índice al key para asegurarse de que sea único.
+				if (publications.length === index + 1) {
+					return (
+						<div
+							key={key}
+							ref={lastPublicationElementRef}
+							style={{ marginBottom: '20px' }}
 						>
-							{publication.author.username}
-						</button>
-					</p>
-					<p><strong>Etiquetas:</strong> {publication.tags.join(', ')}</p>
-					{renderFile(publication)}
+							<h2>{publication.title}</h2>
+							<p>{publication.content}</p>
+							<p>
+								<strong>Autor:</strong>{' '}
+								<button
+									onClick={() =>
+										handleAuthorClick(publication.author._id, publication.author.username)
+									}
+									style={{
+										color: 'blue',
+										textDecoration: 'underline',
+										background: 'none',
+										border: 'none',
+										cursor: 'pointer',
+									}}
+								>
+									{publication.author.username}
+								</button>
+							</p>
+							<p>
+								<strong>Etiquetas:</strong> {publication.tags.join(', ')}
+							</p>
+							{renderFile(publication)}
 
-					<CommentSection publicationId={publication._id} />
-				</div>
-			))}
+							<CommentSection publicationId={publication._id} />
+						</div>
+					);
+				} else {
+					return (
+						<div key={key} style={{ marginBottom: '20px' }}>
+							<h2>{publication.title}</h2>
+							<p>{publication.content}</p>
+							<p>
+								<strong>Autor:</strong>{' '}
+								<button
+									onClick={() =>
+										handleAuthorClick(publication.author._id, publication.author.username)
+									}
+									style={{
+										color: 'blue',
+										textDecoration: 'underline',
+										background: 'none',
+										border: 'none',
+										cursor: 'pointer',
+									}}
+								>
+									{publication.author.username}
+								</button>
+							</p>
+							<p>
+								<strong>Etiquetas:</strong> {publication.tags.join(', ')}
+							</p>
+							{renderFile(publication)}
+
+							<CommentSection publicationId={publication._id} />
+						</div>
+					);
+				}
+			})}
 		</div>
 	);
 };

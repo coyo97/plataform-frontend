@@ -4,21 +4,17 @@ import CareerManager from '../careers/CareerManager';
 import Chat from '../chat/Chat';
 import Header from './Header';
 import GroupManager from '../groups/GroupManager';
+import Stream from '../stream/Stream';
+import JoinStream from '../JoinStream';
 
 const Publica: React.FC = () => {
-    // Supongamos que el userId está almacenado en localStorage
-    const userId = localStorage.getItem('userId'); // O usa el contexto de tu app si está disponible
-
-    if (!userId) {
-        // Manejar caso en que no haya userId (usuario no autenticado, por ejemplo)
-        return <div>Necesitas estar autenticado para usar el chat.</div>;
-    }
-
+	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
+    const streamId = 'stream123'; // También lo puedes obtener dinámicamente
     return (
         <>
 			<Header/>
-           {/* Pasa el userId como prop al componente Chat */}
-			<Chat userId={userId} />
+			 <Stream userId={userId} streamId={streamId} />
+			<JoinStream/>
         </>
     );
 };

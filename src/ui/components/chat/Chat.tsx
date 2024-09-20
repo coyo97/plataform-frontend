@@ -6,7 +6,10 @@ import getEnvVariables from '../../../config/configEnvs';
 import { InboxPeople } from './InboxPeople';
 import { Messages } from './Messages';
 import { ChatSelect } from './ChatSelect';
-import './styles.css';  // Importa los estilos aquí
+
+// Importamos los estilos desde el archivo de estilos centralizado
+import { MessagingContainer, InboxMsg } from './ChatStyles';
+
 
 interface Message {
     _id: string;
@@ -187,8 +190,8 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
     };
 
     return (
-        <div className="messaging">
-            <div className="inbox_msg">
+        <MessagingContainer>
+            <InboxMsg>
                 <InboxPeople
                     users={users}
                     groups={groups}
@@ -205,8 +208,8 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
                 ) : (
                     <ChatSelect />
                 )}
-            </div>
-        </div>
+            </InboxMsg>
+        </MessagingContainer>
     );
 };
 

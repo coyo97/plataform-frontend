@@ -21,6 +21,7 @@ import UpdateProfile from './ui/components/profile/UpdateProfile';
 import Notifications from './ui/components/notifications/Notifications';
 import Chat from './ui/components/chat/Chat';
 import CareerManager from './ui/components/careers/CareerManager';
+import HomeChat from './ui/components/chat/HomeChat';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ function App() {
 						<Route path="/profile" element={<ViewProfile />} />
 						<Route path="/profile/update" element={<UpdateProfile />} />
 						<Route path='/administrator' element={<CareerManager/>}></Route>
+						<Route path='/message' element={<HomeChat/>}></Route>
 					</Routes>
 					{//<Notifications/>
 					}
