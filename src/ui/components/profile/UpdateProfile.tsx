@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateUserProfile } from '../../../async/services/profileService';
 
+import { FormContainer, TextareaField, InputField, SubmitButton } from './updateProfileStyles.styles'; // Importar los estilos
+
 const UpdateProfile: React.FC = () => {
 	const [bio, setBio] = useState('');
 	const [interests, setInterests] = useState('');
@@ -36,24 +38,24 @@ const UpdateProfile: React.FC = () => {
 	};
 
 	return (
-		<form onSubmit={handleSubmit}>
-			<textarea
+		<FormContainer onSubmit={handleSubmit}>
+			<TextareaField
 				placeholder="Bio"
 				value={bio}
 				onChange={(e) => setBio(e.target.value)}
 			/>
-			<input
+			<InputField
 				type="text"
 				placeholder="Interests (comma separated)"
 				value={interests}
 				onChange={(e) => setInterests(e.target.value)}
 			/>
-			<input
+			<InputField
 				type="file"
-				onChange={handleFileChange} // Manejador de cambio de archivo
+				onChange={handleFileChange}
 			/>
-			<button type="submit">Actualizar Perfil</button>
-		</form>
+			<SubmitButton type="submit">Actualizar Perfil</SubmitButton>
+		</FormContainer>
 	);
 };
 

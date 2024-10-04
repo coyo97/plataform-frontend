@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { getUserProfile } from '../../../async/services/profileService';
 import getEnvVariables from '../../../config/configEnvs';
 
+import { ProfileContainer, ProfileInfo, ProfileImage } from './viewProfileStyles.styles'; // Importar los estilos
+
 interface Profile {
 	bio?: string;
 	interests?: string[];
@@ -41,23 +43,23 @@ const ViewProfile: React.FC = () => {
 	}
 
 	return (
-		<div>
+		<ProfileContainer>
 			<h1>Profile</h1>
 			{profile && (
-				<div>
+				<ProfileInfo>
 					<p><strong>Bio:</strong> {profile.bio || 'No bio available'}</p>
 					<p><strong>Interests:</strong> {profile.interests ? profile.interests.join(', ') : 'No interests listed'}</p>
 					{profile.profilePicture && (
-						<img
-							src={`${HOST}/${profile.profilePicture}`} // Asegúrate de que la ruta del backend esté correcta
+						<ProfileImage
+							src={`${HOST}/${profile.profilePicture}`}
 							alt="Profile"
-							style={{ width: '150px', height: '150px', objectFit: 'cover' }}
 						/>
 					)}
-				</div>
+				</ProfileInfo>
 			)}
-		</div>
+		</ProfileContainer>
 	);
+
 };
 
 export default ViewProfile;

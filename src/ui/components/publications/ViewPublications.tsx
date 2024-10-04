@@ -6,6 +6,17 @@ import { useNavigate } from 'react-router-dom';
 import CommentSection from '../comments/CommentSection';
 import getEnvVariables from '../../../config/configEnvs';
 
+import {
+    PublicationContainer,
+    PublicationContent,
+    FilePreview,
+    UserProfileImage,
+    CommentButton,
+    SidebarContainer,
+    FilterTitle,
+    FilterButton
+} from './viewPublicationsStyles.styles'; // Importa los estilos
+
 interface Publication {
 	_id: string;
 	title: string;
@@ -122,96 +133,48 @@ const ViewPublications: React.FC = () => {
 	};
 
 	return (
-		<div>
-			<h1>Publicaciones</h1>
-			{careers.length > 0 && (
-				<select
-					value={selectedCareer}
-					onChange={(e) => {
-						setSelectedCareer(e.target.value);
-						setPublications([]);
-						setPage(1);
-					}}
-				>
-					<option value="">Filtrar por carrera (opcional)</option>
-					{careers.map(career => (
-						<option key={career._id} value={career._id}>
-							{career.name}
-						</option>
-					))}
-				</select>
-			)}
-			{publications.map((publication, index) => {
-				const key = `${publication._id}-${index}`; // Agrega el índice al key para asegurarse de que sea único.
-				if (publications.length === index + 1) {
-					return (
-						<div
-							key={key}
-							ref={lastPublicationElementRef}
-							style={{ marginBottom: '20px' }}
-						>
+		<div style={{ display: 'flex' }}>
+			<SidebarContainer>
+				<FilterTitle>Filtrar publicación</FilterTitle>
+				{careers.map((career) => (
+					<FilterButton
+						key={career._id}
+						active={selectedCareer === career._id}
+						onClick={() => {
+							setSelectedCareer(career._id);
+							setPublications([]);
+							setPage(1);
+						}}
+					>
+						{career.name}
+					</FilterButton>
+				))}
+			</SidebarContainer>
+			<div>
+				{publications.map((publication, index) => (
+					<PublicationContainer key={`${publication._id}-${index}`} ref={lastPublicationElementRef}>
+						<UserProfileImage src="/path-to-profile-image.jpg" alt="User" /> {/* Ajusta la imagen */}
+						<PublicationContent>
 							<h2>{publication.title}</h2>
 							<p>{publication.content}</p>
 							<p>
 								<strong>Autor:</strong>{' '}
-								<button
-									onClick={() =>
-										handleAuthorClick(publication.author._id, publication.author.username)
-									}
-									style={{
-										color: 'blue',
-										textDecoration: 'underline',
-										background: 'none',
-										border: 'none',
-										cursor: 'pointer',
-									}}
-								>
+								<button onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}>
 									{publication.author.username}
 								</button>
 							</p>
-							<p>
-								<strong>Etiquetas:</strong> {publication.tags.join(', ')}
-							</p>
 							{renderFile(publication)}
-
 							<CommentSection publicationId={publication._id} />
-						</div>
-					);
-				} else {
-					return (
-						<div key={key} style={{ marginBottom: '20px' }}>
-							<h2>{publication.title}</h2>
-							<p>{publication.content}</p>
-							<p>
-								<strong>Autor:</strong>{' '}
-								<button
-									onClick={() =>
-										handleAuthorClick(publication.author._id, publication.author.username)
-									}
-									style={{
-										color: 'blue',
-										textDecoration: 'underline',
-										background: 'none',
-										border: 'none',
-										cursor: 'pointer',
-									}}
-								>
-									{publication.author.username}
-								</button>
-							</p>
-							<p>
-								<strong>Etiquetas:</strong> {publication.tags.join(', ')}
-							</p>
-							{renderFile(publication)}
-
-							<CommentSection publicationId={publication._id} />
-						</div>
-					);
-				}
-			})}
+						</PublicationContent>
+					</PublicationContainer>
+				))}
+			</div>
 		</div>
 	);
+	
+
 };
+
 
 export default ViewPublications;
 

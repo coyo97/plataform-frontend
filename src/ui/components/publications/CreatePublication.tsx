@@ -4,6 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
 
+
+import {
+    FormContainer,
+    InputField,
+    TextareaField,
+    SelectField,
+    SubmitButton
+} from './createPublicationStyles.styles'; // Importa los estilos
+
 interface Career {
 	_id: string;
 	name: string;
@@ -77,32 +86,29 @@ const CreatePublication: React.FC = () => {
 	};
 
 	return (
-		<form onSubmit={handleSubmit}>
-			<input
+		<FormContainer onSubmit={handleSubmit}>
+			<InputField
 				type="text"
 				placeholder="Título"
 				value={title}
 				onChange={(e) => setTitle(e.target.value)}
 				required
 			/>
-			<textarea
+			<TextareaField
 				placeholder="Contenido"
 				value={content}
 				onChange={(e) => setContent(e.target.value)}
 				required
-			></textarea>
-			<input
+			></TextareaField>
+			<InputField
 				type="text"
 				placeholder="Etiquetas (separadas por comas)"
 				value={tags}
 				onChange={(e) => setTags(e.target.value)}
 			/>
-			<input
-				type="file"
-				onChange={handleFileChange}
-			/>
+			<InputField type="file" onChange={handleFileChange} />
 			{careers.length > 0 && (
-				<select
+				<SelectField
 					value={selectedCareer}
 					onChange={(e) => setSelectedCareer(e.target.value)}
 				>
@@ -112,10 +118,10 @@ const CreatePublication: React.FC = () => {
 							{career.name}
 						</option>
 					))}
-				</select>
+				</SelectField>
 			)}
-			<button type="submit">Crear Publicación</button>
-		</form>
+			<SubmitButton type="submit">Crear Publicación</SubmitButton>
+		</FormContainer>
 	);
 };
 
