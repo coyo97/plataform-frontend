@@ -4,7 +4,7 @@ import mq from '../../../config/mq';
 export const InboxPeopleContainer = styled('div')({
     display: 'flex',
     flexDirection: 'column',
-    width: '100%',
+    width: '50%',
     maxHeight: '100vh', // Para asegurar que los usuarios se mantengan visibles
     overflowY: 'auto',
     [mq('xs', 'max')]: {

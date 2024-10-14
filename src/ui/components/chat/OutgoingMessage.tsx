@@ -1,26 +1,63 @@
-import React from 'react';
+// src/ui/components/chat/OutgoingMessage.tsx
 
-import { OutgoingMsgContainer, SentMsg, TimeDate } from './outgoingMessage.styles';
+import React from 'react';
+import getEnvVariables from '../../../config/configEnvs';
+
+import {
+  OutgoingMsgContainer,
+  SentMsg,
+  TimeDate,
+} from './outgoingMessage.styles';
 
 interface MessageProps {
-    message: {
-        content: string;
-        createdAt: string;
+  message: {
+    content: string;
+    createdAt: string;
+    filePath?: string;
+    fileType?: string;
+    sender?: {
+      username: string;
+      profile?: {
+        profilePicture?: string;
+      };
     };
+  };
 }
 
 export const OutgoingMessage: React.FC<MessageProps> = ({ message }) => {
-    // Validar la fecha y formatearla solo si es válida
-    const messageDate = new Date(message.createdAt);
-    const formattedDate = isNaN(messageDate.getTime()) ? 'Fecha Inválida' : messageDate.toLocaleString();
+  const { HOST } = getEnvVariables();
 
- return (
-        <OutgoingMsgContainer>
-            <SentMsg>
-                <p>{message.content}</p>
-                <TimeDate>{formattedDate}</TimeDate>
-            </SentMsg>
-        </OutgoingMsgContainer>
-    );
+  const messageDate = new Date(message.createdAt);
+  const formattedDate = isNaN(messageDate.getTime())
+    ? 'Fecha Inválida'
+    : messageDate.toLocaleString();
+
+  const renderMessageContent = () => {
+	  //console.log("Contenido del mensaje:", message);
+    if (message.filePath && message.fileType) {
+      const fileUrl = `${HOST}/${message.filePath}`;
+      if (message.fileType.startsWith('image/')) {
+		  //console.log('Mensaje en OutgoingMessage:', message);
+        return <img src={fileUrl} alt="Imagen" style={{ maxWidth: '100%' }} />;
+      } else {
+        return (
+          <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+            Descargar archivo
+          </a>
+        );
+      }
+    } else {
+      return <p>{message.content}</p>;
+    }
+  };
+
+  return (
+    <OutgoingMsgContainer>
+      <SentMsg>
+        {renderMessageContent()}
+        <TimeDate>{formattedDate}</TimeDate>
+      </SentMsg>
+    </OutgoingMsgContainer>
+  );
 };
 

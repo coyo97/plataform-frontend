@@ -11,8 +11,8 @@ export const OutgoingMsgContainer = styled('div')({
 });
 
 export const SentMsg = styled('div')({
-    backgroundColor: '#007bff', // Fondo azul para mensajes salientes
-    color: '#fff', // Texto blanco
+    backgroundColor: '#007bff', // Color azul para los mensajes enviados
+    color: '#fff', // Texto blanco para mensajes salientes
     padding: '10px 15px',
     borderRadius: '10px',
     maxWidth: '70%',

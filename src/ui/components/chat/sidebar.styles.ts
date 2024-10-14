@@ -7,10 +7,10 @@ export const SidebarContainer = styled('div')({
   backgroundColor: '#f8f8f8',
   borderRight: '1px solid #ddd',
   [mq('xs', 'min')]: {
-    width: '250px',
+    width: '100%', // Ocupa toda la pantalla en dispositivos móviles
   },
   [mq('md', 'min')]: {
-    width: '300px',
+    width: '300px', // Ancho fijo para pantallas más grandes
   },
 });
 

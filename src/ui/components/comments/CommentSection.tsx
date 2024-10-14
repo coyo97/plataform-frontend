@@ -1,12 +1,21 @@
-// src/ui/components/comments/CommentSection.tsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { 
+  CommentContainer, 
+  CommentAuthor, 
+  CommentText, 
+  CommentDate, 
+  CommentButtonGroup, 
+  CommentButton, 
+  CommentTextarea, 
+  CommentsWrapper // Importa el contenedor con scroll
+} from './commentSectionStyles'; // Importa los estilos
 import getEnvVariables from '../../../config/configEnvs';
 
 interface Comment {
     _id: string;
     content: string;
-    author: { username: string };
+    author: { _id: string; username: string };
     created_at: string;
 }
 
@@ -20,7 +29,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
     const [editingComment, setEditingComment] = useState<Comment | null>(null);
     const [editedContent, setEditedContent] = useState('');
 
-	const {HOST, SERVICE} = getEnvVariables();
+    const { HOST, SERVICE } = getEnvVariables();
+
+    const authenticatedUserId = localStorage.getItem('userId');
 
     useEffect(() => {
         const fetchComments = async () => {
@@ -31,15 +42,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
                         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                     }
                 );
-                setComments(response.data.comments || []); // Asegúrate de establecer siempre un array
+                setComments(response.data.comments || []);
             } catch (error) {
                 console.error('Error fetching comments:', error);
-                setComments([]); // Asegúrate de manejar el estado correctamente en caso de error
+                setComments([]);
             }
         };
 
         fetchComments();
-    }, [publicationId]);
+    }, [publicationId, HOST, SERVICE]);
 
     const handleAddComment = async () => {
         if (!newComment.trim()) return;
@@ -53,7 +64,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 
             const newCommentData = response.data.comment;
             setComments((prevComments) => [...prevComments, newCommentData]);
-            setNewComment(''); // Limpia el campo de comentario después de agregarlo
+            setNewComment('');
         } catch (error) {
             console.error('Error adding comment:', error);
         }
@@ -102,39 +113,45 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
     return (
         <div>
             <h3>Comentarios</h3>
-            {comments.length > 0 ? (
-                comments.map((comment) => (
-                    <div key={comment._id}>
-                        <p>
-                            <strong>{comment.author.username}</strong>: {comment.content}
-                        </p>
-                        <small>{new Date(comment.created_at).toLocaleString()}</small>
-                        <div>
-                            <button onClick={() => handleEditComment(comment)}>Editar</button>
-                            <button onClick={() => handleDeleteComment(comment._id)}>Eliminar</button>
-                        </div>
-                        {editingComment && editingComment._id === comment._id && (
-                            <div>
-                                <textarea
-                                    value={editedContent}
-                                    onChange={(e) => setEditedContent(e.target.value)}
-                                    placeholder="Editar comentario"
-                                />
-                                <button onClick={handleUpdateComment}>Guardar</button>
-                                <button onClick={() => setEditingComment(null)}>Cancelar</button>
-                            </div>
-                        )}
-                    </div>
-                ))
-            ) : (
-                <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
-            )}
-            <textarea
+            {/* Envolver los comentarios con el contenedor de scroll */}
+            <CommentsWrapper>
+                {comments.length > 0 ? (
+                    comments.map((comment) => (
+                        <CommentContainer key={comment._id}>
+                            <CommentAuthor>{comment.author.username}</CommentAuthor>
+                            <CommentText>{comment.content}</CommentText>
+                            <CommentDate>{new Date(comment.created_at).toLocaleString()}</CommentDate>
+                            {authenticatedUserId === comment.author._id && (
+                                <CommentButtonGroup>
+                                    <CommentButton onClick={() => handleEditComment(comment)}>Editar</CommentButton>
+                                    <CommentButton onClick={() => handleDeleteComment(comment._id)}>Eliminar</CommentButton>
+                                </CommentButtonGroup>
+                            )}
+                            {editingComment && editingComment._id === comment._id && (
+                                <div>
+                                    <CommentTextarea
+                                        value={editedContent}
+                                        onChange={(e) => setEditedContent(e.target.value)}
+                                        placeholder="Editar comentario"
+                                    />
+                                    <CommentButtonGroup>
+                                        <CommentButton onClick={handleUpdateComment}>Guardar</CommentButton>
+                                        <CommentButton onClick={() => setEditingComment(null)}>Cancelar</CommentButton>
+                                    </CommentButtonGroup>
+                                </div>
+                            )}
+                        </CommentContainer>
+                    ))
+                ) : (
+                    <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
+                )}
+            </CommentsWrapper>
+            <CommentTextarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Añadir un comentario"
             />
-            <button onClick={handleAddComment}>Enviar</button>
+            <CommentButton onClick={handleAddComment}>Enviar</CommentButton>
         </div>
     );
 };

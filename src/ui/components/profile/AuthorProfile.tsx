@@ -9,7 +9,9 @@ interface Profile {
 	email: string;
 	bio?: string;
 	interests?: string[];
-	profilePicture?: string; // Ruta de la imagen
+	profile?: {
+		profilePicture?: string; // Anidado dentro de profile
+	};
 }
 
 interface LocationState {
@@ -24,7 +26,7 @@ const AuthorProfile: React.FC = () => {
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
 
-	const {HOST, SERVICE} = getEnvVariables();
+	const { HOST, SERVICE } = getEnvVariables();
 
 	// Utiliza el ID del estado si está disponible, de lo contrario utiliza el ID de la URL
 	const userProfileId = locationState?.userProfileId || id;
@@ -40,8 +42,8 @@ const AuthorProfile: React.FC = () => {
 			try {
 				const response = await axios.get(`${HOST}${SERVICE}/authors/${userProfileId}`, {
 					headers: {
-					Authorization: `Bearer ${localStorage.getItem('token')}`,
-				},
+						Authorization: `Bearer ${localStorage.getItem('token')}`,
+					},
 				});
 				setProfile(response.data.author);
 			} catch (error) {
@@ -53,7 +55,7 @@ const AuthorProfile: React.FC = () => {
 		};
 
 		fetchAuthorProfile();
-	}, [userProfileId]);
+	}, [userProfileId, HOST, SERVICE]);
 
 	if (loading) {
 		return <p>Loading...</p>;
@@ -72,13 +74,15 @@ const AuthorProfile: React.FC = () => {
 					<p><strong>Email:</strong> {profile.email}</p>
 					<p><strong>Bio:</strong> {profile.bio || 'No bio available'}</p>
 					<p><strong>Interests:</strong> {profile.interests ? profile.interests.join(', ') : 'No interests listed'}</p>
-					{profile.profilePicture && (
-						<img
-							src={`${HOST}/${profile.profilePicture}`} // Asegúrate de que la ruta del backend esté correcta
-							alt="Profile"
-							style={{ width: '150px', height: '150px', objectFit: 'cover' }}
-						/>
-					)}
+					<img
+						src={
+							profile.profile?.profilePicture
+								? `${HOST}/${profile.profile.profilePicture}`
+								: 'https://ptetutorials.com/images/user-profile.png' // Imagen por defecto si no hay foto
+						}
+						alt={profile.username}
+						style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+					/>
 				</div>
 			)}
 		</div>
@@ -86,5 +90,4 @@ const AuthorProfile: React.FC = () => {
 };
 
 export default AuthorProfile;
-
 

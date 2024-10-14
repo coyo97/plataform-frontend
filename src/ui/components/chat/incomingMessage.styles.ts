@@ -26,7 +26,8 @@ export const IncomingMsgImg = styled('div')({
 });
 
 export const ReceivedMsg = styled('div')({
-    backgroundColor: '#f1f0f0',
+    backgroundColor: '#f0f0f0', // Color de fondo para mensajes entrantes
+    color: '#333', // Color del texto
     padding: '10px 15px',
     borderRadius: '10px',
     maxWidth: '70%',

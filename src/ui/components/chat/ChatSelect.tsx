@@ -8,9 +8,8 @@ export const ChatSelect: React.FC = () => {
         <ChatSelectContainer>
             <AlertBox>
                 <hr />
-                <AlertTitle>Seleccione una conversación</AlertTitle>
+                <AlertTitle></AlertTitle>
                 <AlertMessage>
-                    Para comenzar una conversación, selecciona un usuario o un grupo en el panel lateral.
                 </AlertMessage>
             </AlertBox>
         </ChatSelectContainer>

@@ -25,6 +25,9 @@ interface Publication {
 	author: {
 		_id: string;
 		username: string;
+		profile?: {
+			profilePicture?: string;
+		};
 	};
 	filePath?: string;
 	fileType?: string;
@@ -153,7 +156,12 @@ const ViewPublications: React.FC = () => {
 			<div>
 				{publications.map((publication, index) => (
 					<PublicationContainer key={`${publication._id}-${index}`} ref={lastPublicationElementRef}>
-						<UserProfileImage src="/path-to-profile-image.jpg" alt="User" /> {/* Ajusta la imagen */}
+						<UserProfileImage src={
+							publication.author.profile?.profilePicture
+								? `${HOST}/${publication.author.profile.profilePicture}`
+								: 'https://ptetutorials.com/images/user-profile.png'
+							}
+							alt={publication.author.username} /> {/* Ajusta la imagen */}
 						<PublicationContent>
 							<h2>{publication.title}</h2>
 							<p>{publication.content}</p>

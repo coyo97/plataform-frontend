@@ -6,6 +6,7 @@ import Header from './Header';
 import GroupManager from '../groups/GroupManager';
 import Stream from '../stream/Stream';
 import JoinStream from '../JoinStream';
+import FloatingChat from '../chat/FloatingChat';
 
 const Publica: React.FC = () => {
 	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
@@ -15,6 +16,7 @@ const Publica: React.FC = () => {
 			<Header/>
 			 <Stream userId={userId} streamId={streamId} />
 			<JoinStream/>
+			<FloatingChat/>
         </>
     );
 };

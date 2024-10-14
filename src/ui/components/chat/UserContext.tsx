@@ -4,17 +4,17 @@ import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
 
 interface Profile {
-    _id: string;
-    username: string;
-    email: string;
-    bio?: string;
-    interests?: string[];
-    profilePicture?: string;
+  _id: string;
+  username: string;
+  email: string;
+  bio?: string;
+  interests?: string[];
+  profilePicture?: string;
 }
 
 interface UserContextProps {
-    currentUser: Profile | null;
-    setCurrentUser: React.Dispatch<React.SetStateAction<Profile | null>>;
+  currentUser: Profile | null;
+  setCurrentUser: React.Dispatch<React.SetStateAction<Profile | null>>;
 }
 
 const UserContext = createContext<UserContextProps>({
