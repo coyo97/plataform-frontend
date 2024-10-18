@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
 
+import AdminNotifications from '../notifications/AdminNotifications';
+
 interface Career {
     _id: string;
     name: string;
@@ -110,6 +112,7 @@ const CareerManager: React.FC = () => {
                     </li>
                 ))}
             </ul>
+			<AdminNotifications/>
         </div>
     );
 };

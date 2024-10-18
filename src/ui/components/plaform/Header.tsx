@@ -1,4 +1,4 @@
-// Header.tsx
+/// Header.tsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header as StyledHeader, ToggleButton, ArrowIcon } from './header.styles';
@@ -34,4 +34,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-

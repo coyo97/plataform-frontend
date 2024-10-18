@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import { 
   CommentContainer, 
@@ -11,12 +12,15 @@ import {
   CommentsWrapper // Importa el contenedor con scroll
 } from './commentSectionStyles'; // Importa los estilos
 import getEnvVariables from '../../../config/configEnvs';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface Comment {
     _id: string;
     content: string;
     author: { _id: string; username: string };
-    created_at: string;
+	 publication: string;
+  created_at: string;
 }
 
 interface CommentSectionProps {
@@ -28,10 +32,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
     const [newComment, setNewComment] = useState('');
     const [editingComment, setEditingComment] = useState<Comment | null>(null);
     const [editedContent, setEditedContent] = useState('');
+	const [socket, setSocket] = useState<Socket | null>(null);
 
     const { HOST, SERVICE } = getEnvVariables();
 
     const authenticatedUserId = localStorage.getItem('userId');
+const token = localStorage.getItem('token');
 
     useEffect(() => {
         const fetchComments = async () => {
@@ -51,6 +57,39 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 
         fetchComments();
     }, [publicationId, HOST, SERVICE]);
+
+	  // Configurar Socket.IO
+  useEffect(() => {
+    if (!token) return;
+
+    const newSocket = io(HOST, {
+      auth: {
+        token,
+      },
+    });
+
+    setSocket(newSocket);
+
+    // Escuchar eventos de nuevos comentarios
+    newSocket.on('new-comment', (comment: Comment) => {
+      if (comment.publication === publicationId) {
+        setComments((prevComments) => [...prevComments, comment]);
+      }
+    });
+
+       // Escuchar notificaciones
+    newSocket.on('new-notification', (notification) => {
+      if (notification.data.publicationId === publicationId) {
+        toast.info(notification.message);
+      }
+    });
+
+    return () => {
+      newSocket.off('new-comment');
+      newSocket.off('new-notification');
+      newSocket.close();
+    };
+  }, [publicationId, token, HOST]);
 
     const handleAddComment = async () => {
         if (!newComment.trim()) return;
