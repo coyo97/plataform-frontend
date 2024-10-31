@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
@@ -11,23 +11,25 @@ import { ChatSelect } from './ChatSelect';
 import { MessagingContainer, InboxMsg } from './ChatStyles';
 
 
-interface Message {
+export interface Message {
 	_id: string;
-	senderId: string;
-	receiverId: string | null;
+	sender: {
+		_id: string;
+		username: string;
+		profile?: {
+			profilePicture?: string;
+		};
+	};
+	receiver: string | null;
 	content: string;
 	isGroupMessage: boolean;
 	groupId?: string;
-	sender?: {
-		username: string;
-		rofile?: {
-			profilePicture?: string;
-		};
-
-	};
 	isRead: boolean;
 	createdAt: string;
+	filePath?: string;
+	fileType?: string;
 }
+
 
 interface Group {
 	_id: string;
@@ -56,6 +58,11 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 
 	const { HOST, SERVICE } = getEnvVariables();
 
+	const currentChatIdRef = useRef(currentChatId);
+
+	useEffect(() => {
+		currentChatIdRef.current = currentChatId;
+	}, [currentChatId]);
 	useEffect(() => {
 		const token = localStorage.getItem('token');
 		if (!token) {
@@ -80,11 +87,14 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 			console.log('Mensaje recibido:', data);
 			const isValidDate = !isNaN(new Date(data.createdAt).getTime());
 			if (!isValidDate) {
-				console.warn(`Fecha inválida recibida en el mensaje: ${data.createdAt}`);
+				console.warn(
+					`Fecha inválida recibida en el mensaje: ${data.createdAt}`
+				);
 			}
 			if (
-				(data.senderId === currentChatId || data.receiverId === currentChatId) ||
-				(data.isGroupMessage && data.groupId === currentChatId)
+				(data.sender._id === currentChatIdRef.current ||
+				 data.receiver === currentChatIdRef.current) ||
+			 (data.isGroupMessage && data.groupId === currentChatIdRef.current)
 			) {
 				setMessages((prevMessages) => [...prevMessages, data]);
 			}
@@ -93,8 +103,7 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		return () => {
 			newSocket.close();
 		};
-	}, [HOST, userId, currentChatId]);
-
+	}, [HOST]);
 	// Cargar usuarios y grupos
 	useEffect(() => {
 		const token = localStorage.getItem('token');
@@ -151,9 +160,12 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		}
 	}, [currentChatId, isGroupMessage, HOST, SERVICE]);
 
-	// Chat.tsx
+	// En Chat.tsx
 
-	const handleSendMessage = async (messageContent: string, selectedFile?: File | null) => {
+	const handleSendMessage = async (
+		messageContent: string,
+		selectedFile?: File | null
+	) => {
 		if ((!messageContent.trim() && !selectedFile) || !currentChatId) return;
 
 		const token = localStorage.getItem('token');
@@ -163,57 +175,34 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		}
 
 		if (selectedFile) {
-			const formData = new FormData();
-			formData.append('content', messageContent);
-			formData.append('receiverId', isGroupMessage ? '' : currentChatId);
-			formData.append('isGroupMessage', isGroupMessage.toString());
-			if (isGroupMessage) {
-				formData.append('groupId', currentChatId);
-			}
-			formData.append('file', selectedFile);
-
-			try {
-				const response = await axios.post(`${HOST}${SERVICE}/messages/send-with-file`, formData, {
-					headers: {
-						'Content-Type': 'multipart/form-data',
-						Authorization: `Bearer ${token}`,
-					},
-				});
-
-				// Actualizar mensajes inmediatamente en la interfaz de usuario
-				const savedMessage: Message = response.data.message;
-				setMessages((prevMessages) => [...prevMessages, savedMessage]);
-
-			} catch (error) {
-				console.error('Error al enviar mensaje con archivo:', error);
-			}
+			// Manejo del envío de archivos
 		} else {
 			const newMessage = {
 				senderId: userId,
-				receiverId: isGroupMessage ? null : currentChatId,
+				receiverId: !isGroupMessage ? currentChatId : undefined,
 				content: messageContent,
 				isGroupMessage,
 				groupId: isGroupMessage ? currentChatId : undefined,
 			};
-
+			console.log('Enviando mensaje:', newMessage);
 			socket?.emit('send-message', newMessage);
 
-			const currentUser = users.find((user) => user._id === userId);
 			// Actualizar mensajes inmediatamente en la interfaz de usuario
+			const currentUser = users.find((user) => user._id === userId);
 			setMessages((prevMessages) => [
 				...prevMessages,
 				{
-					_id: `${Date.now()}`, // ID temporal
-					senderId: userId,
-					receiverId: currentChatId,
+					_id: `${Date.now()}`,
+					sender: {
+						_id: userId,
+						username: currentUser?.username || 'Yo',
+						profile: currentUser?.profile,
+					},
+					receiver: isGroupMessage ? null : currentChatId,
 					content: messageContent,
 					isGroupMessage,
 					isRead: true,
 					createdAt: new Date().toISOString(),
-					sender: {
-						username: currentUser?.username || 'Yo',
-						profilePicture: currentUser?.profile?.profilePicture,
-					},
 				},
 			]);
 		}

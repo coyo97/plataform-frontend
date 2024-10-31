@@ -1,17 +1,15 @@
 // src/ui/components/platform/Publica.tsx
 import React from 'react';
-import CareerManager from '../careers/CareerManager';
-import Chat from '../chat/Chat';
 import Header from './Header';
-import GroupManager from '../groups/GroupManager';
 import Stream from '../stream/Stream';
-import JoinStream from '../JoinStream';
 import FloatingChat from '../chat/FloatingChat';
-import Notifications from '../notifications/Notifications';
-import AdminNotifications from '../notifications/AdminNotifications';
+import Notifications from '../centerAlert/Notifications';
+import AdminNotifications from '../centerAlert/AdminNotifications';
 import { useState } from 'react';
 import { Sidebar, SidebarContent } from './sidebar.styles';
-import { ToggleButton, ArrowIcon } from './header.styles';
+import FriendsList from '../friends/FriendsList';
+import FriendRequests from '../friends/FriendRequests';
+import UserSearch from '../friends/UserSearch';
 
 const Publica: React.FC = () => {
 	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
@@ -27,8 +25,9 @@ const Publica: React.FC = () => {
 	return (
 		<>
 			<Header/>
-			<Stream userId={userId} streamId={streamId} />
-			<JoinStream/>
+			{//<Stream userId={userId} streamId={streamId} />
+		//	<JoinStream/>
+			}
 			<FloatingChat/>
 			{/* Sidebar */}
 			<Sidebar isOpen={isSidebarOpen}>
@@ -44,7 +43,6 @@ const Publica: React.FC = () => {
 
 			{/* Botón para abrir el Sidebar */}
 			<button onClick={toggleSidebar}>Abrir Notificaciones</button>
-
 		</>
 	);
 };

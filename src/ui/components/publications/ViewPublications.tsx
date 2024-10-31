@@ -7,14 +7,14 @@ import CommentSection from '../comments/CommentSection';
 import getEnvVariables from '../../../config/configEnvs';
 
 import {
-    PublicationContainer,
-    PublicationContent,
-    FilePreview,
-    UserProfileImage,
-    CommentButton,
-    SidebarContainer,
-    FilterTitle,
-    FilterButton
+	PublicationContainer,
+	PublicationContent,
+	FilePreview,
+	UserProfileImage,
+	CommentButton,
+	SidebarContainer,
+	FilterTitle,
+	FilterButton,
 } from './viewPublicationsStyles.styles'; // Importa los estilos
 
 interface Publication {
@@ -31,6 +31,7 @@ interface Publication {
 	};
 	filePath?: string;
 	fileType?: string;
+	likes: string[]; // Añadido: Array de IDs de usuarios que han dado like
 }
 
 interface Career {
@@ -42,8 +43,11 @@ const ViewPublications: React.FC = () => {
 	const [publications, setPublications] = useState<Publication[]>([]);
 	const [careers, setCareers] = useState<Career[]>([]);
 	const [selectedCareer, setSelectedCareer] = useState<string>('');
+	const [searchQuery, setSearchQuery] = useState<string>(''); // Añadido: Estado para la búsqueda
 	const [page, setPage] = useState<number>(1);
 	const [hasMore, setHasMore] = useState<boolean>(true);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
+
 	const observer = useRef<IntersectionObserver | null>(null);
 	const navigate = useNavigate();
 
@@ -54,7 +58,7 @@ const ViewPublications: React.FC = () => {
 			try {
 				const token = localStorage.getItem('token');
 				const response = await axios.get(`${HOST}${SERVICE}/careers`, {
-					headers: { 'Authorization': `Bearer ${token}` },
+					headers: { Authorization: `Bearer ${token}` },
 				});
 				setCareers(response.data.careers);
 			} catch (error) {
@@ -65,25 +69,40 @@ const ViewPublications: React.FC = () => {
 		fetchCareers();
 	}, [HOST, SERVICE]);
 
-	const fetchPublications = useCallback(async () => {
+	const fetchPublications = async (pageToFetch: number) => {
+		if (isLoading) return; // Evita llamadas concurrentes
+		setIsLoading(true);
 		try {
-			const endpoint = selectedCareer
-				? `${HOST}${SERVICE}/publications/career/${selectedCareer}?page=${page}`
-				: `${HOST}${SERVICE}/publications?page=${page}`;
+			let endpoint = '';
 
-			console.log(`Fetching from: ${endpoint}`); // Log para ver qué URL se está llamando
-			const data = await getPublications(endpoint, {});
-			console.log('Fetched publications:', data.publications); // Log para ver las publicaciones obtenidas
+			if (searchQuery.trim() !== '') {
+				endpoint = `${HOST}${SERVICE}/publications/search?query=${encodeURIComponent(searchQuery)}&page=${pageToFetch}`;
+			} else if (selectedCareer) {
+				endpoint = `${HOST}${SERVICE}/publications/career/${selectedCareer}?page=${pageToFetch}`;
+			} else {
+				endpoint = `${HOST}${SERVICE}/publications?page=${pageToFetch}`;
+			}
+
+			console.log(`Fetching from: ${endpoint}`);
+			const token = localStorage.getItem('token');
+			const response = await axios.get(endpoint, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			const data = response.data;
 			setPublications((prevPublications) => [...prevPublications, ...data.publications]);
 			setHasMore(data.publications.length > 0); // Si no hay más publicaciones, detén la carga
 		} catch (error) {
 			console.error('Error fetching publications:', error);
+		} finally {
+			setIsLoading(false);
 		}
-	}, [HOST, SERVICE, selectedCareer, page]);
+	};
 
 	useEffect(() => {
-		fetchPublications();
-	}, [fetchPublications]);
+		setPublications([]);
+		setPage(1);
+		fetchPublications(1);
+	}, [selectedCareer]);
 
 	const lastPublicationRef = useRef<HTMLDivElement | null>(null);
 
@@ -91,14 +110,16 @@ const ViewPublications: React.FC = () => {
 		(node: HTMLDivElement) => {
 			if (observer.current) observer.current.disconnect();
 			observer.current = new IntersectionObserver((entries) => {
-				if (entries[0].isIntersecting && hasMore) {
-					console.log('IntersectionObserver triggered - loading more...'); // Log para ver si se activa el observer
-					setPage((prevPage) => prevPage + 1);
+				if (entries[0].isIntersecting && hasMore && !isLoading) {
+					console.log('IntersectionObserver triggered - loading more...');
+					const nextPage = page + 1;
+					fetchPublications(nextPage);
+					setPage(nextPage);
 				}
 			});
 			if (node) observer.current.observe(node);
 		},
-		[hasMore]
+		[hasMore, isLoading, page]
 	);
 
 	const renderFile = (publication: Publication) => {
@@ -135,6 +156,83 @@ const ViewPublications: React.FC = () => {
 		navigate(`/profile/${authorUsername}`, { state: { userProfileId } });
 	};
 
+	const reportPublication = async (publicationId: string) => {
+		const reason = prompt('Por favor, ingresa la razón del reporte:');
+		if (!reason) return;
+
+		try {
+			const token = localStorage.getItem('token');
+			await axios.post(
+				`${HOST}${SERVICE}/publications/${publicationId}/report`,
+				{ reason },
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
+			alert('Reporte enviado correctamente');
+		} catch (error) {
+			console.error('Error al reportar la publicación:', error);
+			alert('Error al reportar la publicación');
+		}
+	};
+
+	// Funciones para manejar likes
+	const handleLike = async (publicationId: string) => {
+		try {
+			const token = localStorage.getItem('token');
+			await axios.post(
+				`${HOST}${SERVICE}/publications/${publicationId}/like`,
+				{},
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
+			// Actualizar el estado de las publicaciones
+			setPublications((prevPublications) =>
+							prevPublications.map((pub) => {
+				if (pub._id === publicationId) {
+					return {
+						...pub,
+						likes: [...pub.likes, localStorage.getItem('userId') || ''],
+					};
+				}
+				return pub;
+			})
+						   );
+		} catch (error) {
+			console.error('Error al dar like:', error);
+		}
+	};
+
+	const handleUnlike = async (publicationId: string) => {
+		try {
+			const token = localStorage.getItem('token');
+			await axios.post(
+				`${HOST}${SERVICE}/publications/${publicationId}/unlike`,
+				{},
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
+			// Actualizar el estado de las publicaciones
+			setPublications((prevPublications) =>
+							prevPublications.map((pub) => {
+				if (pub._id === publicationId) {
+					return {
+						...pub,
+						likes: pub.likes.filter((userId) => userId !== localStorage.getItem('userId')),
+					};
+				}
+				return pub;
+			})
+						   );
+		} catch (error) {
+			console.error('Error al quitar like:', error);
+		}
+	};
+
+	const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		setPublications([]);
+		setPage(1);
+		fetchPublications(1);
+	};
+
+
 	return (
 		<div style={{ display: 'flex' }}>
 			<SidebarContainer>
@@ -147,42 +245,78 @@ const ViewPublications: React.FC = () => {
 							setSelectedCareer(career._id);
 							setPublications([]);
 							setPage(1);
+							fetchPublications(1);
 						}}
+
 					>
 						{career.name}
 					</FilterButton>
 				))}
 			</SidebarContainer>
-			<div>
-				{publications.map((publication, index) => (
-					<PublicationContainer key={`${publication._id}-${index}`} ref={lastPublicationElementRef}>
-						<UserProfileImage src={
-							publication.author.profile?.profilePicture
-								? `${HOST}/${publication.author.profile.profilePicture}`
-								: 'https://ptetutorials.com/images/user-profile.png'
-							}
-							alt={publication.author.username} /> {/* Ajusta la imagen */}
-						<PublicationContent>
-							<h2>{publication.title}</h2>
-							<p>{publication.content}</p>
-							<p>
-								<strong>Autor:</strong>{' '}
-								<button onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}>
-									{publication.author.username}
-								</button>
-							</p>
-							{renderFile(publication)}
-							<CommentSection publicationId={publication._id} />
-						</PublicationContent>
-					</PublicationContainer>
-				))}
+			<div style={{ flex: 1 }}>
+				{/* Añadido: Formulario de búsqueda */}
+				<form onSubmit={handleSearchSubmit} style={{ marginBottom: '20px' }}>
+					<input
+						type="text"
+						placeholder="Buscar publicaciones..."
+						value={searchQuery}
+						onChange={(e) => {
+							setSearchQuery(e.target.value);
+						}}
+
+						style={{ width: '300px', padding: '8px' }}
+					/>
+					<button type="submit" style={{ padding: '8px 16px', marginLeft: '8px' }}>
+						Buscar
+					</button>
+				</form>
+				{publications.map((publication, index) => {
+					// Determinar si el usuario actual ha dado like
+					const currentUserId = localStorage.getItem('userId') || '';
+					const hasLiked = publication.likes.includes(currentUserId);
+
+					return (
+						<PublicationContainer
+							key={`${publication._id}-${index}`}
+							ref={index === publications.length - 1 ? lastPublicationElementRef : null}
+						>
+							<UserProfileImage
+								src={
+									publication.author.profile?.profilePicture
+										? `${HOST}/${publication.author.profile.profilePicture}`
+										: 'https://ptetutorials.com/images/user-profile.png'
+								}
+								alt={publication.author.username}
+							/>
+							<PublicationContent>
+								<h2>{publication.title}</h2>
+								<p>{publication.content}</p>
+								<p>
+									<strong>Autor:</strong>{' '}
+									<button onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}>
+										{publication.author.username}
+									</button>
+								</p>
+								{renderFile(publication)}
+								{/* Botón de Like/Unlike y contador de likes */}
+								<div>
+									{hasLiked ? (
+										<button onClick={() => handleUnlike(publication._id)}>Quitar Me Gusta</button>
+									) : (
+										<button onClick={() => handleLike(publication._id)}>Me Gusta</button>
+									)}
+									<span>{publication.likes.length} Me Gusta</span>
+								</div>
+								<CommentSection publicationId={publication._id} />
+							</PublicationContent>
+							<button onClick={() => reportPublication(publication._id)}>Reportar</button>
+						</PublicationContainer>
+					);
+				})}
 			</div>
 		</div>
 	);
-	
-
 };
-
 
 export default ViewPublications;
 

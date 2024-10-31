@@ -1,96 +1,112 @@
+// src/ui/components/stream/Stream.tsx
+
 import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import getEnvVariables from '../../../config/configEnvs';
 
 interface StreamProps {
-  userId: string;
-  streamId: string;
+	userId: string;
+	streamId: string;
+	isStreamer: boolean;
 }
 
-const Stream: React.FC<StreamProps> = ({ userId, streamId }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const { HOST } = getEnvVariables();
-  const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
+const Stream: React.FC<StreamProps> = ({ userId, streamId, isStreamer }) => {
+	const [socket, setSocket] = useState<Socket | null>(null);
+	const { HOST } = getEnvVariables();
+	const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const newSocket = io(HOST, { auth: { token } });
+	useEffect(() => {
+		const token = localStorage.getItem('token');
+		const newSocket = io(HOST, { auth: { token } });
 
-    setSocket(newSocket);
+		setSocket(newSocket);
 
-    // Unirse a la sala de stream
-    newSocket.emit('join-stream', streamId);
+		// Unirse a la sala de stream
+		newSocket.emit('join-stream', streamId);
 
-    newSocket.on('offer', async (offer) => {
-      if (peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        newSocket.emit('answer', streamId, answer);
-      }
-    });
+		const pc = new RTCPeerConnection();
 
-    newSocket.on('answer', async (answer) => {
-      if (peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
+		pc.onicecandidate = (event) => {
+			if (event.candidate) {
+				newSocket.emit('ice-candidate', streamId, event.candidate);
+			}
+		};
 
-    newSocket.on('ice-candidate', (candidate) => {
-      if (peerConnection) {
-        peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
+		if (isStreamer) {
+			const startStreaming = async () => {
+				try {
+					const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+					const videoElement = document.getElementById('localVideo') as HTMLVideoElement;
+					if (videoElement) {
+						videoElement.srcObject = stream;
+					}
 
-    return () => {
-      newSocket.close();
-    };
-  }, [streamId]);
+					stream.getTracks().forEach(track => pc.addTrack(track, stream));
+					setPeerConnection(pc);
 
-  const handleStartStream = async () => {
-    if (socket) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        const videoElement = document.getElementById('localVideo') as HTMLVideoElement;
-        if (videoElement) {
-          videoElement.srcObject = stream;
-        }
+					const offer = await pc.createOffer();
+					await pc.setLocalDescription(offer);
+					newSocket.emit('offer', streamId, offer);
+				} catch (error) {
+					console.error('Error al acceder a la cámara/micrófono:', error);
+				}
+			};
+			startStreaming();
+		} else {
+			pc.ontrack = (event) => {
+				const remoteVideo = document.getElementById('remoteVideo') as HTMLVideoElement;
+				if (remoteVideo) {
+					remoteVideo.srcObject = event.streams[0];
+				}
+			};
+			setPeerConnection(pc);
+		}
 
-        const pc = new RTCPeerConnection();
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+		newSocket.on('offer', async (offer) => {
+			if (!isStreamer && peerConnection) {
+				await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+				const answer = await peerConnection.createAnswer();
+				await peerConnection.setLocalDescription(answer);
+				newSocket.emit('answer', streamId, answer);
+			}
+		});
 
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit('ice-candidate', streamId, event.candidate);
-          }
-        };
+		newSocket.on('answer', async (answer) => {
+			if (isStreamer && peerConnection) {
+				await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+			}
+		});
 
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit('offer', streamId, offer);
+		newSocket.on('ice-candidate', (candidate) => {
+			if (peerConnection) {
+				peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+			}
+		});
 
-        setPeerConnection(pc);
-        setIsStreaming(true);
-      } catch (error) {
-        console.error('Error al acceder a la cámara/micrófono:', error);
-      }
-    }
-  };
+		return () => {
+			if (peerConnection) {
+				peerConnection.close();
+			}
+			newSocket.close();
+		};
+	}, [streamId]);
 
-  return (
-    <div>
-      <h1>Stream {streamId}</h1>
-      {!isStreaming ? (
-        <button onClick={handleStartStream}>Iniciar Stream</button>
-      ) : (
-        <div>
-          <p>Transmitiendo...</p>
-          <video id="localVideo" autoPlay muted style={{ width: '300px' }}></video>
-        </div>
-      )}
-    </div>
-  );
+	return (
+		<div>
+			<h1>Stream {streamId}</h1>
+			{isStreamer ? (
+				<div>
+					<p>Transmitiendo...</p>
+					<video id="localVideo" autoPlay muted style={{ width: '300px' }}></video>
+				</div>
+			) : (
+				<div>
+					<p>Viendo el stream...</p>
+					<video id="remoteVideo" autoPlay style={{ width: '300px' }}></video>
+				</div>
+			)}
+		</div>
+	);
 };
 
 export default Stream;
