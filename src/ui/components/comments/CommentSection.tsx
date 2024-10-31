@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { 
 	CommentContainer, 
 	CommentAuthor, 
@@ -113,6 +113,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 		};
 	}, []);
 
+
 	const handleAddComment = async () => {
 		if (!newComment.trim()) return;
 
@@ -128,8 +129,17 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 			setNewComment('');
 		} catch (error) {
 			console.error('Error adding comment:', error);
+
+			// Verificar si el error es de Axios y si es un error de 400 (contenido inapropiado)
+			if (axios.isAxiosError(error) && error.response && error.response.status === 400) {
+				toast.warn(error.response.data.message || 'Comentario no permitido');
+			} else {
+				toast.error('Error al añadir el comentario');
+			}
 		}
 	};
+
+
 
 	// **Agregar las funciones faltantes**
 

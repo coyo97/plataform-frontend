@@ -2,14 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
-
 import { InboxPeople } from './InboxPeople';
 import { Messages } from './Messages';
 import { ChatSelect } from './ChatSelect';
-
-// Importamos los estilos desde el archivo de estilos centralizado
 import { MessagingContainer, InboxMsg } from './ChatStyles';
-
 
 export interface Message {
 	_id: string;
@@ -29,7 +25,6 @@ export interface Message {
 	filePath?: string;
 	fileType?: string;
 }
-
 
 interface Group {
 	_id: string;
@@ -55,9 +50,7 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 	const [groups, setGroups] = useState<Group[]>([]);
 	const [users, setUsers] = useState<User[]>([]);
 	const [isGroupMessage, setIsGroupMessage] = useState(false);
-
 	const { HOST, SERVICE } = getEnvVariables();
-
 	const currentChatIdRef = useRef(currentChatId);
 
 	useEffect(() => {
@@ -69,7 +62,6 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 			console.error('No se encontró el token en el localStorage');
 			return;
 		}
-
 		// Conectar al servidor de Socket.IO
 		const newSocket = io(`${HOST}`, {
 			auth: {
@@ -101,7 +93,7 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		});
 
 		return () => {
-			newSocket.close();
+			newSocket.off('receive-message'); // Desregistra el evento al desmontar el component
 		};
 	}, [HOST]);
 	// Cargar usuarios y grupos
@@ -111,7 +103,6 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 			console.error('No se encontró el token en el localStorage');
 			return;
 		}
-
 		// Cargar usuarios
 		axios
 		.get(`${HOST}${SERVICE}/users`, {
@@ -160,8 +151,6 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		}
 	}, [currentChatId, isGroupMessage, HOST, SERVICE]);
 
-	// En Chat.tsx
-
 	const handleSendMessage = async (
 		messageContent: string,
 		selectedFile?: File | null
@@ -175,7 +164,32 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		}
 
 		if (selectedFile) {
-			// Manejo del envío de archivos
+			const formData = new FormData();
+			formData.append('content', messageContent);
+			formData.append('receiverId', isGroupMessage ? '' : currentChatId);
+			formData.append('isGroupMessage', isGroupMessage.toString());
+			if (isGroupMessage) {
+				formData.append('groupId', currentChatId);
+			}
+			formData.append('file', selectedFile);
+
+			try {
+				const response = await axios.post(
+					`${HOST}${SERVICE}/messages/send-with-file`,
+					formData,
+					{
+						headers: {
+							'Content-Type': 'multipart/form-data',
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+				// Actualizar mensajes inmediatamente en la interfaz de usuario
+				const savedMessage: Message = response.data.message;
+				setMessages((prevMessages) => [...prevMessages, savedMessage]);
+			} catch (error) {
+				console.error('Error al enviar mensaje con archivo:', error);
+			}
 		} else {
 			const newMessage = {
 				senderId: userId,

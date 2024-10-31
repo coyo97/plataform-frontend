@@ -52,4 +52,3 @@ export const OutgoingMessage: React.FC<MessageProps> = ({ message }) => {
 			</OutgoingMsgContainer>
 		);
 };
-

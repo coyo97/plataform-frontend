@@ -1,8 +1,8 @@
 // Messages.tsx
-
 import React, { useRef, useEffect, useState } from 'react';
 import { IncomingMessage } from './IncomingMessage';
 import { OutgoingMessage } from './OutgoingMessage';
+
 
 import {
 	MesgsContainer,
@@ -49,6 +49,8 @@ export const Messages: React.FC<MessagesProps> = ({
 
 	const [messageContent, setMessageContent] = useState('');
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
 
 	const scrollToBottom = () => {
 		if (messagesEndRef.current) {
@@ -65,6 +67,11 @@ export const Messages: React.FC<MessagesProps> = ({
 		handleSendMessage(messageContent, selectedFile);
 		setMessageContent('');
 		setSelectedFile(null);
+
+		// Restablecer el valor del input de archivo
+		if (fileInputRef.current) {
+			fileInputRef.current.value = '';
+		}
 	};
 
 	return (
@@ -99,6 +106,7 @@ export const Messages: React.FC<MessagesProps> = ({
 					📎
 				</label>
 				<input
+					ref={fileInputRef}
 					id="fileInput"
 					type="file"
 					style={{ display: 'none' }}
@@ -108,6 +116,7 @@ export const Messages: React.FC<MessagesProps> = ({
 						}
 					}}
 				/>
+
 				<SendButton type="submit">➤</SendButton>
 			</MessageInputForm>
 		</MesgsContainer>

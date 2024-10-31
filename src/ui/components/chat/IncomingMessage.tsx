@@ -70,4 +70,3 @@ export const IncomingMessage: React.FC<MessageProps> = ({ message }) => {
 				</IncomingMsgContainer>
 			);
 };
-

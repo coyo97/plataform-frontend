@@ -1,16 +1,16 @@
 // CreatePublication.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
 
 
 import {
-    FormContainer,
-    InputField,
-    TextareaField,
-    SelectField,
-    SubmitButton
+	FormContainer,
+	InputField,
+	TextareaField,
+	SelectField,
+	SubmitButton
 } from './createPublicationStyles.styles'; // Importa los estilos
 
 interface Career {
@@ -67,7 +67,7 @@ const CreatePublication: React.FC = () => {
 		formData.append('tags', JSON.stringify(tagsArray));
 
 		if (selectedCareer) {
-			formData.append('careerId', selectedCareer); // Add career ID if selected
+			formData.append('careerId', selectedCareer);
 		}
 
 		try {
@@ -81,6 +81,17 @@ const CreatePublication: React.FC = () => {
 			alert('Publicación creada con éxito');
 			navigate('/publications');
 		} catch (error) {
+			if (axios.isAxiosError(error) && error.response) {
+				const errorMessage = error.response.data.message || 'Error al crear la publicación';
+				// Mostrar mensaje de advertencia si la imagen es inapropiada
+				if (errorMessage === 'Contenido inapropiado detectado en la imagen') {
+					alert('La imagen contiene contenido inapropiado. Por favor, elige otra imagen.');
+				} else {
+					alert(errorMessage);
+				}
+			} else {
+				alert('Ocurrió un error desconocido al crear la publicación');
+			}
 			console.error('Error al crear la publicación:', error);
 		}
 	};
