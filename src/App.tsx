@@ -29,12 +29,13 @@ import HomeModerator from './ui/components/moderator/HomeModerator';
 import HomeAlert from './ui/components/centerAlert/HomeAlert';
 import HomeSetting from './ui/components/configFile/HomeSetting';
 import HomeStream from './ui/components/stream/HomeStream';
+import PublicationDetail from './ui/components/publications/PublicationDetail';
 
 function App() {
 	const queryClient = new QueryClient();
-	 // Ejemplo: Obtener userId del localStorage o contexto
+	// Ejemplo: Obtener userId del localStorage o contexto
 
-	 	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
+	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
 	const streamId = 'stream123'; // También lo puedes obtener dinámicamente
 
 	return (
@@ -47,6 +48,7 @@ function App() {
 						<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
 						<Route path='/stream-academi' element={<HomeStream/>}></Route>
 						<Route path='/publications' element={<HomePublications/>}></Route>
+						<Route path="/publications/:publicationId" element={<PublicationDetail />} />
 						<Route path='/profile' element={<HomeProfile/>}></Route>
 						<Route path='/publications' element={<Home/>}></Route>
 						<Route path='/material-user' element={<UserMaterials/>}></Route>
@@ -56,28 +58,28 @@ function App() {
 						{/*					<Route path='/administrator' element={<CareerManager/>}></Route> */}
 						<Route path='/message' element={<HomeChat/>}></Route>
 						{
-					//Administrator
+							//Administrator
 						}
-						            {/* Rutas del Dashboard con Sidebar */}
-            <Route
-              path="/administrator/*"
-              element={
-                <div className="admin-layout">
-                  <Sidebar /> {/* Sidebar siempre visible en rutas del Dashboard */}
-                  <div className="admin-content">
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="users" element={<UserManagement />} />
-                      <Route path="roles" element={<HomeRoles/>} />
-                      <Route path="moderator" element={<HomeModerator/>} />
-                      <Route path="center-alert" element={<HomeAlert/>} />
-                      <Route path="career" element={<CareerManager/>} />
-                      <Route path="conf-file" element={<HomeSetting/>} />
-                    </Routes>
-                  </div>
-                </div>
-              }
-            />
+						{/* Rutas del Dashboard con Sidebar */}
+						<Route
+							path="/administrator/*"
+							element={
+								<div className="admin-layout">
+									<Sidebar /> {/* Sidebar siempre visible en rutas del Dashboard */}
+									<div className="admin-content">
+										<Routes>
+											<Route path="/" element={<Dashboard />} />
+											<Route path="users" element={<UserManagement />} />
+											<Route path="roles" element={<HomeRoles/>} />
+											<Route path="moderator" element={<HomeModerator/>} />
+											<Route path="center-alert" element={<HomeAlert/>} />
+											<Route path="career" element={<CareerManager/>} />
+											<Route path="conf-file" element={<HomeSetting/>} />
+										</Routes>
+									</div>
+								</div>
+							}
+						/>
 					</Routes>
 					{//<Notifications/>
 					}

@@ -23,6 +23,7 @@ interface User {
 	email: string;
 	roles: Role[];
 	status: string;
+	reportCount: number; // Añadido
 }
 
 const UserManagement: React.FC = () => {
@@ -37,24 +38,25 @@ const UserManagement: React.FC = () => {
 			return;
 		}
 
-		const fetchUsers = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/users`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get(`${HOST}${SERVICE}/users`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-				console.log('Response data:', response.data); // Agrega este log para depurar
+    console.log('Response data:', response.data);
 
-				if (response.data && response.data.list) {
-					setList(response.data.list);
-				} else {
-					console.error('La respuesta de usuarios no contiene los datos esperados.');
-				}
-			} catch (error) {
-				console.error('Error al obtener usuarios:', error);
-				alert('Error al obtener usuarios');
-			}
-		};
+    if (response.data && response.data.list) {
+      setList(response.data.list);
+    } else {
+      console.error('La respuesta de usuarios no contiene los datos esperados.');
+    }
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    alert('Error al obtener usuarios');
+  }
+};
+
 
 		fetchUsers();
 	}, [HOST, SERVICE]);
@@ -149,6 +151,32 @@ const UserManagement: React.FC = () => {
 		}
 	};
 
+	const handleDelete = async (userId: string) => {
+		const confirm = window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.');
+		if (!confirm) return;
+
+		const token = localStorage.getItem('token');
+		if (!token) {
+			console.error('No se encontró el token. Por favor, inicia sesión.');
+			return;
+		}
+
+		try {
+			await axios.delete(`${HOST}${SERVICE}/users/${userId}`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+
+			// Actualizar la lista después de la eliminación
+			setList(prevList => prevList.filter(user => user._id !== userId));
+
+			alert('Usuario eliminado exitosamente.');
+		} catch (error) {
+			console.error('Error al eliminar usuario:', error);
+			alert('Error al eliminar usuario');
+		}
+	};
+
+
 	return (
 		<Container>
 			<Title>Gestión de Usuarios</Title>
@@ -159,6 +187,7 @@ const UserManagement: React.FC = () => {
 						<TableHeader>Email</TableHeader>
 						<TableHeader>Roles</TableHeader>
 						<TableHeader>Estado</TableHeader>
+						<TableHeader>Reportes</TableHeader>
 						<TableHeader>Acciones</TableHeader>
 					</TableRow>
 				</thead>
@@ -173,7 +202,9 @@ const UserManagement: React.FC = () => {
 									: 'Sin roles'}
 							</TableCell>
 							<TableCell>{user.status || 'Sin estado'}</TableCell>
+							<TableCell>{user.reportCount}</TableCell> {/* Mostrar reportCount */}
 							<TableCell>
+								{/* Acciones */}
 								{user.status === 'active' && (
 									<>
 										<Button onClick={() => handleDeactivate(user._id)}>Desactivar</Button>
@@ -184,13 +215,21 @@ const UserManagement: React.FC = () => {
 									<>
 										<Button onClick={() => handleReactivate(user._id)}>Reactivar</Button>
 										<Button onClick={() => handleBlacklist(user._id)}>Bloquear</Button>
+										<Button onClick={() => handleDelete(user._id)}>Eliminar</Button>
 									</>
 								)}
-								{user.status === 'blacklisted' && <span>Usuario bloqueado</span>}
+								{user.status === 'blacklisted' && (
+									<>
+										<span>Usuario bloqueado</span>
+										<Button onClick={() => handleDelete(user._id)}>Eliminar</Button>
+										<Button onClick={() => handleReactivate(user._id)}>Reactivar</Button>
+									</>
+								)}
 							</TableCell>
 						</TableRow>
 					))}
 				</tbody>
+
 			</Table>
 		</Container>
 	);

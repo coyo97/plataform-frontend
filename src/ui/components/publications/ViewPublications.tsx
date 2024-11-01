@@ -47,6 +47,7 @@ const ViewPublications: React.FC = () => {
 	const [page, setPage] = useState<number>(1);
 	const [hasMore, setHasMore] = useState<boolean>(true);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [selectedFilter, setSelectedFilter] = useState<string>('mostRecent');
 
 	const observer = useRef<IntersectionObserver | null>(null);
 	const navigate = useNavigate();
@@ -69,28 +70,34 @@ const ViewPublications: React.FC = () => {
 		fetchCareers();
 	}, [HOST, SERVICE]);
 
-	const fetchPublications = async (pageToFetch: number) => {
-		if (isLoading) return; // Evita llamadas concurrentes
+	const fetchPublications = async (pageToFetch: number, filterType?: string) => {
+		if (isLoading) return;
 		setIsLoading(true);
 		try {
 			let endpoint = '';
+			const token = localStorage.getItem('token');
 
 			if (searchQuery.trim() !== '') {
-				endpoint = `${HOST}${SERVICE}/publications/search?query=${encodeURIComponent(searchQuery)}&page=${pageToFetch}`;
-			} else if (selectedCareer) {
+				endpoint = `${HOST}${SERVICE}/publications/search?query=${encodeURIComponent(
+					searchQuery
+				)}&page=${pageToFetch}`;
+			} else if (filterType === 'mostLiked') {
+				endpoint = `${HOST}${SERVICE}/publications/most-liked?page=${pageToFetch}`;
+			} else if (filterType === 'mostCommented') {
+				endpoint = `${HOST}${SERVICE}/publications/most-commented?page=${pageToFetch}`;
+			} else if (filterType === 'career' && selectedCareer) {
 				endpoint = `${HOST}${SERVICE}/publications/career/${selectedCareer}?page=${pageToFetch}`;
 			} else {
 				endpoint = `${HOST}${SERVICE}/publications?page=${pageToFetch}`;
 			}
 
 			console.log(`Fetching from: ${endpoint}`);
-			const token = localStorage.getItem('token');
 			const response = await axios.get(endpoint, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			const data = response.data;
 			setPublications((prevPublications) => [...prevPublications, ...data.publications]);
-			setHasMore(data.publications.length > 0); // Si no hay más publicaciones, detén la carga
+			setHasMore(data.publications.length > 0);
 		} catch (error) {
 			console.error('Error fetching publications:', error);
 		} finally {
@@ -98,11 +105,12 @@ const ViewPublications: React.FC = () => {
 		}
 	};
 
+
 	useEffect(() => {
 		setPublications([]);
 		setPage(1);
-		fetchPublications(1);
-	}, [selectedCareer]);
+		fetchPublications(1, selectedFilter === 'career' ? 'career' : selectedFilter);
+	}, [selectedFilter, selectedCareer]);
 
 	const lastPublicationRef = useRef<HTMLDivElement | null>(null);
 
@@ -113,13 +121,13 @@ const ViewPublications: React.FC = () => {
 				if (entries[0].isIntersecting && hasMore && !isLoading) {
 					console.log('IntersectionObserver triggered - loading more...');
 					const nextPage = page + 1;
-					fetchPublications(nextPage);
+					fetchPublications(nextPage, selectedFilter === 'career' ? 'career' : selectedFilter);
 					setPage(nextPage);
 				}
 			});
 			if (node) observer.current.observe(node);
 		},
-		[hasMore, isLoading, page]
+		[hasMore, isLoading, page, selectedFilter]
 	);
 
 	const renderFile = (publication: Publication) => {
@@ -237,17 +245,54 @@ const ViewPublications: React.FC = () => {
 		<div style={{ display: 'flex' }}>
 			<SidebarContainer>
 				<FilterTitle>Filtrar publicación</FilterTitle>
+				<FilterButton
+					active={selectedFilter === 'mostRecent'}
+					onClick={() => {
+						setSelectedFilter('mostRecent');
+						setSelectedCareer('');
+						setPublications([]);
+						setPage(1);
+						fetchPublications(1, 'mostRecent');
+					}}
+				>
+					Más recientes
+				</FilterButton>
+				<FilterButton
+					active={selectedFilter === 'mostLiked'}
+					onClick={() => {
+						setSelectedFilter('mostLiked');
+						setSelectedCareer('');
+						setPublications([]);
+						setPage(1);
+						fetchPublications(1, 'mostLiked');
+					}}
+				>
+					Más gustadas
+				</FilterButton>
+				<FilterButton
+					active={selectedFilter === 'mostCommented'}
+					onClick={() => {
+						setSelectedFilter('mostCommented');
+						setSelectedCareer('');
+						setPublications([]);
+						setPage(1);
+						fetchPublications(1, 'mostCommented');
+					}}
+				>
+					Más comentadas
+				</FilterButton>
+				{/* Opciones de carrera */}
 				{careers.map((career) => (
 					<FilterButton
 						key={career._id}
 						active={selectedCareer === career._id}
 						onClick={() => {
 							setSelectedCareer(career._id);
+							setSelectedFilter('');
 							setPublications([]);
 							setPage(1);
-							fetchPublications(1);
+							fetchPublications(1, 'career');
 						}}
-
 					>
 						{career.name}
 					</FilterButton>

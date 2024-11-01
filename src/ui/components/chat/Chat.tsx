@@ -92,10 +92,16 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 			}
 		});
 
+		newSocket.on('message-deleted', ({ messageId }) => {
+			setMessages((prevMessages) => prevMessages.filter((msg) => msg._id !== messageId));
+		});
+
 		return () => {
 			newSocket.off('receive-message'); // Desregistra el evento al desmontar el component
+			newSocket.off('message-deleted');
+			newSocket.disconnect(); // Ci
 		};
-	}, [HOST]);
+	}, []);
 	// Cargar usuarios y grupos
 	useEffect(() => {
 		const token = localStorage.getItem('token');
@@ -232,6 +238,26 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		setIsGroupMessage(true);
 	};
 
+	const handleDeleteMessage = async (messageId: string) => {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			console.error('No se encontró el token en el localStorage');
+			return;
+		}
+
+		try {
+			await axios.delete(`${HOST}${SERVICE}/messages/${messageId}`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			// Actualizar el estado localmente
+			setMessages((prevMessages) =>
+						prevMessages.filter((msg) => msg._id !== messageId)
+					   );
+		} catch (error) {
+			console.error('Error al eliminar el mensaje:', error);
+		}
+	};
+
 	return (
 		<MessagingContainer>
 			<InboxMsg>
@@ -247,6 +273,7 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 						messages={messages}
 						currentUserId={userId}
 						handleSendMessage={handleSendMessage}
+						handleDeleteMessage={handleDeleteMessage}
 					/>
 				) : (
 					<ChatSelect />

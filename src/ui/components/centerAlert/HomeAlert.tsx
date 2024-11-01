@@ -1,3 +1,4 @@
+import ReportThresholdSettings from "../admin/ReportThresholdSettings";
 import AdminNotifications from "./AdminNotifications"
 import ReportManagement from "./ReportManagement"
 
@@ -6,6 +7,7 @@ const HomeAlert: React.FC = () => {
 		<div>
 			<AdminNotifications/>
 			<ReportManagement/>
+			<ReportThresholdSettings/>
 		</div>
 	)
 }

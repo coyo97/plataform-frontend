@@ -2,23 +2,22 @@
 
 import React from 'react';
 import getEnvVariables from '../../../config/configEnvs';
-
 import {
 	OutgoingMsgContainer,
 	SentMsg,
 	TimeDate,
 } from './outgoingMessage.styles';
+import { Message } from '../../../types/types';
 
 interface MessageProps {
-	message: {
-		content: string;
-		createdAt: string;
-		filePath?: string;
-		fileType?: string;
-	};
+	message: Message;
+	onDeleteMessage: (messageId: string) => void;
 }
 
-export const OutgoingMessage: React.FC<MessageProps> = ({ message }) => {
+export const OutgoingMessage: React.FC<MessageProps> = ({
+	message,
+	onDeleteMessage,
+}) => {
 	const { HOST } = getEnvVariables();
 
 	const messageDate = new Date(message.createdAt);
@@ -48,7 +47,9 @@ export const OutgoingMessage: React.FC<MessageProps> = ({ message }) => {
 				<SentMsg>
 					{renderMessageContent()}
 					<TimeDate>{formattedDate}</TimeDate>
+					<button onClick={() => onDeleteMessage(message._id)}>Eliminar</button>
 				</SentMsg>
 			</OutgoingMsgContainer>
 		);
 };
+

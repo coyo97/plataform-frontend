@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 import getEnvVariables from '../../../config/configEnvs';
+import { useNavigate } from 'react-router-dom';
 
 interface Notification {
   _id: string;
@@ -11,12 +12,17 @@ interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
+  data?: {
+    publicationId?: string;
+    commentId?: string;
+  };
 }
 
 const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { HOST, SERVICE } = getEnvVariables();
   const token = localStorage.getItem('token');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -33,7 +39,6 @@ const Notifications: React.FC = () => {
     fetchNotifications();
   }, [HOST, SERVICE, token]);
 
-  // Configurar Socket.IO para recibir notificaciones en tiempo real
   useEffect(() => {
     if (!token) return;
 
@@ -53,6 +58,21 @@ const Notifications: React.FC = () => {
     };
   }, [HOST, token]);
 
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      await axios.delete(
+        `${HOST}${SERVICE}/notifications/${notificationId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setNotifications((prev) =>
+        prev.filter((notif) => notif._id !== notificationId)
+      );
+    } catch (error) {
+      console.error('Error al eliminar la notificación:', error);
+    }
+  };
+
   const markAsRead = async (notificationId: string) => {
     try {
       await axios.put(
@@ -71,17 +91,46 @@ const Notifications: React.FC = () => {
     }
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    // Marca la notificación como leída
+    markAsRead(notification._id);
+
+    // Redirige según el tipo de notificación
+    if (notification.type === 'comment' && notification.data?.publicationId) {
+      navigate(`/publications/${notification.data.publicationId}`);
+    }
+  };
+
   return (
     <div>
-      <h3>Notificaciones</h3>
       <ul>
         {notifications.map((notification) => (
           <li
             key={notification._id}
-            style={{ fontWeight: notification.isRead ? 'normal' : 'bold' }}
+            style={{
+              fontWeight: notification.isRead ? 'normal' : 'bold',
+              cursor: 'pointer', // Cambia el cursor a pointer
+            }}
+            onClick={() => handleNotificationClick(notification)}
+            title="Ir a publicación" // Añade un tooltip
           >
             {notification.message}{' '}
-            <button onClick={() => markAsRead(notification._id)}>Marcar como leída</button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevenir el evento de propagación
+                markAsRead(notification._id);
+              }}
+            >
+              Marcar como leída
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Evita que se active el evento onClick del li
+                deleteNotification(notification._id);
+              }}
+            >
+              Eliminar
+            </button>
           </li>
         ))}
       </ul>

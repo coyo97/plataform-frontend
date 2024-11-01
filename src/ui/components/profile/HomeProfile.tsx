@@ -8,6 +8,7 @@ import { Sidebar, SidebarContent } from '../plaform/sidebar.styles';
 import Notifications from '../centerAlert/Notifications';
 import { useState } from 'react';
 import AdminNotifications from '../centerAlert/AdminNotifications';
+import BlockedUsersList from '../friends/BlockedUsersList';
 
 
 const HomeProfile: React.FC = () => {
@@ -39,6 +40,7 @@ const HomeProfile: React.FC = () => {
 			<FriendRequests/>
 			<UserSearch/>
 			<FriendsList/>
+			<BlockedUsersList/>
 		</>
 	);
 }

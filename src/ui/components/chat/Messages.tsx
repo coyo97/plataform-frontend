@@ -1,9 +1,8 @@
 // Messages.tsx
+
 import React, { useRef, useEffect, useState } from 'react';
 import { IncomingMessage } from './IncomingMessage';
 import { OutgoingMessage } from './OutgoingMessage';
-
-
 import {
 	MesgsContainer,
 	MsgHistory,
@@ -12,24 +11,7 @@ import {
 	MessageInputForm,
 } from './message.styles';
 
-interface Message {
-	_id: string;
-	sender: {
-		_id: string;
-		username: string;
-		profile?: {
-			profilePicture?: string;
-		};
-	};
-	receiver: string | null;
-	content: string;
-	isGroupMessage: boolean;
-	groupId?: string;
-	isRead: boolean;
-	createdAt: string;
-	filePath?: string;
-	fileType?: string;
-}
+import { Message } from '../../../types/types';
 
 interface MessagesProps {
 	messages: Message[];
@@ -38,19 +20,19 @@ interface MessagesProps {
 		messageContent: string,
 		selectedFile?: File | null | undefined
 	) => Promise<void>;
+	handleDeleteMessage: (messageId: string) => void; // Cambiamos el nombre aquí
 }
 
 export const Messages: React.FC<MessagesProps> = ({
 	messages,
 	currentUserId,
 	handleSendMessage,
+	handleDeleteMessage, // Actualizamos el nombre aquí
 }) => {
 	const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
 	const [messageContent, setMessageContent] = useState('');
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
-
 
 	const scrollToBottom = () => {
 		if (messagesEndRef.current) {
@@ -74,6 +56,10 @@ export const Messages: React.FC<MessagesProps> = ({
 		}
 	};
 
+	const handleDeleteMessageLocal = (messageId: string) => {
+		handleDeleteMessage(messageId); // Usamos la prop para manejar la eliminación del mensaje
+	};
+
 	return (
 		<MesgsContainer>
 			<MsgHistory>
@@ -82,6 +68,7 @@ export const Messages: React.FC<MessagesProps> = ({
 								  <OutgoingMessage
 									  key={`${msg._id}-${msg.createdAt || Math.random()}`}
 									  message={msg}
+									  onDeleteMessage={handleDeleteMessageLocal}
 								  />
 				) : (
 					<IncomingMessage
