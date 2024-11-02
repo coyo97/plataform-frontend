@@ -48,9 +48,9 @@ const AllertaStencilBold = {
 };
 const DMSansRegular ={
 	fontFamily: 'DMSans-Regular',
-fontStyle: 'normal',
-fontWeight: 100,
-src: `url(${DMSans})`
+	fontStyle: 'normal',
+	fontWeight: 100,
+	src: `url(${DMSans})`
 };
 const AlatsiRegular = {
 	fontFamily: 'Alatsi-Regular',
@@ -68,39 +68,33 @@ const AlatsiBold = {
 declare module '@mui/material/styles/createPalette' {
 	interface Palette {
 		colorHeader: {main: string};
-	}
-	interface PaletteOptions {
-		colorHeader?: {main: string};
-	}
-}
-declare module '@mui/material/styles/createPalette' {
-	interface Palette {
 		colorForm: {main: string};
-	}
-	interface PaletteOptions {
-		colorForm?: {main: string};
-	}
-}
-
-declare module '@mui/material/styles/createPalette' {
-	interface Palette {
 		colorButton: {main: string, second: string};
 	}
 	interface PaletteOptions {
+		colorHeader?: {main: string};
+		colorForm?: {main: string};
 		colorButton?: {main: string, second: string};
 	}
 }
-
+declare module '@mui/material/styles' {
+  interface BreakpointOverrides {
+    xxs: true; // Agrega `xxs` como un nuevo breakpoint
+  }
+}
 const theme = createTheme({
-	typography: { fontFamily: [ InterRegular.fontFamily, InterBold.fontFamily,
-		PoppinsRegular.fontFamily,
-		PoppinsBold.fontFamily,
-		AllertaStencilRegular.fontFamily,
-		AllertaStencilBold.fontFamily,
-		DMSansRegular.fontFamily, 
-		AlatsiRegular.fontFamily, 
-		AlatsiBold.fontFamily
-	].join(","),
+	typography: {
+		fontFamily: [
+			InterRegular.fontFamily,
+			InterBold.fontFamily,
+			PoppinsRegular.fontFamily,
+			PoppinsBold.fontFamily,
+			AllertaStencilRegular.fontFamily,
+			AllertaStencilBold.fontFamily,
+			DMSansRegular.fontFamily, 
+			AlatsiRegular.fontFamily, 
+			AlatsiBold.fontFamily
+		].join(","),
 	},
 	palette: {
 		primary: {
@@ -123,11 +117,31 @@ const theme = createTheme({
 			second: '#76ff03',
 		},
 	},
+	breakpoints: {
+		values: {
+			xxs: 0,
+			xs: 375,
+			sm: 600,
+			md: 900,
+			lg: 1200,
+			xl: 1800,
+		},
+	},
 	components: {
 		MuiCssBaseline: {
 			styleOverrides: {
 				'@global': {
-					'@font-face': [PoppinsRegular, PoppinsBold, InterRegular, InterBold, AllertaStencilRegular, AllertaStencilBold, DMSansRegular, AlatsiRegular, AlatsiBold],
+					'@font-face': [
+						PoppinsRegular, 
+						PoppinsBold, 
+						InterRegular, 
+						InterBold, 
+						AllertaStencilRegular, 
+						AllertaStencilBold, 
+						DMSansRegular, 
+						AlatsiRegular, 
+						AlatsiBold
+					],
 				},
 				body: {
 					fontFamily: ["PoppinsRegular"],

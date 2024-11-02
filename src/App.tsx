@@ -45,6 +45,7 @@ function App() {
 					<Routes>
 						<Route path="/" element={<Welcome />} />
 						<Route path="/login" element={<FormLogin />} />
+						<Route path="/register" element={<UserForm/>} />
 						<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
 						<Route path='/stream-academi' element={<HomeStream/>}></Route>
 						<Route path='/publications' element={<HomePublications/>}></Route>

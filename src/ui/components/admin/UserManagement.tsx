@@ -229,7 +229,6 @@ const fetchUsers = async () => {
 						</TableRow>
 					))}
 				</tbody>
-
 			</Table>
 		</Container>
 	);

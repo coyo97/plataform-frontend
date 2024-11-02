@@ -2,6 +2,8 @@ import React from 'react';
 import { SidebarChatItem } from './SidebarChatItem';
 
 import { SidebarContainer, SectionTitle, } from './sidebar.styles';
+import GroupManager from '../groups/GroupManager';
+import GroupUser from '../groups/GroupUser';
 
 interface User {
     _id: string;
@@ -43,6 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ users, groups, currentChatId, 
                     onClick={() => onSelectGroup(group._id)}
                 />
             ))}
+			<GroupUser/>
+			<GroupManager/>
         </SidebarContainer>
     );
 };
