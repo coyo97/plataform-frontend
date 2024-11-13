@@ -1,70 +1,40 @@
 // src/ui/components/roles/createRole.styles.ts
-import { styled } from '@mui/system';
-import { Theme } from '@mui/material/styles';
-import mq from '../../../config/mq';
 
-export const Container = styled('div')(({ theme }: { theme?: Theme }) => ({
-  backgroundColor: theme?.palette.colorForm.main,
-  borderRadius: theme?.shape.borderRadius,
-  padding: '20px',
-  margin: '20px auto',
-  [mq('xxs', 'max')]: {
-    width: '90%',
-  },
-  [mq('md', 'min')]: {
-    width: '50%',
-  },
+import { Box, Button, TextField, Typography, MenuItem, List, ListItem, styled } from '@mui/material';
+
+export const RoleContainer = styled(Box)(({ theme }) => ({
+    padding: theme.spacing(3),
+    backgroundColor: theme.palette.background.default,
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[3],
+    maxWidth: '600px',
+    margin: '0 auto',
 }));
 
-export const Title = styled('h2')(({ theme }: { theme?: Theme }) => ({
-  color: theme?.palette.primary.contrastText,
-  textAlign: 'center',
-  marginBottom: '20px',
-}));
-
-export const Form = styled('form')({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '15px',
+export const Title = styled(Typography)({
+    fontWeight: 'bold',
+    marginBottom: '1rem',
+    fontSize: '1.5rem',
 });
 
-export const InputGroup = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
+export const FormField = styled(TextField)({
+    marginBottom: '1rem',
+    width: '100%',
 });
 
-export const Label = styled('label')({
-  fontWeight: 'bold',
+export const SelectField = styled(TextField)({
+    marginBottom: '1rem',
+    width: '100%',
 });
 
-export const Input = styled('input')({
-  padding: '10px',
-  borderRadius: '4px',
-  border: '1px solid #ddd',
+export const PermissionList = styled(List)({
+    marginTop: '1rem',
+    borderTop: '1px solid rgba(0, 0, 0, 0.12)',
 });
 
-export const TextArea = styled('textarea')({
-  padding: '10px',
-  borderRadius: '4px',
-  border: '1px solid #ddd',
+export const PermissionItem = styled(ListItem)({
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '0.5rem 0',
 });
-
-export const Select = styled('select')({
-  padding: '10px',
-  borderRadius: '4px',
-  border: '1px solid #ddd',
-});
-
-export const Button = styled('button')(({ theme }: { theme?: Theme }) => ({
-  padding: '10px',
-  borderRadius: '4px',
-  border: 'none',
-  cursor: 'pointer',
-  backgroundColor: theme?.palette.colorButton.main,
-  color: theme?.palette.primary.contrastText,
-  '&:hover': {
-    backgroundColor: theme?.palette.colorButton.second,
-  },
-}));
 

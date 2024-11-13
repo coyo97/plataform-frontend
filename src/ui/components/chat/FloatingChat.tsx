@@ -3,6 +3,7 @@ import { styled } from '@mui/system';
 import Chat from './Chat';
 
 // Contenedor flotante del chat
+// Contenedor flotante del chat
 const FloatingContainer = styled('div')(({ theme }) => ({
 	position: 'fixed',
 	bottom: '20px',
@@ -15,16 +16,8 @@ const FloatingContainer = styled('div')(({ theme }) => ({
 	zIndex: 1000,
 	display: 'flex',
 	flexDirection: 'column',
-	overflow: 'hidden', // Mantiene el contenido dentro del contenedor
+	overflow: 'hidden',
 }));
-
-// Contenedor para los mensajes y el campo de texto
-const ChatBody = styled('div')({
-	overflowY: 'auto', // Para que los mensajes puedan desplazarse si son muchos
-	display: 'flex',
-	padding: '0px',
-	boxSizing: 'border-box',
-});
 
 // Encabezado del chat
 const Header = styled('div')(({ theme }) => ({
@@ -33,8 +26,16 @@ const Header = styled('div')(({ theme }) => ({
 	color: theme.palette.common.white,
 	fontWeight: 'bold',
 	textAlign: 'center',
-	position: 'relative', // Asegura que el botón de cierre esté en la esquina
+	position: 'relative',
 }));
+
+// Contenedor para los mensajes y el campo de texto
+const ChatBody = styled('div')({
+	flex: 1,
+	overflow: 'hidden',
+	display: 'flex',
+	flexDirection: 'column',
+});
 
 // Botón de cerrar
 const CloseButton = styled('button')(({ theme }) => ({
@@ -107,13 +108,12 @@ const FloatingChat: React.FC = () => {
 						<CloseButton onClick={toggleChat}>×</CloseButton>
 					</Header>
 					<ChatBody>
-						{/* El componente Chat recibe el userId */}
-						<Chat userId={userId} />
+						{/* El componente Chat recibe el userId y isFloating */}
+						<Chat userId={userId} isFloating={true} />
 					</ChatBody>
 				</FloatingContainer>
 			)}
-		</>
-	);
+		</>	);
 };
 
 export default FloatingChat;

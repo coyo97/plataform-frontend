@@ -1,9 +1,8 @@
-// src/components/UpdateProfile.tsx
+// src/ui/components/profile/UpdateProfile.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateUserProfile } from '../../../async/services/profileService';
-
-import { FormContainer, TextareaField, InputField, SubmitButton } from './updateProfileStyles.styles'; // Importar los estilos
+import { FormContainer, StyledTextField, StyledButton, Title } from './updateProfile.styles';
 
 const UpdateProfile: React.FC = () => {
 	const [bio, setBio] = useState('');
@@ -21,10 +20,9 @@ const UpdateProfile: React.FC = () => {
 		event.preventDefault();
 		const formData = new FormData();
 		formData.append('bio', bio);
-		// Convertir el array de intereses a una cadena JSON antes de añadirlo al FormData
 		formData.append('interests', JSON.stringify(interests.split(',').map(item => item.trim())));
 		if (profilePicture) {
-			formData.append('profilePicture', profilePicture);
+			formData.append('file', profilePicture);
 		}
 
 		try {
@@ -38,24 +36,34 @@ const UpdateProfile: React.FC = () => {
 	};
 
 	return (
-		<FormContainer onSubmit={handleSubmit}>
-			<TextareaField
-				placeholder="Bio"
-				value={bio}
-				onChange={(e) => setBio(e.target.value)}
-			/>
-			<InputField
-				type="text"
-				placeholder="Interests (comma separated)"
-				value={interests}
-				onChange={(e) => setInterests(e.target.value)}
-			/>
-			<InputField
-				type="file"
-				onChange={handleFileChange}
-			/>
-			<SubmitButton type="submit">Actualizar Perfil</SubmitButton>
-		</FormContainer>
+		<form onSubmit={handleSubmit}>
+			<FormContainer>
+				<Title variant="h5">Actualizar Perfil</Title>
+				<StyledTextField
+					label="Bio"
+					multiline
+					rows={4}
+					value={bio}
+					onChange={(e) => setBio(e.target.value)}
+					variant="outlined"
+				/>
+				<StyledTextField
+					label="Intereses (separados por comas)"
+					value={interests}
+					onChange={(e) => setInterests(e.target.value)}
+					variant="outlined"
+				/>
+				<StyledTextField
+					type="file"
+					onChange={handleFileChange}
+					InputLabelProps={{ shrink: true }}
+					variant="outlined"
+				/>
+				<StyledButton type="submit" variant="contained">
+					Actualizar Perfil
+				</StyledButton>
+			</FormContainer>
+		</form>
 	);
 };
 

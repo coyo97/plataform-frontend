@@ -1,85 +1,71 @@
+// src/ui/components/auth/loginForm/formLogin.styles.ts
+
 import { styled } from '@mui/system';
 import { Theme } from '@mui/material/styles';
 import mq from '../../../../config/mq';
 
-// Añade el tipo de tema explícitamente en la función estilizada
-const FormWrapper = styled('form')(({ theme }: { theme?: Theme }) => {
-	if (!theme) {
-		// Puedes definir un color de fondo predeterminado si `theme` es undefined
-		return {
-			backgroundColor: '#FFFFFF', // Color predeterminado en hexadecimal
-			borderRadius: '4px', // Valor predeterminado
-			boxShadow: '0 1px 3px rgba(0,0,0,0.12)', // Valor predeterminado
-			padding: '20px',
-			display: 'flex',
-			flexDirection: 'column',
-			gap: '16px',
-			width: '100%',
-		};
-	}
-
-	return {
-		backgroundColor: hexToRgba(theme.palette.colorForm.main, 1), // Convertir color hexadecimal a rgba con opacidad al 100%
-		borderRadius: theme.shape.borderRadius,
-		boxShadow: theme.shadows[2],
-		padding: '20px',
-		display: 'flex',
-		flexDirection: 'column',
-		gap: '16px',
-		[mq('xxs', 'max')]: {
-			width: '100%',
-		},
-		[mq('md', 'min')]: {
-			width: '400px',
-		},
-	};
-});
-
-const FormTitle = styled('h1')({
-	fontSize: '24px',
-	color: 'white',
-	marginBottom: '16px',
-});
-
-const FormInput = styled('input')({
-	padding: '10px',
-	borderRadius: '4px',
-	border: '1px solid #ddd',
+const FormWrapper = styled('form')(({ theme }: { theme?: Theme }) => ({
+	backgroundColor: theme?.palette.colorForm.main || '#FFFFFF',
+	borderRadius: theme?.shape.borderRadius || '8px',
+	boxShadow: theme?.shadows[3] || '0 4px 8px rgba(0,0,0,0.1)',
+	padding: '30px',
+	display: 'flex',
+	flexDirection: 'column',
+	gap: '20px',
 	width: '100%',
-});
+	maxWidth: '400px',
+	position: 'absolute',
+	top: '50%',
+	left: '50%',
+	transform: 'translate(-50%, -50%)',
+	[mq('xxs', 'max')]: {
+		width: '100%',
+	},
+}));
+
+const FormTitle = styled('h1')(({ theme }: { theme?: Theme }) => ({
+	fontSize: '24px',
+	color: theme?.palette.primary.main || '#003366',
+	marginBottom: '16px',
+	textAlign: 'center',
+	fontFamily: theme?.typography.fontFamily || 'sans-serif',
+}));
+
+const FormInput = styled('input')(({ theme }: { theme?: Theme }) => ({
+	padding: '12px',
+	borderRadius: '4px',
+	border: `1px solid ${theme?.palette.divider || '#ddd'}`,
+	width: '100%',
+	fontSize: '16px',
+	color: theme?.palette.text.primary || '#000',
+	'&:focus': {
+		borderColor: theme?.palette.primary.main || '#003366',
+		outline: 'none',
+		boxShadow: `0 0 5px ${theme?.palette.primary.main || '#003366'}33`,
+	},
+}));
 
 const SubmitButton = styled('button')(({ theme }: { theme?: Theme }) => ({
-	padding: '10px',
+	padding: '12px',
 	borderRadius: '4px',
 	border: 'none',
-	backgroundColor: theme?.palette.colorButton.main,
-	color: 'black',
+	backgroundColor: theme?.palette.colorButton.main || '#003366',
+	color: theme?.palette.primary.contrastText || '#FFFFFF',
 	fontSize: '16px',
 	cursor: 'pointer',
+	fontFamily: theme?.typography.fontFamily || 'sans-serif',
+	transition: 'background-color 0.3s ease',
 	'&:hover': {
-		backgroundColor: theme?.palette.colorButton.second,
+		backgroundColor: theme?.palette.colorButton.second || '#CC0000',
 	},
 }));
 
 const FormLabel = styled('label')(({ theme }: { theme?: Theme }) => ({
-	color: 'white', // Usar el color primario de texto del tema
+	color: theme?.palette.text.primary || '#333',
 	fontSize: '16px',
 	marginBottom: '8px',
+	fontFamily: theme?.typography.fontFamily || 'sans-serif',
 }));
 
-const hexToRgba = (hex: string, alpha: number = 1) => {
-	// Elimina el '#' si está presente
-	hex = hex.replace(/^#/, '');
-
-	// Extrae los valores RGB
-	const r = parseInt(hex.slice(0, 2), 16);
-	const g = parseInt(hex.slice(2, 4), 16);
-	const b = parseInt(hex.slice(4, 6), 16);
-
-	// Devuelve el valor RGBA
-	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-
-export { FormWrapper, FormTitle, FormInput, SubmitButton, FormLabel};
+export { FormWrapper, FormTitle, FormInput, SubmitButton, FormLabel };
 

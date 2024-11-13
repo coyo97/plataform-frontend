@@ -1,6 +1,16 @@
+// src/ui/components/centerAlert/AdminNotifications.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
+import {
+	Container,
+	Title,
+	FormControl,
+	StyledSelect,
+	MessageInput,
+	SendButton,
+} from './adminNotifications.styles';
+import { MenuItem, Typography } from '@mui/material';
 
 interface User {
 	_id: string;
@@ -49,28 +59,38 @@ const AdminNotifications: React.FC = () => {
 	};
 
 	return (
-		<div>
-			<h3>Enviar Notificación</h3>
-			<div>
-				<label>
-					Enviar a:
-					<select value={recipients} onChange={(e) => setRecipients(e.target.value)}>
-						<option value="all">Todos los usuarios</option>
-						{users.map((user) => (
-							<option key={user._id} value={user._id}>
-								{user.username}
-							</option>
-						))}
-					</select>
-				</label>
-			</div>
-			<textarea
-				value={message}
-				onChange={(e) => setMessage(e.target.value)}
-				placeholder="Mensaje de la notificación"
-			/>
-			<button onClick={sendNotification}>Enviar</button>
-		</div>
+		<Container>
+			<Title>Enviar Notificación</Title>
+			<FormControl>
+				<Typography variant="body1">Enviar a:</Typography>
+				<StyledSelect
+					value={recipients}
+					onChange={(e) => setRecipients(e.target.value as string)}
+
+					variant="outlined"
+				>
+					<MenuItem value="all">Todos los usuarios</MenuItem>
+					{users.map((user) => (
+						<MenuItem key={user._id} value={user._id}>
+							{user.username}
+						</MenuItem>
+					))}
+				</StyledSelect>
+			</FormControl>
+			<FormControl>
+				<MessageInput
+					label="Mensaje de la notificación"
+					multiline
+					rows={4}
+					value={message}
+					onChange={(e) => setMessage(e.target.value)}
+					variant="outlined"
+				/>
+			</FormControl>
+			<SendButton variant="contained" onClick={sendNotification}>
+				Enviar
+			</SendButton>
+		</Container>
 	);
 };
 

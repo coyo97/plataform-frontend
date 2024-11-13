@@ -1,21 +1,38 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import axios from 'axios'; // Asegúrate de tener axios importado para hacer solicitudes HTTP
-import { getPublications } from '../../../async/services/publicationService';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 import CommentSection from '../comments/CommentSection';
 import getEnvVariables from '../../../config/configEnvs';
 
 import {
-	PublicationContainer,
-	PublicationContent,
-	FilePreview,
-	UserProfileImage,
-	CommentButton,
 	SidebarContainer,
 	FilterTitle,
 	FilterButton,
-} from './viewPublicationsStyles.styles'; // Importa los estilos
+} from './viewPublicationsStyles.styles';
+
+import {
+	Card,
+	CardHeader,
+	CardContent,
+	CardActions,
+	Avatar,
+	IconButton,
+	Typography,
+	Accordion,
+	AccordionSummary,
+	AccordionDetails,
+} from '@mui/material';
+
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import CommentIcon from '@mui/icons-material/Comment';
+import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
+
+import ReportDialog from './ReportDialog'; // Nuevo componente
+import SearchBar from './SearchBar'; // Nuevo componente
+import CreatePublication from './CreatePublication';
 
 interface Publication {
 	_id: string;
@@ -31,7 +48,7 @@ interface Publication {
 	};
 	filePath?: string;
 	fileType?: string;
-	likes: string[]; // Añadido: Array de IDs de usuarios que han dado like
+	likes: string[];
 }
 
 interface Career {
@@ -43,11 +60,13 @@ const ViewPublications: React.FC = () => {
 	const [publications, setPublications] = useState<Publication[]>([]);
 	const [careers, setCareers] = useState<Career[]>([]);
 	const [selectedCareer, setSelectedCareer] = useState<string>('');
-	const [searchQuery, setSearchQuery] = useState<string>(''); // Añadido: Estado para la búsqueda
 	const [page, setPage] = useState<number>(1);
 	const [hasMore, setHasMore] = useState<boolean>(true);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [selectedFilter, setSelectedFilter] = useState<string>('mostRecent');
+
+	const [openReportDialog, setOpenReportDialog] = useState<boolean>(false);
+	const [publicationToReport, setPublicationToReport] = useState<string>('');
 
 	const observer = useRef<IntersectionObserver | null>(null);
 	const navigate = useNavigate();
@@ -70,49 +89,55 @@ const ViewPublications: React.FC = () => {
 		fetchCareers();
 	}, [HOST, SERVICE]);
 
-	const fetchPublications = async (pageToFetch: number, filterType?: string) => {
-		if (isLoading) return;
-		setIsLoading(true);
-		try {
-			let endpoint = '';
-			const token = localStorage.getItem('token');
+	const fetchPublications = useCallback(
+		async (pageToFetch: number, filterType?: string, searchQuery = '') => {
+			if (isLoading) return;
+			setIsLoading(true);
+			try {
+				let endpoint = '';
+				const token = localStorage.getItem('token');
 
-			if (searchQuery.trim() !== '') {
-				endpoint = `${HOST}${SERVICE}/publications/search?query=${encodeURIComponent(
-					searchQuery
-				)}&page=${pageToFetch}`;
-			} else if (filterType === 'mostLiked') {
-				endpoint = `${HOST}${SERVICE}/publications/most-liked?page=${pageToFetch}`;
-			} else if (filterType === 'mostCommented') {
-				endpoint = `${HOST}${SERVICE}/publications/most-commented?page=${pageToFetch}`;
-			} else if (filterType === 'career' && selectedCareer) {
-				endpoint = `${HOST}${SERVICE}/publications/career/${selectedCareer}?page=${pageToFetch}`;
-			} else {
-				endpoint = `${HOST}${SERVICE}/publications?page=${pageToFetch}`;
+				if (searchQuery.trim() !== '') {
+					endpoint = `${HOST}${SERVICE}/publications/search?query=${encodeURIComponent(
+						searchQuery
+					)}&page=${pageToFetch}`;
+				} else if (filterType === 'mostLiked') {
+					endpoint = `${HOST}${SERVICE}/publications/most-liked?page=${pageToFetch}`;
+				} else if (filterType === 'mostCommented') {
+					endpoint = `${HOST}${SERVICE}/publications/most-commented?page=${pageToFetch}`;
+				} else if (filterType === 'career' && selectedCareer) {
+					endpoint = `${HOST}${SERVICE}/publications/career/${selectedCareer}?page=${pageToFetch}`;
+				} else {
+					endpoint = `${HOST}${SERVICE}/publications?page=${pageToFetch}`;
+				}
+				console.log(`Fetching from: ${endpoint}`);
+				const response = await axios.get(endpoint, {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				const data = response.data;
+
+				setPublications((prevPublications) => {
+					const publicationsMap = new Map();
+					[...prevPublications, ...data.publications].forEach((pub) => {
+						publicationsMap.set(pub._id, pub);
+					});
+					return Array.from(publicationsMap.values());
+				});
+
+				setHasMore(data.publications.length > 0);
+			} catch (error) {
+				console.error('Error fetching publications:', error);
+			} finally {
+				setIsLoading(false);
 			}
-
-			console.log(`Fetching from: ${endpoint}`);
-			const response = await axios.get(endpoint, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			const data = response.data;
-			setPublications((prevPublications) => [...prevPublications, ...data.publications]);
-			setHasMore(data.publications.length > 0);
-		} catch (error) {
-			console.error('Error fetching publications:', error);
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-
+		},
+		[HOST, SERVICE, selectedCareer, selectedFilter] // Eliminamos isLoading de las dependencias
+	);
 	useEffect(() => {
 		setPublications([]);
 		setPage(1);
 		fetchPublications(1, selectedFilter === 'career' ? 'career' : selectedFilter);
-	}, [selectedFilter, selectedCareer]);
-
-	const lastPublicationRef = useRef<HTMLDivElement | null>(null);
+	}, [selectedFilter, selectedCareer]); // Eliminamos fetchPublications de las dependencias
 
 	const lastPublicationElementRef = useCallback(
 		(node: HTMLDivElement) => {
@@ -127,63 +152,62 @@ const ViewPublications: React.FC = () => {
 			});
 			if (node) observer.current.observe(node);
 		},
-		[hasMore, isLoading, page, selectedFilter]
+		[hasMore, isLoading, page, fetchPublications, selectedFilter]
 	);
 
-	const renderFile = (publication: Publication) => {
-		if (!publication.filePath || !publication.fileType) return null;
+	const renderFile = useCallback(
+		(publication: Publication) => {
+			if (!publication.filePath || !publication.fileType) return null;
 
-		const fileUrl = `${HOST}/${publication.filePath}`;
+			const fileUrl = `${HOST}/${publication.filePath}`;
 
-		if (publication.fileType.startsWith('image/')) {
-			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;
-		} else if (publication.fileType.startsWith('video/')) {
-			return (
-				<video controls style={{ width: '300px', height: 'auto' }}>
-					<source src={fileUrl} type={publication.fileType} />
-					Tu navegador no soporta la reproducción de video.
-				</video>
-			);
-		} else if (publication.fileType === 'application/pdf') {
-			return (
-				<a href={fileUrl} target="_blank" rel="noopener noreferrer">
-					Ver PDF
-				</a>
-			);
-		} else {
-			return (
-				<a href={fileUrl} download>
-					Descargar archivo
-				</a>
-			);
-		}
-	};
+			if (publication.fileType.startsWith('image/')) {
+				return <img src={fileUrl} alt={publication.title} style={{ width: '100%', maxWidth: '500px', height: 'auto' }} />;
+			} else if (publication.fileType.startsWith('video/')) {
+				return (
+					<video controls style={{ width: '100%', maxWidth: '500px', height: 'auto' }}>
+						<source src={fileUrl} type={publication.fileType} />
+						Tu navegador no soporta la reproducción de video.
+					</video>
+				);
+			} else if (publication.fileType === 'application/pdf') {
+				return (
+					<a href={fileUrl} target="_blank" rel="noopener noreferrer">
+						Ver PDF
+					</a>
+				);
+			} else {
+				return (
+					<a href={fileUrl} download>
+						Descargar archivo
+					</a>
+				);
+			}
+		},
+		[HOST]
+	);
 
-	const handleAuthorClick = (authorId: string, authorUsername: string) => {
-		const userProfileId = authorId;
-		navigate(`/profile/${authorUsername}`, { state: { userProfileId } });
-	};
+	const handleAuthorClick = useCallback(
+		(authorId: string, authorUsername: string) => {
+			const userProfileId = authorId;
+			navigate(`/profile/${authorUsername}`, { state: { userProfileId } });
+		},
+		[navigate]
+	);
 
-	const reportPublication = async (publicationId: string) => {
-		const reason = prompt('Por favor, ingresa la razón del reporte:');
-		if (!reason) return;
+	// Funciones para manejar el diálogo de reporte
+	const handleOpenReportDialog = useCallback((publicationId: string) => {
+		setPublicationToReport(publicationId);
+		setOpenReportDialog(true);
+	}, []);
 
-		try {
-			const token = localStorage.getItem('token');
-			await axios.post(
-				`${HOST}${SERVICE}/publications/${publicationId}/report`,
-				{ reason },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			alert('Reporte enviado correctamente');
-		} catch (error) {
-			console.error('Error al reportar la publicación:', error);
-			alert('Error al reportar la publicación');
-		}
-	};
+	const handleCloseReportDialog = useCallback(() => {
+		setOpenReportDialog(false);
+		setPublicationToReport('');
+	}, []);
 
 	// Funciones para manejar likes
-	const handleLike = async (publicationId: string) => {
+	const handleLike = useCallback(async (publicationId: string) => {
 		try {
 			const token = localStorage.getItem('token');
 			await axios.post(
@@ -206,9 +230,9 @@ const ViewPublications: React.FC = () => {
 		} catch (error) {
 			console.error('Error al dar like:', error);
 		}
-	};
+	}, [HOST, SERVICE]);
 
-	const handleUnlike = async (publicationId: string) => {
+	const handleUnlike = useCallback(async (publicationId: string) => {
 		try {
 			const token = localStorage.getItem('token');
 			await axios.post(
@@ -231,133 +255,189 @@ const ViewPublications: React.FC = () => {
 		} catch (error) {
 			console.error('Error al quitar like:', error);
 		}
-	};
+	}, [HOST, SERVICE]);
 
-	const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		setPublications([]);
-		setPage(1);
-		fetchPublications(1);
-	};
-
+	// Manejo de la búsqueda
+	const handleSearch = useCallback(
+		(searchQuery: string) => {
+			setPublications([]);
+			setPage(1);
+			fetchPublications(1, selectedFilter === 'career' ? 'career' : selectedFilter, searchQuery);
+		},
+		[fetchPublications, selectedFilter]
+	);
 
 	return (
-		<div style={{ display: 'flex' }}>
+		<div style={{ display: 'flex', flexWrap: 'wrap', padding: '20px' }}>
 			<SidebarContainer>
-				<FilterTitle>Filtrar publicación</FilterTitle>
+				<CreatePublication/>
+				<FilterTitle>Filtrar Publicaciones</FilterTitle>
+
+				{/* Sección de Filtrado por Carrera */}
+				<Accordion>
+					<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+						<Typography>Filtrar por Carrera</Typography>
+					</AccordionSummary>
+					<AccordionDetails>
+						{careers.map((career) => (
+							<FilterButton
+								key={career._id}
+								active={selectedCareer === career._id}
+								onClick={() => {
+									setSelectedCareer(career._id);
+									setSelectedFilter('');
+									setPublications([]);
+									setPage(1);
+									fetchPublications(1, 'career');
+								}}
+							>
+								{career.name}
+							</FilterButton>
+						))}
+					</AccordionDetails>
+				</Accordion>
+
+				{/* Sección de Ordenamiento */}
+				<Accordion>
+					<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+						<Typography>Ordenar Publicaciones</Typography>
+					</AccordionSummary>
+					<AccordionDetails>
+						<FilterButton
+							active={selectedFilter === 'mostRecent'}
+							onClick={() => {
+								setSelectedFilter('mostRecent');
+								setSelectedCareer('');
+								setPublications([]);
+								setPage(1);
+								fetchPublications(1, 'mostRecent');
+							}}
+						>
+							Más recientes
+						</FilterButton>
+						<FilterButton
+							active={selectedFilter === 'mostLiked'}
+							onClick={() => {
+								setSelectedFilter('mostLiked');
+								setSelectedCareer('');
+								setPublications([]);
+								setPage(1);
+								fetchPublications(1, 'mostLiked');
+							}}
+						>
+							Más gustadas
+						</FilterButton>
+						<FilterButton
+							active={selectedFilter === 'mostCommented'}
+							onClick={() => {
+								setSelectedFilter('mostCommented');
+								setSelectedCareer('');
+								setPublications([]);
+								setPage(1);
+								fetchPublications(1, 'mostCommented');
+							}}
+						>
+							Más comentadas
+						</FilterButton>
+					</AccordionDetails>
+				</Accordion>
+
+				{/* Botón para Limpiar Filtros */}
 				<FilterButton
-					active={selectedFilter === 'mostRecent'}
+					active={selectedFilter === '' && selectedCareer === ''}
 					onClick={() => {
-						setSelectedFilter('mostRecent');
+						setSelectedFilter('');
 						setSelectedCareer('');
 						setPublications([]);
 						setPage(1);
 						fetchPublications(1, 'mostRecent');
 					}}
 				>
-					Más recientes
+					Ver todas las publicaciones
 				</FilterButton>
-				<FilterButton
-					active={selectedFilter === 'mostLiked'}
-					onClick={() => {
-						setSelectedFilter('mostLiked');
-						setSelectedCareer('');
-						setPublications([]);
-						setPage(1);
-						fetchPublications(1, 'mostLiked');
-					}}
-				>
-					Más gustadas
-				</FilterButton>
-				<FilterButton
-					active={selectedFilter === 'mostCommented'}
-					onClick={() => {
-						setSelectedFilter('mostCommented');
-						setSelectedCareer('');
-						setPublications([]);
-						setPage(1);
-						fetchPublications(1, 'mostCommented');
-					}}
-				>
-					Más comentadas
-				</FilterButton>
-				{/* Opciones de carrera */}
-				{careers.map((career) => (
-					<FilterButton
-						key={career._id}
-						active={selectedCareer === career._id}
-						onClick={() => {
-							setSelectedCareer(career._id);
-							setSelectedFilter('');
-							setPublications([]);
-							setPage(1);
-							fetchPublications(1, 'career');
-						}}
-					>
-						{career.name}
-					</FilterButton>
-				))}
 			</SidebarContainer>
-			<div style={{ flex: 1 }}>
-				{/* Añadido: Formulario de búsqueda */}
-				<form onSubmit={handleSearchSubmit} style={{ marginBottom: '20px' }}>
-					<input
-						type="text"
-						placeholder="Buscar publicaciones..."
-						value={searchQuery}
-						onChange={(e) => {
-							setSearchQuery(e.target.value);
-						}}
+			<div style={{ flex: 1, marginLeft: '20px' }}>
+				{/* Formulario de búsqueda */}
+				<SearchBar onSearch={handleSearch} />
 
-						style={{ width: '300px', padding: '8px' }}
-					/>
-					<button type="submit" style={{ padding: '8px 16px', marginLeft: '8px' }}>
-						Buscar
-					</button>
-				</form>
 				{publications.map((publication, index) => {
-					// Determinar si el usuario actual ha dado like
 					const currentUserId = localStorage.getItem('userId') || '';
 					const hasLiked = publication.likes.includes(currentUserId);
 
+					// Verifica si el autor existe
+					const isAuthorPresent = publication.author && publication.author.username;
+
 					return (
-						<PublicationContainer
-							key={`${publication._id}-${index}`}
+						<div
+							key={publication._id}
 							ref={index === publications.length - 1 ? lastPublicationElementRef : null}
 						>
-							<UserProfileImage
-								src={
-									publication.author.profile?.profilePicture
-										? `${HOST}/${publication.author.profile.profilePicture}`
-										: 'https://ptetutorials.com/images/user-profile.png'
-								}
-								alt={publication.author.username}
-							/>
-							<PublicationContent>
-								<h2>{publication.title}</h2>
-								<p>{publication.content}</p>
-								<p>
-									<strong>Autor:</strong>{' '}
-									<button onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}>
-										{publication.author.username}
-									</button>
-								</p>
-								{renderFile(publication)}
-								{/* Botón de Like/Unlike y contador de likes */}
-								<div>
-									{hasLiked ? (
-										<button onClick={() => handleUnlike(publication._id)}>Quitar Me Gusta</button>
+							<Card style={{ marginBottom: '20px', width: '100%' }}>
+								<CardHeader
+									avatar={
+										isAuthorPresent ? (
+											<Avatar
+												src={
+													publication.author.profile?.profilePicture
+														? `${HOST}/${publication.author.profile.profilePicture}`
+														: 'https://ptetutorials.com/images/user-profile.png'
+												}
+												alt={publication.author.username}
+												style={{ cursor: 'pointer' }}
+												onClick={() => handleAuthorClick(publication.author._id, publication.author.username)}
+											/>
 									) : (
-										<button onClick={() => handleLike(publication._id)}>Me Gusta</button>
-									)}
-									<span>{publication.likes.length} Me Gusta</span>
-								</div>
+										<Avatar alt="Usuario Eliminado">?</Avatar>
+									)
+									}
+									title={publication.title}
+									subheader={
+										isAuthorPresent
+											? `Publicado por ${publication.author.username}`
+											: 'Publicado por un usuario eliminado'
+									}
+									action={
+										<IconButton
+											onClick={() => handleOpenReportDialog(publication._id)}
+											aria-label="Reportar"
+										>
+											<ReportOutlinedIcon color="error" />
+										</IconButton>
+									}
+								/>
+								<CardContent>
+									<Typography variant="body2" color="textSecondary" component="p">
+										{publication.content}
+									</Typography>
+									{/* Mostrar archivo si existe */}
+									{renderFile(publication)}
+								</CardContent>
+								<CardActions disableSpacing>
+									<IconButton
+										onClick={() => (hasLiked ? handleUnlike(publication._id) : handleLike(publication._id))}
+										aria-label={hasLiked ? 'Quitar Me Gusta' : 'Me Gusta'}
+									>
+										{hasLiked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
+									</IconButton>
+									<Typography variant="body2">{publication.likes.length}</Typography>
+									<IconButton aria-label="Comentarios">
+										<CommentIcon />
+									</IconButton>
+								</CardActions>
+								{/* Sección de Comentarios */}
 								<CommentSection publicationId={publication._id} />
-							</PublicationContent>
-							<button onClick={() => reportPublication(publication._id)}>Reportar</button>
-						</PublicationContainer>
+							</Card>
+						</div>
 					);
 				})}
+				{/* Diálogo de Reporte */}
+				{openReportDialog && (
+					<ReportDialog
+						open={openReportDialog}
+						onClose={handleCloseReportDialog}
+						publicationId={publicationToReport}
+					/>
+				)}
 			</div>
 		</div>
 	);

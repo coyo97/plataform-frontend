@@ -6,7 +6,8 @@ import CreatePublication from './CreatePublication';
 const HomePublications: React.FC = () => {
 	return(
 		<>
-			<CreatePublication/>
+			{//<CreatePublication/>
+			}
 			<ViewPublications/>
 		</>
     );

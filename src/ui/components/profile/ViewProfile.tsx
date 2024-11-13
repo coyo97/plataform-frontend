@@ -25,7 +25,7 @@ const ViewProfile: React.FC = () => {
 				setProfile(data.profile);
 			} catch (error) {
 				console.error('Error fetching profile:', error);
-				setError('Error fetching profile');
+				setError('Usted aun no actulizo su perfil');
 			} finally {
 				setLoading(false);
 			}

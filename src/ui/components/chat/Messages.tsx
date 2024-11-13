@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { IncomingMessage } from './IncomingMessage';
 import { OutgoingMessage } from './OutgoingMessage';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import {
 	MesgsContainer,
 	MsgHistory,
@@ -21,6 +22,8 @@ interface MessagesProps {
 		selectedFile?: File | null | undefined
 	) => Promise<void>;
 	handleDeleteMessage: (messageId: string) => void; // Cambiamos el nombre aquí
+	loadMoreMessages: () => void;
+	hasMoreMessages: boolean;
 }
 
 export const Messages: React.FC<MessagesProps> = ({
@@ -28,6 +31,8 @@ export const Messages: React.FC<MessagesProps> = ({
 	currentUserId,
 	handleSendMessage,
 	handleDeleteMessage, // Actualizamos el nombre aquí
+	loadMoreMessages,
+	hasMoreMessages,
 }) => {
 	const messagesEndRef = useRef<HTMLDivElement | null>(null);
 	const [messageContent, setMessageContent] = useState('');
@@ -60,25 +65,42 @@ export const Messages: React.FC<MessagesProps> = ({
 		handleDeleteMessage(messageId); // Usamos la prop para manejar la eliminación del mensaje
 	};
 
+	useEffect(() => {
+		if (messagesEndRef.current) {
+			messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+		}
+	}, [messages]);
+
 	return (
 		<MesgsContainer>
-			<MsgHistory>
-				{messages.map((msg) =>
-							  msg.sender._id === currentUserId ? (
-								  <OutgoingMessage
-									  key={`${msg._id}-${msg.createdAt || Math.random()}`}
-									  message={msg}
-									  onDeleteMessage={handleDeleteMessageLocal}
-								  />
-				) : (
-					<IncomingMessage
-						key={`${msg._id}-${msg.createdAt || Math.random()}`}
-						message={msg}
-					/>
-				)
-							 )}
-				<div ref={messagesEndRef} />
-			</MsgHistory>
+			<div id="scrollableDiv" style={{ height: '100%', overflow: 'auto' }}>
+				<InfiniteScroll
+					dataLength={messages.length}
+					next={loadMoreMessages}
+					hasMore={hasMoreMessages}
+					loader={<h4>Cargando más mensajes...</h4>}
+					scrollableTarget="scrollableDiv"
+					scrollThreshold={0.9}
+				>
+					<MsgHistory  id="scrollableDiv">
+						{messages.map((msg) =>
+									  msg.sender._id === currentUserId ? (
+										  <OutgoingMessage
+											  key={`${msg._id}-${msg.createdAt || Math.random()}`}
+											  message={msg}
+											  onDeleteMessage={handleDeleteMessageLocal}
+										  />
+						) : (
+							<IncomingMessage
+								key={`${msg._id}-${msg.createdAt || Math.random()}`}
+								message={msg}
+							/>
+						)
+									 )}
+						<div ref={messagesEndRef} />
+					</MsgHistory>
+				</InfiniteScroll>
+			</div>
 			<MessageInputForm onSubmit={handleSubmit}>
 				<MessageInput
 					name="message"

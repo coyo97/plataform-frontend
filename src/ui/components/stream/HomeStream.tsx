@@ -5,6 +5,8 @@ import JoinStream from './JoinStream';
 import Stream from './Stream';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
+import ForgotPassword from '../auth/ForgotPassword';
+import ResetPassword from '../auth/ResetPassword';
 
 const HomeStream: React.FC = () => {
 	const [userId, setUserId] = useState<string>('');

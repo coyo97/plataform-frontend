@@ -1,0 +1,35 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f4f4;
+  overflow: hidden;
+}
+
+.sidebar-open .admin-content {
+  margin-left: 250px; /* Ancho del sidebar */
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar-closed .admin-content {
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+}
+
+.menu-button {
+  display: none;
+  position: fixed; /* Para que esté siempre visible en móviles */
+  top: 10px;
+  left: 10px;
+  z-index: 1000; /* Asegura que el botón esté por encima de otros elementos */
+}
+
+@media (max-width: 768px) {
+  .menu-button {
+    display: block;
+  }
+  .sidebar-open .admin-content,
+  .sidebar-closed .admin-content {
+    margin-left: 0;
+  }
+}
+

@@ -1,6 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { getPublications, updatePublication, deletePublication } from '../../../../async/services/publicationService';
 import getEnvVariables from '../../../../config/configEnvs';
+import {
+	Container,
+	PublicationCard,
+	PublicationTitle,
+	PublicationContent,
+	Tags,
+	EditButton,
+	DeleteButton,
+	EditForm,
+	Input,
+	TextArea,
+	FileInput,
+	UpdateButton,
+	CancelButton,
+} from './userMaterialsStyles';
 
 interface Publication {
 	_id: string;
@@ -10,8 +25,8 @@ interface Publication {
 	author: {
 		username: string;
 	};
-	filePath?: string; // Ruta al archivo
-	fileType?: string; // Tipo de archivo (opcional)
+	filePath?: string;
+	fileType?: string;
 }
 
 const ViewUserPublications: React.FC = () => {
@@ -22,7 +37,7 @@ const ViewUserPublications: React.FC = () => {
 	const [tags, setTags] = useState('');
 	const [newImage, setNewImage] = useState<File | null>(null);
 
-	const {HOST, SERVICE} = getEnvVariables();
+	const { HOST, SERVICE } = getEnvVariables();
 
 	useEffect(() => {
 		const fetchUserPublications = async () => {
@@ -44,48 +59,35 @@ const ViewUserPublications: React.FC = () => {
 		setTags(publication.tags.join(', '));
 	};
 
-	useEffect(() => {
-		console.log('Estado de publicaciones:', publications);
-	}, [publications]); // Esto debe ejecutarse cada vez que las publicaciones cambien
-
-
-	// Manejador para la actualización de la publicación
 	const handleUpdate = async () => {
 		if (!selectedPublication) return;
 
 		const formData = new FormData();
 		formData.append('title', title);
 		formData.append('content', content);
-		formData.append('tags', JSON.stringify(tags.split(',').map(tag => tag.trim()))); // Asegúrate de enviar las tags como string en JSON
+		formData.append('tags', JSON.stringify(tags.split(',').map(tag => tag.trim())));
+
 		if (newImage) {
 			formData.append('file', newImage);
-			console.log('Imagen seleccionada:', newImage);
 		}
 
 		try {
-			console.log('FormData para actualizar:', formData);
-
-			// Actualiza la publicación
 			await updatePublication(`${HOST}${SERVICE}/user-publications/${selectedPublication._id}`, formData);
-				alert('Publicación actualizada con éxito');
+			alert('Publicación actualizada con éxito');
 
-			// Refrescar las publicaciones para ver los cambios
 			const data = await getPublications(`${HOST}${SERVICE}/user-publications`, {});
-			console.log('Publicaciones después de actualizar:', data.publications);
 			setPublications(data.publications);
-
-			setSelectedPublication(null); // Limpia la publicación seleccionada después de actualizar
+			setSelectedPublication(null);
 		} catch (error) {
 			console.error('Error updating publication:', error);
 			alert('Error al actualizar la publicación');
 		}
 	};
 
-
 	const handleDelete = async (id: string) => {
 		try {
 			await deletePublication(`${HOST}${SERVICE}/publications/${id}`);
-				alert('Publicación eliminada con éxito');
+			alert('Publicación eliminada con éxito');
 			setPublications(publications.filter(pub => pub._id !== id));
 		} catch (error) {
 			console.error('Error deleting publication:', error);
@@ -98,7 +100,7 @@ const ViewUserPublications: React.FC = () => {
 
 		const fileUrl = `${HOST}/${publication.filePath}`;
 
-			if (publication.fileType.startsWith('image/')) {
+		if (publication.fileType.startsWith('image/')) {
 			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;
 		} else if (publication.fileType.startsWith('video/')) {
 			return (
@@ -123,48 +125,48 @@ const ViewUserPublications: React.FC = () => {
 	};
 
 	return (
-		<div>
+		<Container>
 			<h1>Mis Publicaciones</h1>
-			{publications.map((publication) => (
-				<div key={publication._id} style={{ marginBottom: '20px' }}>
-					<h2>{publication.title}</h2>
-					<p>{publication.content}</p>
-					<p><strong>Etiquetas:</strong> {publication.tags.join(', ')}</p>
+			{publications.map(publication => (
+				<PublicationCard key={publication._id}>
+					<PublicationTitle>{publication.title}</PublicationTitle>
+					<PublicationContent>{publication.content}</PublicationContent>
+		  <Tags><strong>Etiquetas:</strong> {publication.tags.join(', ')}</Tags>
 					{renderFile(publication)}
-					<button onClick={() => handleEdit(publication)}>Editar</button>
-					<button onClick={() => handleDelete(publication._id)}>Eliminar</button>
-				</div>
+					<EditButton onClick={() => handleEdit(publication)}>Editar</EditButton>
+					<DeleteButton onClick={() => handleDelete(publication._id)}>Eliminar</DeleteButton>
+				</PublicationCard>
 			))}
 
 			{selectedPublication && (
-				<div style={{ marginTop: '20px' }}>
+				<EditForm>
 					<h2>Editar Publicación</h2>
-					<input 
-						type="text" 
-						placeholder="Título" 
-						value={title} 
-						onChange={(e) => setTitle(e.target.value)} 
+					<Input
+						type="text"
+						placeholder="Título"
+						value={title}
+						onChange={(e) => setTitle(e.target.value)}
 					/>
-					<textarea 
-						placeholder="Contenido" 
-						value={content} 
-						onChange={(e) => setContent(e.target.value)} 
+					<TextArea
+						placeholder="Contenido"
+						value={content}
+						onChange={(e) => setContent(e.target.value)}
 					/>
-					<input 
-						type="text" 
-						placeholder="Etiquetas (separadas por comas)" 
-						value={tags} 
-						onChange={(e) => setTags(e.target.value)} 
+					<Input
+						type="text"
+						placeholder="Etiquetas (separadas por comas)"
+						value={tags}
+						onChange={(e) => setTags(e.target.value)}
 					/>
-					<input 
-						type="file" 
-						onChange={(e) => setNewImage(e.target.files ? e.target.files[0] : null)} 
+					<FileInput
+						type="file"
+						onChange={(e) => setNewImage(e.target.files ? e.target.files[0] : null)}
 					/>
-					<button onClick={handleUpdate}>Actualizar</button>
-					<button onClick={() => setSelectedPublication(null)}>Cancelar</button>
-				</div>
+					<UpdateButton onClick={handleUpdate}>Actualizar</UpdateButton>
+					<CancelButton onClick={() => setSelectedPublication(null)}>Cancelar</CancelButton>
+				</EditForm>
 			)}
-		</div>
+		</Container>
 	);
 };
 

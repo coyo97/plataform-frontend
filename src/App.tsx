@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Theme from './Theme/Theme';
 import NavMenu from './ui/components/navMenu/NavMenu';
@@ -30,13 +30,35 @@ import HomeAlert from './ui/components/centerAlert/HomeAlert';
 import HomeSetting from './ui/components/configFile/HomeSetting';
 import HomeStream from './ui/components/stream/HomeStream';
 import PublicationDetail from './ui/components/publications/PublicationDetail';
+import './ui/components/admin/adminLayout.css'; // Asegúrate de que la ruta sea correcta
+import ForgotPassword from './ui/components/auth/ForgotPassword';
+import ResetPassword from './ui/components/auth/ResetPassword';
+import AdminRoute from './routes/AdminRoute';
 
 function App() {
 	const queryClient = new QueryClient();
-	// Ejemplo: Obtener userId del localStorage o contexto
+	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
-	const streamId = 'stream123'; // También lo puedes obtener dinámicamente
+	useEffect(() => {
+		const handleResize = () => {
+			if (window.innerWidth > 768) {
+				setIsSidebarOpen(true);
+			} else {
+				setIsSidebarOpen(false);
+			}
+		};
+		// Establecer el estado inicial
+		handleResize();
+
+		// Escuchar cambios en el tamaño de la ventana
+		window.addEventListener('resize', handleResize);
+
+		// Limpiar el listener al desmontar el componente
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	}, []);
+
 
 	return (
 		<Theme>
@@ -51,39 +73,45 @@ function App() {
 						<Route path='/publications' element={<HomePublications/>}></Route>
 						<Route path="/publications/:publicationId" element={<PublicationDetail />} />
 						<Route path='/profile' element={<HomeProfile/>}></Route>
-						<Route path='/publications' element={<Home/>}></Route>
 						<Route path='/material-user' element={<UserMaterials/>}></Route>
 						<Route path="/profile/:id" element={<AuthorProfile />} />
 						<Route path="/profile" element={<ViewProfile />} />
 						<Route path="/profile/update" element={<UpdateProfile />} />
-						{/*					<Route path='/administrator' element={<CareerManager/>}></Route> */}
 						<Route path='/message' element={<HomeChat/>}></Route>
-						{
-							//Administrator
-						}
+						<Route path="/forgot-password" element={<ForgotPassword/>} />
+						<Route path="/reset-password/:token" element={<ResetPassword/>} />
 						{/* Rutas del Dashboard con Sidebar */}
 						<Route
 							path="/administrator/*"
 							element={
-								<div className="admin-layout">
-									<Sidebar /> {/* Sidebar siempre visible en rutas del Dashboard */}
-									<div className="admin-content">
-										<Routes>
-											<Route path="/" element={<Dashboard />} />
-											<Route path="users" element={<UserManagement />} />
-											<Route path="roles" element={<HomeRoles/>} />
-											<Route path="moderator" element={<HomeModerator/>} />
-											<Route path="center-alert" element={<HomeAlert/>} />
-											<Route path="career" element={<CareerManager/>} />
-											<Route path="conf-file" element={<HomeSetting/>} />
-										</Routes>
-									</div>
-								</div>
+								<AdminRoute
+									element={
+										<div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+											<Sidebar isVisible={isSidebarOpen} />
+											<div className="admin-content">
+												{/* Botón de menú para pantallas pequeñas */}
+												<button
+													className="menu-button"
+													onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+												>
+													☰
+												</button>
+												<Routes>
+													<Route path="/" element={<Dashboard />} />
+													<Route path="users" element={<UserManagement />} />
+													<Route path="roles" element={<HomeRoles />} />
+													<Route path="moderator" element={<HomeModerator />} />
+													<Route path="center-alert" element={<HomeAlert />} />
+													<Route path="career" element={<CareerManager />} />
+													<Route path="conf-file" element={<HomeSetting />} />
+												</Routes>
+											</div>
+										</div>
+									}
+								/>
 							}
 						/>
 					</Routes>
-					{//<Notifications/>
-					}
 				</Router>
 			</QueryClientProvider>
 		</Theme>

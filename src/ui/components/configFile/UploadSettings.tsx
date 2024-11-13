@@ -1,12 +1,11 @@
-// src/components/admin/UploadSettings.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
+import { Container, Title, Label, Input, Button } from './uploadSettingsStyles';
 
 const UploadSettings: React.FC = () => {
   const [maxUploadSize, setMaxUploadSize] = useState<number>(50 * 1024 * 1024); // 50MB por defecto
-  const {HOST, SERVICE} = getEnvVariables();
-
+  const { HOST, SERVICE } = getEnvVariables();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -39,18 +38,18 @@ const UploadSettings: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2>Configuración de Subida de Archivos</h2>
-      <label>
+    <Container>
+      <Title>Configuración de Subida de Archivos</Title>
+      <Label>
         Tamaño máximo de subida (en MB):
-        <input
+        <Input
           type="number"
           value={maxUploadSize / (1024 * 1024)}
           onChange={(e) => setMaxUploadSize(Number(e.target.value) * 1024 * 1024)}
         />
-      </label>
-      <button onClick={handleUpdate}>Actualizar</button>
-    </div>
+      </Label>
+      <Button onClick={handleUpdate}>Actualizar</Button>
+    </Container>
   );
 };
 

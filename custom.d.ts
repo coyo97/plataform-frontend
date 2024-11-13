@@ -3,3 +3,5 @@ declare module "*.ttf" {
   export default content;
 }
 
+declare module '@mui/icons-material/*';
+

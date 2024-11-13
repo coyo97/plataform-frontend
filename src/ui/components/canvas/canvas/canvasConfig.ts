@@ -1,14 +1,11 @@
-// canvasConfig.ts
-
-
-
 export function canvasConfig(canvas: HTMLCanvasElement) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error("Context not found");
 
-    canvas.width = 500;
-    canvas.height = 500;
-    canvas.style.border = '5px solid black';
+    // Ajuste dinámico de tamaño en función de la pantalla
+    canvas.width = window.innerWidth * 0.9; // 90% del ancho de la pantalla
+    canvas.height = window.innerHeight * 0.8; // 80% de la altura de la pantalla
+    canvas.style.border = '0px solid black';
 
     return context;
 }
@@ -16,8 +13,8 @@ export function canvasConfig(canvas: HTMLCanvasElement) {
 export function borrarCanvas(canvas: HTMLCanvasElement) {
     const context = canvas.getContext('2d');
     if (context) {
-        canvas.width = 500;
-        canvas.height = 500;
+        canvas.width = window.innerWidth * 0.9;
+        canvas.height = window.innerHeight * 0.8;
     }
 }
 

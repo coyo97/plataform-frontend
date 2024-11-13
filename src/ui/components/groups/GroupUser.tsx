@@ -1,7 +1,23 @@
-// src/ui/components/GroupManagement.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
+import {
+	Box,
+	Button,
+	Typography,
+	TextField,
+	MenuItem,
+	FormControl,
+	Select,
+	InputLabel,
+	List,
+	ListItem,
+	ListItemText,
+	IconButton,
+} from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 interface Group {
 	_id: string;
@@ -23,16 +39,13 @@ const GroupUser: React.FC = () => {
 	const [groups, setGroups] = useState<Group[]>([]);
 	const [users, setUsers] = useState<User[]>([]);
 	const [groupMembers, setGroupMembers] = useState<User[]>([]);
-	const token = localStorage.getItem('token'); // Asegúrate de obtener el token de autenticación
+	const token = localStorage.getItem('token');
 
-	// Obtener los grupos a los que pertenece el usuario
 	useEffect(() => {
 		const fetchGroups = async () => {
 			try {
 				const response = await axios.get(`${HOST}${SERVICE}/groups`, {
-					headers: {
-						'Authorization': `Bearer ${token}`
-					}
+					headers: { Authorization: `Bearer ${token}` },
 				});
 				setGroups(response.data.groups);
 			} catch (error) {
@@ -43,14 +56,11 @@ const GroupUser: React.FC = () => {
 		fetchGroups();
 	}, [HOST, SERVICE, token]);
 
-	// Obtener todos los usuarios
 	useEffect(() => {
 		const fetchUsers = async () => {
 			try {
 				const response = await axios.get(`${HOST}${SERVICE}/users`, {
-					headers: {
-						'Authorization': `Bearer ${token}`
-					}
+					headers: { Authorization: `Bearer ${token}` },
 				});
 				setUsers(response.data.list);
 			} catch (error) {
@@ -61,18 +71,15 @@ const GroupUser: React.FC = () => {
 		fetchUsers();
 	}, [HOST, SERVICE, token]);
 
-	// Función para agregar un usuario al grupo
 	const handleAddUser = async (e: React.FormEvent) => {
 		e.preventDefault();
 		try {
-			const response = await axios.post(`${HOST}${SERVICE}/groups/${groupId}/addUser`, { userToAddId }, {
-				headers: {
-					'Authorization': `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				}
-			});
+			const response = await axios.post(
+				`${HOST}${SERVICE}/groups/${groupId}/addUser`,
+				{ userToAddId },
+				{ headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+			);
 			setMessage(`Usuario agregado al grupo: ${response.data.group.name}`);
-			// Actualizar la lista de miembros
 			fetchGroupMembers(groupId);
 		} catch (error) {
 			console.error('Error al agregar usuario:', error);
@@ -80,18 +87,15 @@ const GroupUser: React.FC = () => {
 		}
 	};
 
-	// Función para eliminar un usuario del grupo
 	const handleRemoveUser = async (e: React.FormEvent) => {
 		e.preventDefault();
 		try {
-			const response = await axios.post(`${HOST}${SERVICE}/groups/${groupId}/removeUser`, { userToRemoveId }, {
-				headers: {
-					'Authorization': `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				}
-			});
+			const response = await axios.post(
+				`${HOST}${SERVICE}/groups/${groupId}/removeUser`,
+				{ userToRemoveId },
+				{ headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+			);
 			setMessage(`Usuario eliminado del grupo: ${response.data.group.name}`);
-			// Actualizar la lista de miembros
 			fetchGroupMembers(groupId);
 		} catch (error) {
 			console.error('Error al eliminar usuario:', error);
@@ -99,13 +103,10 @@ const GroupUser: React.FC = () => {
 		}
 	};
 
-	// Función para obtener los miembros de un grupo
 	const fetchGroupMembers = async (groupId: string) => {
 		try {
 			const response = await axios.get(`${HOST}${SERVICE}/groups/${groupId}/members`, {
-				headers: {
-					'Authorization': `Bearer ${token}`
-				}
+				headers: { Authorization: `Bearer ${token}` },
 			});
 			setGroupMembers(response.data.members);
 		} catch (error) {
@@ -114,7 +115,6 @@ const GroupUser: React.FC = () => {
 		}
 	};
 
-	// Actualizar los miembros cuando se selecciona un grupo
 	useEffect(() => {
 		if (groupId) {
 			fetchGroupMembers(groupId);
@@ -124,67 +124,119 @@ const GroupUser: React.FC = () => {
 	}, [groupId]);
 
 	return (
-		<div style={{ padding: '20px' }}>
-			<h1>Gestión de Usuarios del Grupo</h1>
-			{message && <p>{message}</p>}
+		<Box sx={{ p: 3 }}>
+			<Typography variant="h5" gutterBottom>
+				<GroupIcon sx={{ mr: 1 }} />
+				Gestión de Usuarios del Grupo
+			</Typography>
+			{message && <Typography color="primary">{message}</Typography>}
 
-			<label>
-				Seleccionar Grupo:
-				<select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-					<option value="">Seleccione un grupo</option>
-					{groups.map(group => (
-						<option key={group._id} value={group._id}>{group.name}</option>
+			<FormControl fullWidth sx={{ mb: 2 }}>
+				<InputLabel>Seleccionar Grupo</InputLabel>
+				<Select
+					value={groupId}
+					onChange={(e) => setGroupId(e.target.value)}
+					label="Seleccionar Grupo"
+				>
+					<MenuItem value="">
+						<em>Seleccione un grupo</em>
+					</MenuItem>
+					{groups.map((group) => (
+						<MenuItem key={group._id} value={group._id}>
+							{group.name}
+						</MenuItem>
 					))}
-				</select>
-			</label>
+				</Select>
+			</FormControl>
 
 			{groupId && (
 				<>
-					<button onClick={() => fetchGroupMembers(groupId)}>
-						Ver Miembros del Grupo
-					</button>
+					<Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+						<Button
+							variant="contained"
+							color="primary"
+							onClick={() => fetchGroupMembers(groupId)}
+							startIcon={<GroupIcon />}
+						>
+							Ver Miembros del Grupo
+						</Button>
+					</Box>
 
 					{groupMembers.length > 0 && (
-						<div>
-							<h2>Miembros del Grupo:</h2>
-							<ul>
-								{groupMembers.map(member => (
-									<li key={member._id}>{member.username} ({member.email})</li>
-								))}
-							</ul>
-						</div>
+						<List>
+							<Typography variant="h6">Miembros del Grupo</Typography>
+							{groupMembers.map((member) => (
+								<ListItem key={member._id}>
+									<ListItemText primary={`${member.username} (${member.email})`} />
+								</ListItem>
+							))}
+						</List>
 					)}
 
-					<form onSubmit={handleAddUser} style={{ marginBottom: '20px' }}>
-						<h2>Agregar Usuario al Grupo</h2>
-						<label>
-							Seleccionar Usuario a Agregar:
-							<select value={userToAddId} onChange={(e) => setUserToAddId(e.target.value)} required>
-								<option value="">Seleccione un usuario</option>
-								{users.map(user => (
-									<option key={user._id} value={user._id}>{user.username}</option>
+					<Box component="form" onSubmit={handleAddUser} sx={{ mb: 2 }}>
+						<Typography variant="h6">Agregar Usuario al Grupo</Typography>
+						<FormControl fullWidth sx={{ mt: 1 }}>
+							<InputLabel>Seleccionar Usuario a Agregar</InputLabel>
+							<Select
+								value={userToAddId}
+								onChange={(e) => setUserToAddId(e.target.value)}
+								label="Seleccionar Usuario a Agregar"
+								required
+							>
+								<MenuItem value="">
+									<em>Seleccione un usuario</em>
+								</MenuItem>
+								{users.map((user) => (
+									<MenuItem key={user._id} value={user._id}>
+										{user.username}
+									</MenuItem>
 								))}
-							</select>
-						</label>
-						<button type="submit">Agregar Usuario</button>
-					</form>
+							</Select>
+						</FormControl>
+						<Button
+							type="submit"
+							variant="contained"
+							color="success"
+							startIcon={<PersonAddIcon />}
+							sx={{ mt: 1 }}
+						>
+							Agregar Usuario
+						</Button>
+					</Box>
 
-					<form onSubmit={handleRemoveUser}>
-						<h2>Eliminar Usuario del Grupo</h2>
-						<label>
-							Seleccionar Usuario a Eliminar:
-							<select value={userToRemoveId} onChange={(e) => setUserToRemoveId(e.target.value)} required>
-								<option value="">Seleccione un usuario</option>
-								{groupMembers.map(member => (
-									<option key={member._id} value={member._id}>{member.username}</option>
+					<Box component="form" onSubmit={handleRemoveUser}>
+						<Typography variant="h6">Eliminar Usuario del Grupo</Typography>
+						<FormControl fullWidth sx={{ mt: 1 }}>
+							<InputLabel>Seleccionar Usuario a Eliminar</InputLabel>
+							<Select
+								value={userToRemoveId}
+								onChange={(e) => setUserToRemoveId(e.target.value)}
+								label="Seleccionar Usuario a Eliminar"
+								required
+							>
+								<MenuItem value="">
+									<em>Seleccione un usuario</em>
+								</MenuItem>
+								{groupMembers.map((member) => (
+									<MenuItem key={member._id} value={member._id}>
+										{member.username}
+									</MenuItem>
 								))}
-							</select>
-						</label>
-						<button type="submit">Eliminar Usuario</button>
-					</form>
+							</Select>
+						</FormControl>
+						<Button
+							type="submit"
+							variant="contained"
+							color="error"
+							startIcon={<PersonRemoveIcon />}
+							sx={{ mt: 1 }}
+						>
+							Eliminar Usuario
+						</Button>
+					</Box>
 				</>
 			)}
-		</div>
+		</Box>
 	);
 };
 

@@ -41,9 +41,10 @@ interface User {
 
 interface ChatProps {
 	userId: string;
+	isFloating?: boolean;
 }
 
-const Chat: React.FC<ChatProps> = ({ userId }) => {
+const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 	const [socket, setSocket] = useState<Socket | null>(null);
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [currentChatId, setCurrentChatId] = useState('');
@@ -52,10 +53,49 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 	const [isGroupMessage, setIsGroupMessage] = useState(false);
 	const { HOST, SERVICE } = getEnvVariables();
 	const currentChatIdRef = useRef(currentChatId);
+	const [showUserList, setShowUserList] = useState(true);
+	const [hasMoreMessages, setHasMoreMessages] = useState(true);
+	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+	const toggleUserList = () => {
+		setShowUserList(!showUserList);
+	};
+	const loadMessages = async (initialLoad = false) => {
+		if (!currentChatId || isLoadingMessages || !hasMoreMessages) return;
+
+		setIsLoadingMessages(true);
+		const token = localStorage.getItem('token');
+		const endpoint = isGroupMessage ? `/messages/group/${currentChatId}` : `/messages/user/${currentChatId}`;
+		const skip = initialLoad ? 0 : messages.length;
+		const limit = 10;
+
+		try {
+			const response = await axios.get(`${HOST}${SERVICE}${endpoint}`, {
+				headers: { Authorization: `Bearer ${token}` },
+				params: { skip, limit },
+			});
+
+			const newMessages = response.data.messages || [];
+			if (newMessages.length < limit) {
+				setHasMoreMessages(false);
+			}
+			setMessages((prevMessages) => [...newMessages, ...prevMessages]);
+		} catch (error) {
+			console.error('Error fetching messages:', error);
+		} finally {
+			setIsLoadingMessages(false);
+		}
+	};
+
+
+
 
 	useEffect(() => {
 		currentChatIdRef.current = currentChatId;
-	}, [currentChatId]);
+		setMessages([]);
+		setHasMoreMessages(true);
+		loadMessages(true);
+	}, [currentChatId, isGroupMessage]);
 	useEffect(() => {
 		const token = localStorage.getItem('token');
 		if (!token) {
@@ -111,11 +151,11 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		}
 		// Cargar usuarios
 		axios
-		.get(`${HOST}${SERVICE}/users`, {
+		.get(`${HOST}${SERVICE}/users/friends`, {//para todos los usuarios solo hast users
 			headers: { Authorization: `Bearer ${token}` },
 		})
-		.then((response) => {
-			const filteredUsers = response.data.list.filter((user: User) => user._id !== userId);
+		.then((response) => {//response.dat.list        eso es para todos usuarios
+			const filteredUsers = response.data.friends.filter((user: User) => user._id !== userId);
 			setUsers(filteredUsers);
 			console.log('Usuarios cargados:', filteredUsers);
 		})
@@ -258,6 +298,7 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 		}
 	};
 
+
 	return (
 		<MessagingContainer>
 			<InboxMsg>
@@ -267,16 +308,23 @@ const Chat: React.FC<ChatProps> = ({ userId }) => {
 					currentChatId={currentChatId}
 					onSelectUser={handleSelectUser}
 					onSelectGroup={handleSelectGroup}
+					isFloating={isFloating} 
+					showUserList={showUserList}
+					toggleUserList={toggleUserList}
 				/>
-				{currentChatId ? (
-					<Messages
-						messages={messages}
-						currentUserId={userId}
-						handleSendMessage={handleSendMessage}
-						handleDeleteMessage={handleDeleteMessage}
-					/>
-				) : (
-					<ChatSelect />
+				{(!isFloating || !showUserList) && (
+					currentChatId ? (
+						<Messages
+							messages={messages}
+							currentUserId={userId}
+							handleSendMessage={handleSendMessage}
+							handleDeleteMessage={handleDeleteMessage}
+							loadMoreMessages={loadMessages}
+							hasMoreMessages={hasMoreMessages}
+						/>
+					) : (
+						<ChatSelect />
+					)
 				)}
 			</InboxMsg>
 		</MessagingContainer>

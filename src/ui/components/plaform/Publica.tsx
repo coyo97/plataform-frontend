@@ -1,50 +1,42 @@
 // src/ui/components/platform/Publica.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import Header from './Header';
-import Stream from '../stream/Stream';
 import FloatingChat from '../chat/FloatingChat';
 import Notifications from '../centerAlert/Notifications';
 import AdminNotifications from '../centerAlert/AdminNotifications';
-import { useState } from 'react';
 import { Sidebar, SidebarContent } from './sidebar.styles';
-import FriendsList from '../friends/FriendsList';
-import FriendRequests from '../friends/FriendRequests';
-import UserSearch from '../friends/UserSearch';
+import ForgotPassword from '../auth/ForgotPassword';
+import ResetPassword from '../auth/ResetPassword';
 
 const Publica: React.FC = () => {
-	const userId = '12345'; // Obtén el userId de la fuente correcta, como estado o props
-	const streamId = 'stream123'; // También lo puedes obtener dinámicamente
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const userRole = localStorage.getItem('role') || 'user'; // Asigna un rol por defecto si es null
 
-	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-	const userRole = localStorage.getItem('role'); // Verificar el rol del usuario
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+    console.log('Sidebar abierto:', !isSidebarOpen);
+  };
 
-
-	const toggleSidebar = () => {
-		setIsSidebarOpen(!isSidebarOpen);
-	};
-	return (
-		<>
-			<Header/>
-			{//<Stream userId={userId} streamId={streamId} />
-		//	<JoinStream/>
-			}
-			<FloatingChat/>
-			{/* Sidebar */}
-			<Sidebar isOpen={isSidebarOpen}>
-				<SidebarContent>
-					<h3>Notificaciones</h3>
-					{/* Mostrar notificaciones */}
-					<Notifications />
-					{/* Mostrar la opción de enviar notificaciones si el usuario es admin */}
-					{userRole === 'admin' && <AdminNotifications />}
-					<button onClick={toggleSidebar}>Cerrar</button>
-				</SidebarContent>
-			</Sidebar>
-
-			{/* Botón para abrir el Sidebar */}
-			<button onClick={toggleSidebar}>Abrir Notificaciones</button>
-		</>
-	);
+  return (
+    <>
+      <Header/>
+      <FloatingChat/>
+      {/* Botón para abrir el Sidebar *
+      <button onClick={toggleSidebar}>Abrir Notificaciones</button>
+      {/* Sidebar
+      <Sidebar isOpen={isSidebarOpen}>
+        <SidebarContent>
+          <h3>Notificaciones</h3>
+          {/* Mostrar notificaciones
+          <Notifications />
+          {/* Mostrar la opción de enviar notificaciones si el usuario es admin
+          {userRole === 'admin' && <AdminNotifications />}
+          <button onClick={toggleSidebar}>Cerrar</button>
+        </SidebarContent>
+      </Sidebar>
+		*/}
+    </>
+  );
 };
 
 export default Publica;
