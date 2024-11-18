@@ -1,3 +1,5 @@
+// Chat.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
@@ -60,35 +62,35 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 	const toggleUserList = () => {
 		setShowUserList(!showUserList);
 	};
+
 	const loadMessages = async (initialLoad = false) => {
 		if (!currentChatId || isLoadingMessages || !hasMoreMessages) return;
 
 		setIsLoadingMessages(true);
 		const token = localStorage.getItem('token');
-		const endpoint = isGroupMessage ? `/messages/group/${currentChatId}` : `/messages/user/${currentChatId}`;
-		const skip = initialLoad ? 0 : messages.length;
-		const limit = 10;
+		const endpoint = isGroupMessage
+			? `/messages/group/${currentChatId}`
+			: `/messages/user/${currentChatId}`;
+			const skip = initialLoad ? 0 : messages.length;
+			const limit = 10;
 
-		try {
-			const response = await axios.get(`${HOST}${SERVICE}${endpoint}`, {
-				headers: { Authorization: `Bearer ${token}` },
-				params: { skip, limit },
-			});
+			try {
+				const response = await axios.get(`${HOST}${SERVICE}${endpoint}`, {
+					headers: { Authorization: `Bearer ${token}` },
+					params: { skip, limit },
+				});
 
-			const newMessages = response.data.messages || [];
-			if (newMessages.length < limit) {
-				setHasMoreMessages(false);
+				const newMessages = response.data.messages || [];
+				if (newMessages.length < limit) {
+					setHasMoreMessages(false);
+				}
+				setMessages((prevMessages) => [...newMessages, ...prevMessages]);
+			} catch (error) {
+				console.error('Error fetching messages:', error);
+			} finally {
+				setIsLoadingMessages(false);
 			}
-			setMessages((prevMessages) => [...newMessages, ...prevMessages]);
-		} catch (error) {
-			console.error('Error fetching messages:', error);
-		} finally {
-			setIsLoadingMessages(false);
-		}
 	};
-
-
-
 
 	useEffect(() => {
 		currentChatIdRef.current = currentChatId;
@@ -96,10 +98,12 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 		setHasMoreMessages(true);
 		loadMessages(true);
 	}, [currentChatId, isGroupMessage]);
+
 	useEffect(() => {
 		const token = localStorage.getItem('token');
 		if (!token) {
 			console.error('No se encontró el token en el localStorage');
+			// Aquí podrías redirigir al usuario a la página de inicio de sesión
 			return;
 		}
 		// Conectar al servidor de Socket.IO
@@ -119,9 +123,7 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 			console.log('Mensaje recibido:', data);
 			const isValidDate = !isNaN(new Date(data.createdAt).getTime());
 			if (!isValidDate) {
-				console.warn(
-					`Fecha inválida recibida en el mensaje: ${data.createdAt}`
-				);
+				console.warn(`Fecha inválida recibida en el mensaje: ${data.createdAt}`);
 			}
 			if (
 				(data.sender._id === currentChatIdRef.current ||
@@ -137,24 +139,27 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 		});
 
 		return () => {
-			newSocket.off('receive-message'); // Desregistra el evento al desmontar el component
+			newSocket.off('receive-message');
 			newSocket.off('message-deleted');
-			newSocket.disconnect(); // Ci
+			newSocket.off('connect');
+			newSocket.disconnect();
 		};
-	}, []);
+	}, [HOST]);
+
 	// Cargar usuarios y grupos
 	useEffect(() => {
 		const token = localStorage.getItem('token');
 		if (!token) {
 			console.error('No se encontró el token en el localStorage');
+			// Aquí podrías redirigir al usuario a la página de inicio de sesión
 			return;
 		}
 		// Cargar usuarios
 		axios
-		.get(`${HOST}${SERVICE}/users/friends`, {//para todos los usuarios solo hast users
+		.get(`${HOST}${SERVICE}/users/friends`, {
 			headers: { Authorization: `Bearer ${token}` },
 		})
-		.then((response) => {//response.dat.list        eso es para todos usuarios
+		.then((response) => {
 			const filteredUsers = response.data.friends.filter((user: User) => user._id !== userId);
 			setUsers(filteredUsers);
 			console.log('Usuarios cargados:', filteredUsers);
@@ -177,26 +182,6 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 		});
 	}, [HOST, SERVICE, userId]);
 
-	useEffect(() => {
-		if (currentChatId) {
-			const token = localStorage.getItem('token');
-			const endpoint = isGroupMessage ? `/messages/group/${currentChatId}` : `/messages/user/${currentChatId}`;
-			axios
-			.get(`${HOST}${SERVICE}${endpoint}`, {
-				headers: { Authorization: `Bearer ${token}` },
-			})
-			.then((response) => {
-				//console.log('Mensajes cargados:', response.data.messages);
-				//console.log('Respuesta del servidor al cargar mensajes:', response.data);
-				setMessages(response.data.messages || []);
-				//console.log('Mensajes cargados:', response.data.messages);
-			})
-			.catch((error) => {
-				console.error('Error fetching messages:', error);
-			});
-		}
-	}, [currentChatId, isGroupMessage, HOST, SERVICE]);
-
 	const handleSendMessage = async (
 		messageContent: string,
 		selectedFile?: File | null
@@ -206,6 +191,7 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 		const token = localStorage.getItem('token');
 		if (!token) {
 			console.error('No se encontró el token en el localStorage');
+			// Aquí podrías redirigir al usuario a la página de inicio de sesión
 			return;
 		}
 
@@ -228,11 +214,12 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 							'Content-Type': 'multipart/form-data',
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					}				
 				);
 				// Actualizar mensajes inmediatamente en la interfaz de usuario
 				const savedMessage: Message = response.data.message;
 				setMessages((prevMessages) => [...prevMessages, savedMessage]);
+				// No agregamos el mensaje al estado aquí; esperamos a recibirlo del servidor
 			} catch (error) {
 				console.error('Error al enviar mensaje con archivo:', error);
 			}
@@ -264,7 +251,8 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 					isRead: true,
 					createdAt: new Date().toISOString(),
 				},
-			]);
+			]);			
+			// No agregamos el mensaje al estado aquí; esperamos a recibirlo del servidor
 		}
 	};
 
@@ -282,6 +270,7 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 		const token = localStorage.getItem('token');
 		if (!token) {
 			console.error('No se encontró el token en el localStorage');
+			// Aquí podrías redirigir al usuario a la página de inicio de sesión
 			return;
 		}
 
@@ -298,7 +287,6 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 		}
 	};
 
-
 	return (
 		<MessagingContainer>
 			<InboxMsg>
@@ -308,7 +296,7 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 					currentChatId={currentChatId}
 					onSelectUser={handleSelectUser}
 					onSelectGroup={handleSelectGroup}
-					isFloating={isFloating} 
+					isFloating={isFloating}
 					showUserList={showUserList}
 					toggleUserList={toggleUserList}
 				/>

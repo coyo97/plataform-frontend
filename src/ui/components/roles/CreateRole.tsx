@@ -1,3 +1,5 @@
+// src/ui/components/roles/CreateRole.tsx
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
@@ -5,11 +7,20 @@ import {
 	RoleContainer,
 	Title,
 	FormField,
-	SelectField,
 	PermissionList,
 	PermissionItem,
+	AddPermissionButton,
+	SubmitButton,
 } from './createRole.styles';
-import { Button, Typography, MenuItem } from '@mui/material';
+import {
+	Button,
+	Typography,
+	MenuItem,
+	Select,
+	FormControl,
+	InputLabel,
+	SelectChangeEvent,
+} from '@mui/material';
 
 interface Permission {
 	name: string;
@@ -56,8 +67,8 @@ const CreateRole: React.FC = () => {
 
 	const addPermission = () => {
 		if (selectedModule && selectedAction) {
-			const moduleName = modules.find((mod) => mod.id === selectedModule)?.name || '';
-			const actionName = actions.find((act) => act.id === selectedAction)?.name || '';
+			const moduleName = modules.find((mod) => mod.name === selectedModule)?.name || '';
+			const actionName = actions.find((act) => act.name === selectedAction)?.name || '';
 			const permissionName = `${moduleName}-${actionName}`;
 
 			setPermissions([
@@ -72,6 +83,7 @@ const CreateRole: React.FC = () => {
 			setSelectedAction('');
 		}
 	};
+
 	const removePermission = (index: number) => {
 		setPermissions(permissions.filter((_, i) => i !== index));
 	};
@@ -109,7 +121,6 @@ const CreateRole: React.FC = () => {
 		}
 	};
 
-
 	return (
 		<RoleContainer>
 			<Title>Crear Nuevo Rol</Title>
@@ -132,54 +143,85 @@ const CreateRole: React.FC = () => {
 
 				<Typography variant="h6">Permisos</Typography>
 
-				<SelectField
-					select
-					label="Módulo"
-					variant="outlined"
-					value={selectedModule}
-					onChange={(e) => setSelectedModule(e.target.value)}
-				>
-					<MenuItem value="">-- Seleccionar Módulo --</MenuItem>
-					{modules.map((module) => (
-						<MenuItem key={module.id} value={module.name}>
-							{module.name}
+				<FormControl variant="outlined" fullWidth margin="normal">
+					<InputLabel id="module-label">Módulo</InputLabel>
+					<Select
+						labelId="module-label"
+						label="Módulo"
+						value={selectedModule}
+						onChange={(e: SelectChangeEvent) => setSelectedModule(e.target.value)}
+						MenuProps={{
+							anchorOrigin: {
+								vertical: 'bottom',
+								horizontal: 'left',
+						},
+						}}
+					>
+						<MenuItem value="">
+							<em>-- Seleccionar Módulo --</em>
 						</MenuItem>
-					))}
-				</SelectField>
+						{modules.map((module) => (
+							<MenuItem key={module.id} value={module.name}>
+								{module.name}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
 
-				<SelectField
-					select
-					label="Acción"
-					variant="outlined"
-					value={selectedAction}
-					onChange={(e) => setSelectedAction(e.target.value)}
-				>
-					<MenuItem value="">-- Seleccionar Acción --</MenuItem>
-					{actions.map((action) => (
-						<MenuItem key={action.id} value={action.name}>
-							{action.name}
+				<FormControl variant="outlined" fullWidth margin="normal">
+					<InputLabel id="action-label">Acción</InputLabel>
+					<Select
+						labelId="action-label"
+						label="Acción"
+						value={selectedAction}
+						onChange={(e: SelectChangeEvent) => setSelectedAction(e.target.value)}
+						MenuProps={{
+							anchorOrigin: {
+								vertical: 'bottom',
+								horizontal: 'left',
+						},
+						}}
+					>
+						<MenuItem value="">
+							<em>-- Seleccionar Acción --</em>
 						</MenuItem>
-					))}
-				</SelectField>
+						{actions.map((action) => (
+							<MenuItem key={action.id} value={action.name}>
+								{action.name}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
 
-				<Button variant="contained" color="primary" onClick={addPermission}>
+				<AddPermissionButton
+					variant="contained"
+					color="primary"
+					onClick={addPermission}
+					fullWidth
+				>
 					Agregar Permiso
-				</Button>
+				</AddPermissionButton>
 
 				<PermissionList>
 					{permissions.map((perm, index) => (
 						<PermissionItem key={index}>
-							{perm.module} - {perm.action}
-							<Button color="secondary" onClick={() => removePermission(index)}>
+							<Typography>
+								{perm.module} - {perm.action}
+							</Typography>
+							<Button
+								variant="outlined"
+								color="secondary"
+								onClick={() => removePermission(index)}
+							>
 								Eliminar
 							</Button>
 						</PermissionItem>
 					))}
 				</PermissionList>
 
-				<Button type="submit" variant="contained" color="primary" fullWidth>
+				<SubmitButton type="submit" variant="contained" color="primary" fullWidth>
 					Crear Rol
-				</Button>
+				</SubmitButton>
 			</form>
 		</RoleContainer>
 	);

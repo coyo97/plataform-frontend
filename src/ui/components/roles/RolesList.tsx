@@ -9,7 +9,7 @@ import {
     StyledTableRow,
     StyledTableCell,
     PermissionList,
-    DeleteButton,
+    DeleteButton,ActionButtonsContainer
 } from './rolesList.styles';
 import { Table, TableBody } from '@mui/material';
 
@@ -80,24 +80,30 @@ const RolesList: React.FC = () => {
                             <StyledTableCell data-label="Permisos">Permisos</StyledTableCell>
                         </StyledTableRow>
                     </StyledTableHead>
-                    <TableBody>
-                        {roles.map((role) => (
-                            <StyledTableRow key={role._id}>
-                                <StyledTableCell data-label="Nombre">{role.name}</StyledTableCell>
-                                <StyledTableCell data-label="Descripción">{role.description || 'Sin descripción'}</StyledTableCell>
-                                <StyledTableCell data-label="Permisos">
-                                    <PermissionList>
-                                        {role.permissions.map((perm, index) => (
-                                            <li key={index}>
-                                                {perm.module} - {perm.action}
-                                            </li>
-                                        ))}
-                                    </PermissionList>
-                                    <DeleteButton onClick={() => handleDeleteRole(role._id)}>Eliminar</DeleteButton>
-                                </StyledTableCell>
-                            </StyledTableRow>
-                        ))}
-                    </TableBody>
+<TableBody>
+	{roles.map((role) => (
+		<StyledTableRow key={role._id}>
+			<StyledTableCell data-label="Nombre">{role.name}</StyledTableCell>
+			<StyledTableCell data-label="Descripción">
+				{role.description || 'Sin descripción'}
+			</StyledTableCell>
+			<StyledTableCell data-label="Permisos">
+				<PermissionList>
+					{role.permissions.map((perm, index) => (
+						<li key={index}>
+							{perm.module} - {perm.action}
+						</li>
+					))}
+				</PermissionList>
+				<ActionButtonsContainer>
+					<DeleteButton onClick={() => handleDeleteRole(role._id)}>
+						Eliminar
+					</DeleteButton>
+				</ActionButtonsContainer>
+			</StyledTableCell>
+		</StyledTableRow>
+	))}
+</TableBody>
                 </Table>
             </StyledTableContainer>
         </Container>

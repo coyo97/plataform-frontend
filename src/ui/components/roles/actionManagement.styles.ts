@@ -11,6 +11,7 @@ export const ActionManagementContainer = styled(Box)(({ theme }) => ({
     margin: '0 auto',
     [theme.breakpoints.down('sm')]: {
         padding: theme.spacing(2),
+        maxWidth: '100%',
     },
 }));
 
@@ -20,12 +21,18 @@ export const Title = styled(Typography)({
     fontSize: '1.5rem',
 });
 
-export const InputContainer = styled(Box)({
+export const InputContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    marginBottom: '1rem',
-});
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: theme.spacing(2),
+    marginBottom: theme.spacing(3),
+    [theme.breakpoints.up('sm')]: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
+}));
 
 export const StyledInput = styled(InputBase)(({ theme }) => ({
     padding: theme.spacing(1),
@@ -35,12 +42,23 @@ export const StyledInput = styled(InputBase)(({ theme }) => ({
 }));
 
 export const ActionButton = styled(Button)(({ theme }) => ({
+    fontSize: '0.875rem',
+    padding: theme.spacing(1),
+	width: '100%', // Ancho completo en pantallas pequeñas
+    maxWidth: '150px', // Ancho máximo para pantallas grandes
+    whiteSpace: 'nowrap', // Evita que el texto se desborde
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
     backgroundColor: theme.palette.primary.main,
     color: theme.palette.primary.contrastText,
     '&:hover': {
         backgroundColor: theme.palette.primary.dark,
     },
+    [theme.breakpoints.up('sm')]: {
+        width: 'auto', // Ajusta automáticamente el tamaño en pantallas grandes
+    },
 }));
+
 
 export const ActionList = styled(Box)({
     marginTop: '1rem',
@@ -49,11 +67,18 @@ export const ActionList = styled(Box)({
 export const ActionItem = styled(Box)(({ theme }) => ({
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+	flexDirection: 'column', // Alinea los botones en columna
+    gap: theme.spacing(2), // Espaciado entre los elementos
+    alignItems: 'flex-start',
     padding: theme.spacing(1),
     borderBottom: `1px solid ${theme.palette.divider}`,
     '&:last-child': {
         borderBottom: 'none',
+    },
+    [theme.breakpoints.up('sm')]: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
 }));
 

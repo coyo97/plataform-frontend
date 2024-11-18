@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
+import { useMediaQuery, useTheme } from '@mui/material';
+
+import { Pagination } from '@mui/material';
+import { SelectChangeEvent } from '@mui/material/Select';
+
 import {
 	Table,
 	TableHead,
@@ -23,6 +28,7 @@ import {
 	ActionButton,
 	FilterButton, // Importa o define FilterButton si no existe
 } from './userManagement.styles';
+import UserCard from './UserCard'; // Importa el componente UserCard
 
 interface Role {
 	_id: string;
@@ -52,9 +58,12 @@ const UserManagement: React.FC = () => {
 	const [searchQuery, setSearchQuery] = useState<string>('');
 	const { HOST, SERVICE } = getEnvVariables();
 	const [selectedStatus, setSelectedStatus] = useState<string>('');
-const [currentPage, setCurrentPage] = useState<number>(1);
+	const theme = useTheme();
+	const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+	const [currentPage, setCurrentPage] = useState<number>(1);
 	const [totalPages, setTotalPages] = useState<number>(1);
-	const usersPerPage = 20; // Número de usuarios por página
+	const usersPerPage = 10; // Puedes ajustar este valor según tus necesidades
+	const [totalUsers, setTotalUsers] = useState<number>(0);
 
 
 	useEffect(() => {
@@ -68,10 +77,19 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 			try {
 				const response = await axios.get(`${HOST}${SERVICE}/users`, {
 					headers: { Authorization: `Bearer ${token}` },
+					params: {
+						page: currentPage,
+						limit: usersPerPage,
+						status: selectedStatus,
+						career: selectedCareer,
+						search: searchQuery,
+					},
 				});
 				if (response.data && response.data.list) {
 					setList(response.data.list);
-					setFilteredUsers(response.data.list); // Inicializar usuarios filtrados
+					setFilteredUsers(response.data.list);
+					setTotalPages(response.data.totalPages); // Actualizar el total de páginas
+					setTotalUsers(response.data.totalUsers); // Actualizar el total de usuarios (si lo necesitas)
 				} else {
 					console.error('La respuesta de usuarios no contiene los datos esperados.');
 				}
@@ -80,6 +98,16 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 				alert('Error al obtener usuarios');
 			}
 		};
+
+		fetchUsers();
+	}, [HOST, SERVICE, currentPage, selectedStatus, selectedCareer, searchQuery]);
+	// Efecto para obtener las carreras
+	useEffect(() => {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			console.error('No se encontró el token. Por favor, inicia sesión.');
+			return;
+		}
 
 		const fetchCareers = async () => {
 			try {
@@ -92,7 +120,6 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 			}
 		};
 
-		fetchUsers();
 		fetchCareers();
 	}, [HOST, SERVICE]);
 
@@ -223,6 +250,20 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 		}
 	};
 
+	const handleStatusChange = (e: SelectChangeEvent) => {
+		setSelectedStatus(e.target.value);
+		setCurrentPage(1); // Resetear a la primera página
+	};
+
+	const handleCareerChange = (careerId: string) => {
+		setSelectedCareer(careerId);
+		setCurrentPage(1); // Resetear a la primera página
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchQuery(e.target.value);
+		setCurrentPage(1); // Resetear a la primera página
+	};
 
 	return (
 		<UserManagementContainer>
@@ -232,7 +273,7 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 			<TextField
 				placeholder="Buscar usuario por nombre o email"
 				value={searchQuery}
-				onChange={(e) => setSearchQuery(e.target.value)}
+				onChange={handleSearchChange}
 				variant="outlined"
 				size="small"
 				style={{ marginBottom: '20px' }}
@@ -248,7 +289,7 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 						<div key={career._id} style={{ marginBottom: '10px' }}>
 							<FilterButton
 								active={selectedCareer === career._id}
-								onClick={() => setSelectedCareer(career._id)}
+								onClick={() => handleCareerChange(career._id)}
 							>
 								{career.name}
 							</FilterButton>
@@ -271,94 +312,120 @@ const [currentPage, setCurrentPage] = useState<number>(1);
 				</AccordionDetails>
 			</Accordion>
 
-			<StyledTableContainer>
-				<FormControl variant="outlined" size="small" style={{ marginBottom: '20px', minWidth: 200 }}>
-					<InputLabel id="status-label">Filtrar por Estado</InputLabel>
-					<Select
-						labelId="status-label"
-						value={selectedStatus}
-						onChange={(e) => setSelectedStatus(e.target.value)}
-						label="Filtrar por Estado"
-					>
-						<MenuItem value="">Todos los estados</MenuItem>
-						<MenuItem value="active">Activo</MenuItem>
-						<MenuItem value="deactivated">Desactivado</MenuItem>
-						<MenuItem value="blacklisted">Bloqueado</MenuItem>
+			{isSmallScreen ? (
+				filteredUsers.map((user) => (
+					<UserCard
+						key={user._id}
+						user={user}
+						handleDeactivate={handleDeactivate}
+						handleReactivate={handleReactivate}
+						handleBlacklist={handleBlacklist}
+						handleDelete={handleDelete}
+					/>
+				))
+			) : (
+				<StyledTableContainer>
+					<FormControl variant="outlined" size="small" style={{ marginBottom: '20px', minWidth: 200 }}>
+						<InputLabel id="status-label">Filtrar por Estado</InputLabel>
+						<Select
+							labelId="status-label"
+							value={selectedStatus}
+							onChange={handleStatusChange}
+							label="Filtrar por Estado"
+						>
+							<MenuItem value="">Todos los estados</MenuItem>
+							<MenuItem value="active">Activo</MenuItem>
+							<MenuItem value="deactivated">Desactivado</MenuItem>
+							<MenuItem value="blacklisted">Bloqueado</MenuItem>
 
 
-					</Select>
+						</Select>
 
-				</FormControl>
-				{/* Acciones Masivas */}
-				{filteredUsers.length > 0 && (
-					<div style={{ marginBottom: '20px' }}>
-						<Typography variant="subtitle1">Acciones Masivas:</Typography>
-						<ButtonGroup variant="contained" color="primary">
-							<ActionButton onClick={() => handleBulkAction('deactivate')}>Desactivar Todos</ActionButton>
-							<ActionButton onClick={() => handleBulkAction('reactivate')}>Reactivar Todos</ActionButton>
-							<ActionButton onClick={() => handleBulkAction('blacklist')}>Bloquear Todos</ActionButton>
-						</ButtonGroup>
-					</div>
-				)}
+					</FormControl>
+					{/* Acciones Masivas */}
+					{filteredUsers.length > 0 && (
+						<div style={{ marginBottom: '20px' }}>
+							<Typography variant="subtitle1">Acciones Masivas:</Typography>
+							<ButtonGroup variant="contained" color="primary">
+								<ActionButton onClick={() => handleBulkAction('deactivate')}>Desactivar Todos</ActionButton>
+								<ActionButton onClick={() => handleBulkAction('reactivate')}>Reactivar Todos</ActionButton>
+								<ActionButton onClick={() => handleBulkAction('blacklist')}>Bloquear Todos</ActionButton>
+							</ButtonGroup>
+						</div>
+					)}
 
-				<Table>
-					<TableHead>
-						<StyledTableRow>
-							<StyledTableCell>Usuario</StyledTableCell>
-							<StyledTableCell>Email</StyledTableCell>
-							<StyledTableCell>Roles</StyledTableCell>
-							<StyledTableCell>Carreras</StyledTableCell>
-							<StyledTableCell>Estado</StyledTableCell>
-							<StyledTableCell>Reportes</StyledTableCell>
-							<StyledTableCell>Acciones</StyledTableCell>
-						</StyledTableRow>
-					</TableHead>
-					<TableBody>
-						{filteredUsers.map((user) => (
-							<StyledTableRow key={user._id}>
-								<StyledTableCell>{user.username}</StyledTableCell>
-								<StyledTableCell>{user.email}</StyledTableCell>
-								<StyledTableCell>
-									{user.roles && user.roles.length > 0
-										? user.roles.map((role) => role.name).join(', ')
-										: 'Sin roles'}
-								</StyledTableCell>
-								<StyledTableCell>
-									{user.careers && user.careers.length > 0
-										? user.careers.map((career) => career.name).join(', ')
-										: 'Sin carrera'}
-								</StyledTableCell>
-								<StyledTableCell>{user.status || 'Sin estado'}</StyledTableCell>
-								<StyledTableCell>{user.reportCount}</StyledTableCell>
-								<StyledTableCell>
-									<ActionButtonContainer>
-										{user.status === 'active' && (
-											<>
-												<ActionButton onClick={() => handleDeactivate(user._id)}>Desactivar</ActionButton>
-												<ActionButton onClick={() => handleBlacklist(user._id)}>Bloquear</ActionButton>
-											</>
-										)}
-										{user.status === 'deactivated' && (
-											<>
-												<ActionButton onClick={() => handleReactivate(user._id)}>Reactivar</ActionButton>
-												<ActionButton onClick={() => handleBlacklist(user._id)}>Bloquear</ActionButton>
-												<ActionButton onClick={() => handleDelete(user._id)}>Eliminar</ActionButton>
-											</>
-										)}
-										{user.status === 'blacklisted' && (
-											<>
-												<Typography variant="body2" color="error">Usuario bloqueado</Typography>
-												<ActionButton onClick={() => handleDelete(user._id)}>Eliminar</ActionButton>
-												<ActionButton onClick={() => handleReactivate(user._id)}>Reactivar</ActionButton>
-											</>
-										)}
-									</ActionButtonContainer>
-								</StyledTableCell>
+					<Table style={{ minWidth: 800 }}>
+						<TableHead>
+							<StyledTableRow>
+								<StyledTableCell>Usuario</StyledTableCell>
+								{!isSmallScreen && <StyledTableCell>Email</StyledTableCell>}
+								{!isSmallScreen && <StyledTableCell>Roles</StyledTableCell>}
+								{!isSmallScreen && <StyledTableCell>Carreras</StyledTableCell>}
+								<StyledTableCell>Estado</StyledTableCell>
+								{!isSmallScreen && <StyledTableCell>Reportes</StyledTableCell>}
+								<StyledTableCell>Acciones</StyledTableCell>
 							</StyledTableRow>
-						))}
-					</TableBody>
-				</Table>
-			</StyledTableContainer>
+						</TableHead>
+						<TableBody>
+							{filteredUsers.map((user) => (
+								<StyledTableRow key={user._id}>
+									<StyledTableCell>{user.username}</StyledTableCell>
+									{!isSmallScreen && <StyledTableCell>{user.email}</StyledTableCell>}
+									{!isSmallScreen && (
+										<StyledTableCell>
+											{user.roles && user.roles.length > 0
+												? user.roles.map((role) => role.name).join(', ')
+												: 'Sin roles'}
+										</StyledTableCell>
+									)}
+									{!isSmallScreen && (
+										<StyledTableCell>
+											{user.careers && user.careers.length > 0
+												? user.careers.map((career) => career.name).join(', ')
+												: 'Sin carrera'}
+										</StyledTableCell>
+									)}
+									<StyledTableCell>{user.status || 'Sin estado'}</StyledTableCell>
+									{!isSmallScreen && <StyledTableCell>{user.reportCount}</StyledTableCell>}
+									<StyledTableCell>
+										<ActionButtonContainer>
+											{user.status === 'active' && (
+												<>
+													<ActionButton onClick={() => handleDeactivate(user._id)}>Desactivar</ActionButton>
+													<ActionButton onClick={() => handleBlacklist(user._id)}>Bloquear</ActionButton>
+												</>
+											)}
+											{user.status === 'deactivated' && (
+												<>
+													<ActionButton onClick={() => handleReactivate(user._id)}>Reactivar</ActionButton>
+													<ActionButton onClick={() => handleBlacklist(user._id)}>Bloquear</ActionButton>
+													<ActionButton onClick={() => handleDelete(user._id)}>Eliminar</ActionButton>
+												</>
+											)}
+											{user.status === 'blacklisted' && (
+												<>
+													<Typography variant="body2" color="error">Usuario bloqueado</Typography>
+													<ActionButton onClick={() => handleDelete(user._id)}>Eliminar</ActionButton>
+													<ActionButton onClick={() => handleReactivate(user._id)}>Reactivar</ActionButton>
+												</>
+											)}
+										</ActionButtonContainer>
+									</StyledTableCell>
+								</StyledTableRow>
+							))}
+						</TableBody>
+
+					</Table>
+				</StyledTableContainer>
+			)}
+			<div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+				<Pagination
+					count={totalPages}
+					page={currentPage}
+					onChange={(event, value) => setCurrentPage(value)}
+					color="primary"
+				/>
+			</div>
 		</UserManagementContainer>
 	);
 };

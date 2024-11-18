@@ -9,17 +9,17 @@ interface Career {
 	name: string;
 }
 
-
 const UserForm: React.FC = () => {
 	const [username, setUsername] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [careers, setCareers] = useState<string[]>([]);
 	const [availableCareers, setAvailableCareers] = useState<Career[]>([]);
+	const [successMessage, setSuccessMessage] = useState('');
 	const [error, setError] = useState('');
 	const navigate = useNavigate();
 
-	const {HOST, SERVICE} = getEnvVariables();
+	const { HOST, SERVICE } = getEnvVariables();
 
 	useEffect(() => {
 		const fetchCareers = async () => {
@@ -41,19 +41,22 @@ const UserForm: React.FC = () => {
 		const userData = { username, email, password, careers };
 
 		try {
-			const response = await axios.post(`${HOST}${SERVICE}/users`, userData);
-			console.log(response.data);
-			navigate('/register');
+			await axios.post(`${HOST}${SERVICE}/users`, userData);
+			setSuccessMessage('Registro con éxito');
+			setTimeout(() => {
+				navigate('/login'); // Redirigir al usuario a la página de inicio de sesión
+			}, 2000); // Esperar 2 segundos antes de redirigir
 		} catch (error: any) {
 			console.error('Error creating user:', error);
-			setError('Error creating user. Please check the details and try again.');
+			setError('Error creando usuario. Por favor, verifica los datos e inténtalo de nuevo.');
 		}
 	};
 
 	return (
 		<FormWrapper onSubmit={handleSubmit}>
-			<FormTitle>Crear Cuenta</FormTitle>
+			<FormTitle>Registro</FormTitle>
 			{error && <p style={{ color: 'red' }}>{error}</p>}
+			{successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
 			<div>
 				<FormLabel>Username:</FormLabel>
 				<FormInput
@@ -84,8 +87,8 @@ const UserForm: React.FC = () => {
 			<div>
 				<FormLabel>Carreras:</FormLabel>
 				<select
-					value={careers[0]} // Cambia a una selección única, elige el primer elemento del array `careers`
-					onChange={(e) => setCareers([e.target.value])} // Almacena solo una carrera seleccionada
+					value={careers[0]}
+					onChange={(e) => setCareers([e.target.value])}
 					required
 					style={{
 						padding: '10px',
@@ -100,9 +103,9 @@ const UserForm: React.FC = () => {
 						</option>
 					))}
 				</select>
-
 			</div>
-			<SubmitButton type="submit">Registrarse</SubmitButton>
+			<SubmitButton type="submit">Registro</SubmitButton>
+			<SubmitButton onClick={() => navigate('/login')}>Iniciar Sesión</SubmitButton>
 		</FormWrapper>
 	);
 };

@@ -38,7 +38,7 @@ export const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
 	boxShadow: theme.shadows[3],
 	borderRadius: theme.shape.borderRadius,
 	backgroundColor: theme.palette.background.paper,
-	overflow: 'hidden',
+	 overflowX: 'auto',
 	display: 'flex',
 	flexDirection: 'column',
 }));

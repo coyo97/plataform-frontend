@@ -1,5 +1,3 @@
-// Messages.tsx
-
 import React, { useRef, useEffect, useState } from 'react';
 import { IncomingMessage } from './IncomingMessage';
 import { OutgoingMessage } from './OutgoingMessage';
@@ -21,7 +19,7 @@ interface MessagesProps {
 		messageContent: string,
 		selectedFile?: File | null | undefined
 	) => Promise<void>;
-	handleDeleteMessage: (messageId: string) => void; // Cambiamos el nombre aquí
+	handleDeleteMessage: (messageId: string) => void;
 	loadMoreMessages: () => void;
 	hasMoreMessages: boolean;
 }
@@ -30,24 +28,17 @@ export const Messages: React.FC<MessagesProps> = ({
 	messages,
 	currentUserId,
 	handleSendMessage,
-	handleDeleteMessage, // Actualizamos el nombre aquí
+	handleDeleteMessage,
 	loadMoreMessages,
 	hasMoreMessages,
 }) => {
 	const messagesEndRef = useRef<HTMLDivElement | null>(null);
+	const scrollableDivRef = useRef<HTMLDivElement | null>(null);
 	const [messageContent, setMessageContent] = useState('');
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
-	const scrollToBottom = () => {
-		if (messagesEndRef.current) {
-			messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-		}
-	};
-
-	useEffect(() => {
-		scrollToBottom();
-	}, [messages]);
 
 	const handleSubmit = (event: React.FormEvent) => {
 		event.preventDefault();
@@ -59,50 +50,68 @@ export const Messages: React.FC<MessagesProps> = ({
 		if (fileInputRef.current) {
 			fileInputRef.current.value = '';
 		}
+
+		// Enfocar de nuevo en el input de mensaje
+		if (messageInputRef.current) {
+			messageInputRef.current.focus();
+		}
 	};
 
 	const handleDeleteMessageLocal = (messageId: string) => {
-		handleDeleteMessage(messageId); // Usamos la prop para manejar la eliminación del mensaje
+		handleDeleteMessage(messageId);
+	};
+
+	// Función para ordenar mensajes por fecha
+	const sortMessagesByDate = (messagesArray: Message[]) => {
+		return messagesArray.sort(
+			(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+		);
 	};
 
 	useEffect(() => {
-		if (messagesEndRef.current) {
-			messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+		if (messagesEndRef.current && messages.length > 0) {
+			messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
 		}
 	}, [messages]);
 
 	return (
 		<MesgsContainer>
-			<div id="scrollableDiv" style={{ height: '100%', overflow: 'auto' }}>
+			<div
+				id="scrollableDiv"
+				style={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column-reverse' }}
+				ref={scrollableDivRef}
+			>
 				<InfiniteScroll
 					dataLength={messages.length}
 					next={loadMoreMessages}
 					hasMore={hasMoreMessages}
+					inverse={true}
 					loader={<h4>Cargando más mensajes...</h4>}
 					scrollableTarget="scrollableDiv"
 					scrollThreshold={0.9}
 				>
-					<MsgHistory  id="scrollableDiv">
-						{messages.map((msg) =>
-									  msg.sender._id === currentUserId ? (
-										  <OutgoingMessage
-											  key={`${msg._id}-${msg.createdAt || Math.random()}`}
-											  message={msg}
-											  onDeleteMessage={handleDeleteMessageLocal}
-										  />
+					<MsgHistory>
+						{sortMessagesByDate(messages).map((msg) =>
+														  msg.sender._id === currentUserId ? (
+															  <OutgoingMessage
+																  key={msg._id}
+																  message={msg}
+																  onDeleteMessage={handleDeleteMessageLocal}
+															  />
 						) : (
 							<IncomingMessage
-								key={`${msg._id}-${msg.createdAt || Math.random()}`}
+								key={msg._id}
 								message={msg}
 							/>
 						)
-									 )}
+														 )}
 						<div ref={messagesEndRef} />
 					</MsgHistory>
 				</InfiniteScroll>
 			</div>
 			<MessageInputForm onSubmit={handleSubmit}>
 				<MessageInput
+					ref={messageInputRef} // Añadido
 					name="message"
 					placeholder="Escribe un mensaje..."
 					value={messageContent}

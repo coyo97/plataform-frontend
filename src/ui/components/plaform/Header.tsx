@@ -41,7 +41,7 @@ const Header: React.FC = () => {
 					<li><Link to='/material-user'>Material</Link></li>
 					<li><Link to='/message'>Mensajería</Link></li>
 					<li><Link to='/stream-academi'>Ayuda Académica</Link></li>
-					<li><Link to='/publications'>Home</Link></li>
+					<li><Link to='/publications'>Publicaciones</Link></li>
 				</ul>
 
 				{/* Botón de notificaciones */}

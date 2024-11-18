@@ -88,7 +88,10 @@ const ViewPublications: React.FC = () => {
 
 		fetchCareers();
 	}, [HOST, SERVICE]);
-
+  const handleNewPublication = (newPublication: Publication) => {
+    // Añadir la nueva publicación al inicio de la lista
+    setPublications((prevPublications) => [newPublication, ...prevPublications]);
+  };
 	const fetchPublications = useCallback(
 		async (pageToFetch: number, filterType?: string, searchQuery = '') => {
 			if (isLoading) return;
@@ -270,7 +273,7 @@ const ViewPublications: React.FC = () => {
 	return (
 		<div style={{ display: 'flex', flexWrap: 'wrap', padding: '20px' }}>
 			<SidebarContainer>
-				<CreatePublication/>
+				<CreatePublication onPublicationCreated={handleNewPublication}/>
 				<FilterTitle>Filtrar Publicaciones</FilterTitle>
 
 				{/* Sección de Filtrado por Carrera */}
