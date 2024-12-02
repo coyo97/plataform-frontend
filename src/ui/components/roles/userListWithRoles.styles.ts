@@ -1,3 +1,5 @@
+// userListWithRoles.styles.ts
+
 import { styled, TableContainer, TableRow, TableCell, Typography, Box } from '@mui/material';
 import mq from '../../../config/mq';
 
@@ -26,8 +28,7 @@ export const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
     borderRadius: theme.shape.borderRadius,
     backgroundColor: theme.palette.background.paper,
     overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
+    // Eliminamos 'display: flex' y 'flexDirection: column'
 }));
 
 export const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -36,7 +37,8 @@ export const StyledTableRow = styled(TableRow)(({ theme }) => ({
         backgroundColor: theme.palette.action.hover,
     },
     [mq('md', 'max')]: {
-        display: 'block',
+        // Eliminamos 'display: block'
+        // Puedes mantener 'padding' si lo deseas
         padding: theme.spacing(2),
     },
 }));

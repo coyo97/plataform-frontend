@@ -1,3 +1,4 @@
+// ModuleManagement.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
@@ -6,7 +7,8 @@ import {
 	SectionTitle,
 	ModuleList,
 	ModuleItem,
-	ActionButton,  InputContainer,
+	ActionButton,
+	InputContainer,
 } from './moduleManagement.styles';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -14,7 +16,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { Box, TextField, Typography, Button, Grid } from '@mui/material';
 
 interface Module {
-	id: string;
+	_id: string;
 	name: string;
 }
 
@@ -25,8 +27,9 @@ const ModuleManagement: React.FC = () => {
 	const [editingModuleName, setEditingModuleName] = useState('');
 	const { HOST, SERVICE } = getEnvVariables();
 	const token = localStorage.getItem('token');
-	const theme = useTheme(); // Obtenemos el tema aquí
+	const theme = useTheme();
 	const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
 	useEffect(() => {
 		if (!token) {
 			console.error('No se encontró el token. Por favor, inicia sesión.');
@@ -35,11 +38,13 @@ const ModuleManagement: React.FC = () => {
 
 		const fetchModules = async () => {
 			try {
-				const response = await axios.get(`${HOST}${SERVICE}/permissions`, {
+				const response = await axios.get(`${HOST}${SERVICE}/modules`, {
 					headers: { Authorization: `Bearer ${token}` },
 				});
 				if (response.data && response.data.modules) {
 					setModules(response.data.modules);
+				} else {
+					console.error('La respuesta no contiene los módulos esperados.');
 				}
 			} catch (error) {
 				console.error('Error al obtener módulos:', error);
@@ -87,13 +92,13 @@ const ModuleManagement: React.FC = () => {
 
 		try {
 			const response = await axios.put(
-				`${HOST}${SERVICE}/modules/${editingModule.id}`,
+				`${HOST}${SERVICE}/modules/${editingModule._id}`,
 				{ name: editingModuleName },
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
 			setModules(
-				modules.map(module =>
-							module.id === editingModule.id ? response.data.module : module
+				modules.map((module) =>
+							module._id === editingModule._id ? response.data.module : module
 						   )
 			);
 			cancelEditing();
@@ -112,7 +117,7 @@ const ModuleManagement: React.FC = () => {
 			await axios.delete(`${HOST}${SERVICE}/modules/${id}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			setModules(modules.filter(module => module.id !== id));
+			setModules(modules.filter((module) => module._id !== id));
 		} catch (error) {
 			console.error('Error al eliminar módulo:', error);
 			alert('Error al eliminar módulo');
@@ -128,7 +133,7 @@ const ModuleManagement: React.FC = () => {
 				<TextField
 					label="Nombre del Módulo"
 					value={newModuleName}
-					onChange={e => setNewModuleName(e.target.value)}
+					onChange={(e) => setNewModuleName(e.target.value)}
 					variant="outlined"
 					fullWidth
 				/>
@@ -140,7 +145,7 @@ const ModuleManagement: React.FC = () => {
 					size={isSmallScreen ? 'small' : 'medium'}
 					sx={{
 						width: '100%',
-						maxWidth: '200px', // Limita el ancho máximo del botón
+						maxWidth: '200px',
 						whiteSpace: 'nowrap',
 						overflow: 'hidden',
 						textOverflow: 'ellipsis',
@@ -153,8 +158,8 @@ const ModuleManagement: React.FC = () => {
 			<Typography variant="subtitle1">Lista de Módulos</Typography>
 			<ModuleList>
 				{modules.map((module) => (
-					<ModuleItem key={module.id}>
-						{editingModule && editingModule.id === module.id ? (
+					<ModuleItem key={module._id}>
+						{editingModule && editingModule._id === module._id ? (
 							<Grid
 								container
 								spacing={2}
@@ -164,8 +169,8 @@ const ModuleManagement: React.FC = () => {
 								<Grid item xs={12} sm={8}>
 									<TextField
 										label="Nombre del Módulo"
-										value={newModuleName}
-										onChange={e => setNewModuleName(e.target.value)}
+										value={editingModuleName}
+										onChange={(e) => setEditingModuleName(e.target.value)}
 										variant="outlined"
 										fullWidth
 									/>
@@ -174,7 +179,7 @@ const ModuleManagement: React.FC = () => {
 									<Button
 										variant="contained"
 										color="primary"
-										onClick={handleCreateModule}
+										onClick={handleUpdateModule}
 										fullWidth
 										size={isSmallScreen ? 'small' : 'medium'}
 										sx={{
@@ -182,7 +187,7 @@ const ModuleManagement: React.FC = () => {
 											whiteSpace: 'nowrap',
 										}}
 									>
-										Crear Módulo
+										Guardar Cambios
 									</Button>
 								</Grid>
 							</Grid>
@@ -208,7 +213,7 @@ const ModuleManagement: React.FC = () => {
 									<ActionButton
 										variant="outlined"
 										color="error"
-										onClick={() => handleDeleteModule(module.id)}
+										onClick={() => handleDeleteModule(module._id)}
 										fullWidth={!(window.innerWidth >= 600)}
 										size="small"
 									>
@@ -222,6 +227,7 @@ const ModuleManagement: React.FC = () => {
 			</ModuleList>
 		</ModuleManagementContainer>
 	);
-}
+};
+
 export default ModuleManagement;
 

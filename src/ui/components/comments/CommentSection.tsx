@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { 
 	CommentContainer, 
 	CommentAuthor, 
@@ -139,10 +139,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 		}
 	};
 
-
-
-	// **Agregar las funciones faltantes**
-
 	// Función para manejar la edición de un comentario
 	const handleEditComment = (comment: Comment) => {
 		setEditingComment(comment);
@@ -170,6 +166,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 					   setEditedContent('');
 		} catch (error) {
 			console.error('Error updating comment:', error);
+
+			if (axios.isAxiosError(error)) {
+				if (error.response && error.response.status === 403) {
+					toast.warn('No tienes permisos necesarios para realizar esta acccion ');
+				} else {
+					toast.error('Error al actualizar el comentario');
+				}
+			} else {
+				toast.error('Ocurrió un error inesperado');
+			}
 		}
 	};
 
@@ -183,6 +189,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 			setComments((prevComments) => prevComments.filter((comment) => comment._id !== commentId));
 		} catch (error) {
 			console.error('Error deleting comment:', error);
+
+			if (axios.isAxiosError(error)) {
+				if (error.response && error.response.status === 403) {
+					toast.warn('No tienes permiso necesarios para realizar esta accion');
+				} else {
+					toast.error('Error al eliminar el comentario');
+				}
+			} else {
+				toast.error('Ocurrió un error inesperado');
+			}
 		}
 	};
 
