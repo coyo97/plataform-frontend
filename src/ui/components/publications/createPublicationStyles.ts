@@ -1,59 +1,60 @@
-import { Box, Button, Input, TextareaAutosize, Typography, styled } from '@mui/material';
+// src/ui/components/publications/createPublicationStyles.ts
+import { styled } from '@mui/material/styles';
+import {
+	Card,
+	CardHeader,
+	CardContent,
+	CardActions,
+	TextField,
+	Select,
+	Button,
+} from '@mui/material';
+import mq from '../../../config/mq';
 
-export const FormContainer = styled('form')({
-	display: 'flex',
-	flexDirection: 'column',
-	gap: '15px',
-	maxWidth: '500px',
+/* Tarjeta principal */
+export const FormCard = styled(Card)(({ theme }) => ({
+	maxWidth: 640,
 	margin: 'auto',
-	padding: '20px',
-	border: '1px solid #ddd',
-	borderRadius: '8px',
-	boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-	backgroundColor: '#fff',
-});
+	borderRadius: 20,
+	boxShadow: theme.shadows[4],
+	transition: 'box-shadow .25s',
+	'&:hover': { boxShadow: theme.shadows[8] },
+	[mq('xs', 'max')]: { margin: theme.spacing(1) },
+}));
 
-export const FormTitle = styled(Typography)({
-	fontSize: '24px',
-	fontWeight: 'bold',
+/* Cabecera */
+export const FormHeader = styled(CardHeader)(({ theme }) => ({
+	background: theme.palette.primary.main,
+	color: theme.palette.primary.contrastText,
 	textAlign: 'center',
-	color: '#333',
-});
-
-export const InputField = styled(Input)({
-	padding: '10px',
-	fontSize: '16px',
-	borderRadius: '4px',
-	border: '1px solid #ddd',
-});
-
-export const TextArea = styled(TextareaAutosize)({
-	padding: '10px',
-	fontSize: '16px',
-	borderRadius: '4px',
-	border: '1px solid #ddd',
-	resize: 'vertical',
-});
-
-export const SelectField = styled('select')({
-	padding: '10px',
-	fontSize: '16px',
-	borderRadius: '4px',
-	border: '1px solid #ddd',
-});
-
-export const FileInput = styled(Input)({
-	padding: '10px',
-	fontSize: '16px',
-});
-
-export const SubmitButton = styled(Button)({
-	padding: '10px 20px',
-	fontSize: '16px',
-	color: '#fff',
-	backgroundColor: '#3f51b5',
-	'&:hover': {
-		backgroundColor: '#303f9f',
+	'& .MuiCardHeader-title': {
+		fontSize: '1.4rem',
+		fontWeight: 600,
 	},
+}));
+
+/* Contenido como grid */
+export const FormBody = styled(CardContent)(({ theme }) => ({
+	display: 'grid',
+	gap: theme.spacing(3),
+}));
+
+/* Botonera */
+export const FormActions = styled(CardActions)(({ theme }) => ({
+	justifyContent: 'flex-end',
+	padding: theme.spacing(2, 3),
+}));
+
+/* Campos */
+export const StyledTextField = styled(TextField)({
+	width: '100%',
 });
+export const StyledSelect = styled(Select)({
+	width: '100%',
+});
+export const StyledButton = styled(Button)(({ theme }) => ({
+	paddingInline: theme.spacing(4),
+	textTransform: 'none',
+	borderRadius: theme.shape.borderRadius,
+}));
 

@@ -3,24 +3,29 @@ type Payload = any; // Puedes definir un tipo más específico si sabes la estru
 type Headers = { [key: string]: string };
 
 const getHeaders = (): Headers => {
-    const token = localStorage.getItem('token'); // O la forma en que guardas el token
-    const headers: Headers = {
-        "Content-Type": "application/json",
-        ...(token && { "Authorization": `Bearer ${token}` }) // Añade el token si está presente
-    };
-    return headers;
+	const token = localStorage.getItem('token'); // O la forma en que guardas el token
+	const headers: Headers = {
+		"Content-Type": "application/json",
+		...(token && { "Authorization": `Bearer ${token}` }) // Añade el token si está presente
+	};
+	return headers;
 };
 
-const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean): RequestInit => {
+const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean,): RequestInit => {
+	const headers = getHeaders();          // ← siempre calculamos Auth
+	if (isFile) delete headers['Content-Type'];   // ⤴︎ quitamos solo el Content-Type
+
 	const options: RequestInit = {
 		method,
-		headers: isFile ? undefined : getHeaders(),
+		headers,                             // ← ya incluye Authorization
 	};
-	if (method === "POST" || method === "PUT") {
+
+	if (method === 'POST' || method === 'PUT') {
 		options.body = isFile ? payload : JSON.stringify(payload);
 	}
 	return options;
 };
+
 
 const request = async <T>(endpoint: string, payload: Payload, method: HttpMethod, isFile: boolean): Promise<T> => {
 	const options = buildOptions(payload, method, isFile);
@@ -47,7 +52,7 @@ export const get = async <T>(endpoint: string, payload: Payload, isFile: boolean
 
 
 export const put = async <T>(endpoint: string, payload: Payload, isFile: boolean = false): Promise<T> =>
-    request<T>(endpoint, payload, "PUT", isFile);
+	request<T>(endpoint, payload, "PUT", isFile);
 
 export const del = async <T>(endpoint: string): Promise<T> =>
-    request<T>(endpoint, {}, "DELETE", false);
+	request<T>(endpoint, {}, "DELETE", false);

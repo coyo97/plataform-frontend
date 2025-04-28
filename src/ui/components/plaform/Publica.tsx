@@ -7,6 +7,7 @@ import AdminNotifications from '../centerAlert/AdminNotifications';
 import { Sidebar, SidebarContent } from './sidebar.styles';
 import ForgotPassword from '../auth/ForgotPassword';
 import ResetPassword from '../auth/ResetPassword';
+import ViewPublications from '../publications/ViewPublications';
 
 const Publica: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -35,6 +36,9 @@ const Publica: React.FC = () => {
         </SidebarContent>
       </Sidebar>
 		*/}
+		<div>
+			<ViewPublications/>
+		</div>
     </>
   );
 };

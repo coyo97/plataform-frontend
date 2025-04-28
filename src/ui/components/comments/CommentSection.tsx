@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
-import { 
-	CommentContainer, 
-	CommentAuthor, 
-	CommentText, 
-	CommentDate, 
-	CommentButtonGroup, 
-	CommentButton, 
-	CommentTextarea, 
-	CommentsWrapper 
-} from './commentSectionStyles'; 
 import getEnvVariables from '../../../config/configEnvs';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+import {
+	CommentsWrapper, CommentCard, AuthorTxt, ContentTxt, DateTxt,
+	ActionBox, CommentField, PrimaryBtn,
+} from './commentSection.styles';
+
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
+import CloseIcon from '@mui/icons-material/Close';
+import {IconButton} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';   
 
 interface Comment {
 	_id: string;
@@ -208,43 +210,53 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 			<CommentsWrapper>
 				{comments.length > 0 ? (
 					comments.map((comment) => (
-						<CommentContainer key={comment._id}>
-							<CommentAuthor>{comment.author.username}</CommentAuthor>
-							<CommentText>{comment.content}</CommentText>
-							<CommentDate>{new Date(comment.created_at).toLocaleString()}</CommentDate>
+						<CommentCard key={comment._id}>
+							<AuthorTxt>{comment.author.username}</AuthorTxt>
+							<ContentTxt>{comment.content}</ContentTxt>
+							<DateTxt>{new Date(comment.created_at).toLocaleString()}</DateTxt>
 							{authenticatedUserId === comment.author._id && (
-								<CommentButtonGroup>
-									<CommentButton onClick={() => handleEditComment(comment)}>Editar</CommentButton>
-									<CommentButton onClick={() => handleDeleteComment(comment._id)}>Eliminar</CommentButton>
-								</CommentButtonGroup>
+								<ActionBox>
+									<IconButton size="small" onClick={() => handleEditComment(comment)}> <EditIcon fontSize="small" /> 
+									</IconButton>
+									<IconButton size="small" onClick={() => handleDeleteComment(comment._id)}><DeleteIcon fontSize="small" />
+									</IconButton>
+								</ActionBox>
 							)}
 							{editingComment && editingComment._id === comment._id && (
-								<div>
-									<CommentTextarea
+								<>
+									<CommentField
+										multiline
+										minRows={2}
 										value={editedContent}
 										onChange={(e) => setEditedContent(e.target.value)}
 										placeholder="Editar comentario"
 									/>
-									<CommentButtonGroup>
-										<CommentButton onClick={handleUpdateComment}>Guardar</CommentButton>
-										<CommentButton onClick={() => setEditingComment(null)}>Cancelar</CommentButton>
-									</CommentButtonGroup>
-								</div>
+									<ActionBox>
+										<IconButton color='primary' onClick={handleUpdateComment}>
+											<SaveIcon fontSize='small'/>
+										</IconButton>
+										<IconButton onClick={() => setEditingComment(null)}>
+											<CloseIcon fontSize="small"/>
+										</IconButton>
+									</ActionBox>
+								</>
 							)}
-						</CommentContainer>
+						</CommentCard>
 					))
 				) : (
 					<p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
 				)}
 			</CommentsWrapper>
-			<CommentTextarea
+			<CommentField
+				multiline
+				minRows={2}
 				value={newComment}
 				onChange={(e) => setNewComment(e.target.value)}
 				placeholder="Añadir un comentario"
 				onFocus={connectSocket}
 				onBlur={disconnectSocket}
 			/>
-			<CommentButton onClick={handleAddComment}>Enviar</CommentButton>
+			<PrimaryBtn variant='contained' onClick={handleAddComment} endIcon={<SendIcon/>}></PrimaryBtn>
 			<ToastContainer />
 		</div>
 	);

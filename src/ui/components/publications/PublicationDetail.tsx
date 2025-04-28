@@ -1,92 +1,66 @@
-// src/components/publications/PublicationDetail.tsx
+// src/ui/components/publications/PublicationDetail.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
-import CommentSection from '../comments/CommentSection';
+import { useParams }               from 'react-router-dom';
 
-interface Publication {
-	_id: string;
-	title: string;
-	content: string;
-	author: {
-		_id: string;
-		username: string;
-		profile?: {
-			profilePicture?: string;
-		};
-	};
-	filePath?: string;
-	fileType?: string;
-	likes: string[];
-}
+import {
+	fetchPublications,               // ← mismo helper del feed
+	Publication
+}                                   from '../../../async/services/publicationService';
+import * as R                       from '../../../async/routes/publicationRoutes';
+import getEnvVariables              from '../../../config/configEnvs';
+import CommentSection               from '../comments/CommentSection';
 
 const PublicationDetail: React.FC = () => {
-	const { publicationId } = useParams<{ publicationId: string }>();
-	const [publication, setPublication] = useState<Publication | null>(null);
-	const { HOST, SERVICE } = getEnvVariables();
-	const token = localStorage.getItem('token');
+	const { publicationId } = useParams<{ publicationId:string }>();
+	const [publication, setPublication] = useState<Publication|null>(null);
+	const { HOST } = getEnvVariables();
 
+	//cargar la publicación 
 	useEffect(() => {
-		const fetchPublication = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/publications/${publicationId}`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				setPublication(response.data.publication);
-			} catch (error) {
-				console.error('Error fetching publication:', error);
-			}
-		};
+		if (!publicationId) return;
+		fetchPublications(R.PUB_BY_ID(publicationId))
+		.then(pubs => {
+			// la API devuelve { publication: … } → service lo envuelve como array
+			setPublication(
+				Array.isArray(pubs) ? pubs[0] : (pubs as unknown as Publication)   // fallback defensivo
+			);
+		})
+		.catch(console.error);
+	}, [publicationId]);
 
-		fetchPublication();
-	}, [HOST, SERVICE, publicationId, token]);
+	if (!publication) return <p>Cargando publicación…</p>;
 
-	if (!publication) {
-		return <div>Cargando publicación...</div>;
-	}
-
-	// Función para renderizar el archivo adjunto
 	const renderFile = () => {
 		if (!publication.filePath || !publication.fileType) return null;
+		const url = `${HOST}/${publication.filePath}`;
 
-		const fileUrl = `${HOST}/${publication.filePath}`;
-
-		if (publication.fileType.startsWith('image/')) {
-			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;
-		} else if (publication.fileType.startsWith('video/')) {
+		if (publication.fileType.startsWith('image/'))
+			return <img src={url} alt={publication.title} style={{width:300, height:'auto'}}/>;
+		if (publication.fileType.startsWith('video/'))
 			return (
-				<video controls style={{ width: '300px', height: 'auto' }}>
-					<source src={fileUrl} type={publication.fileType} />
-					Tu navegador no soporta la reproducción de video.
+				<video controls style={{width:300}}>
+					<source src={url} type={publication.fileType}/>
 				</video>
 			);
-		} else if (publication.fileType === 'application/pdf') {
-			return (
-				<a href={fileUrl} target="_blank" rel="noopener noreferrer">
-					Ver PDF
-				</a>
-			);
-		} else {
-			return (
-				<a href={fileUrl} download>
-					Descargar archivo
-				</a>
-			);
-		}
+			if (publication.fileType === 'application/pdf')
+				return <a href={url} target="_blank" rel="noreferrer">Ver PDF</a>;
+
+			return <a href={url} download>Descargar archivo</a>;
 	};
 
 	return (
 		<div>
 			<h2>{publication.title}</h2>
 			<p>{publication.content}</p>
+
 			<p>
-				<strong>Autor:</strong> {publication.author.username}
+				<strong>Autor:</strong> {publication.author.username ?? 'Usuario eliminado'}
 			</p>
+
 			{renderFile()}
-			{/* Aquí puedes agregar más detalles y funcionalidades, como comentarios */}
-			{/* Si deseas reutilizar el componente de comentarios */}
-			<CommentSection publicationId={publication._id} />
+
+			{/* comentarios reutilizando CommentSection */}
+			<CommentSection publicationId={publication._id}/>
 		</div>
 	);
 };

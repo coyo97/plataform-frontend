@@ -1,169 +1,109 @@
+// src/ui/components/publications/user/UserMaterials.tsx
 import React, { useEffect, useState } from 'react';
-import { getPublications, updatePublication, deletePublication } from '../../../../async/services/publicationService';
+import {
+	fetchMyPublications, updatePublication, deletePublication,
+	Publication,
+} from '../../../../async/services/publicationService';
+
 import getEnvVariables from '../../../../config/configEnvs';
 import {
-	Container,
-	PublicationCard,
-	PublicationTitle,
-	PublicationContent,
-	Tags,
-	EditButton,
-	DeleteButton,
-	EditForm,
-	Input,
-	TextArea,
-	FileInput,
-	UpdateButton,
-	CancelButton,
+	Container, PublicationCard, PublicationTitle, PublicationContent,
+	Tags, EditButton, DeleteButton,
+	EditForm, Input, TextArea, FileInput,
+	UpdateButton, CancelButton,
 } from './userMaterialsStyles';
 
-interface Publication {
-	_id: string;
-	title: string;
-	content: string;
-	tags: string[];
-	author: {
-		username: string;
-	};
-	filePath?: string;
-	fileType?: string;
-}
-
 const ViewUserPublications: React.FC = () => {
-	const [publications, setPublications] = useState<Publication[]>([]);
-	const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
-	const [title, setTitle] = useState('');
-	const [content, setContent] = useState('');
-	const [tags, setTags] = useState('');
-	const [newImage, setNewImage] = useState<File | null>(null);
+	const [pubs, setPubs]           = useState<Publication[]>([]);
+	const [sel , setSel]            = useState<Publication | null>(null);
+	const [title, setTitle]         = useState('');
+	const [content, setContent]     = useState('');
+	const [tags, setTags]           = useState('');
+	const [file, setFile]           = useState<File | null>(null);
 
-	const { HOST, SERVICE } = getEnvVariables();
+	const { HOST } = getEnvVariables();
 
-	useEffect(() => {
-		const fetchUserPublications = async () => {
-			try {
-				const data = await getPublications(`${HOST}${SERVICE}/user-publications`, {});
-				setPublications(data.publications);
-			} catch (error) {
-				console.error('Error fetching user publications:', error);
-			}
-		};
+	//* cargar publicaciones 
+	const load = async () => {
+		const data = await fetchMyPublications();
+		setPubs(data);
+	};
+	useEffect(() => { load(); }, []);
 
-		fetchUserPublications();
-	}, []);
-
-	const handleEdit = (publication: Publication) => {
-		setSelectedPublication(publication);
-		setTitle(publication.title);
-		setContent(publication.content);
-		setTags(publication.tags.join(', '));
+	//* editar / actualizar 
+	const edit = (p: Publication) => {
+		setSel(p);
+		setTitle(p.title);
+		setContent(p.content);
+		setTags((p.tags??[]).join(', '));
 	};
 
-	const handleUpdate = async () => {
-		if (!selectedPublication) return;
+	const save = async () => {
+		if (!sel) return;
+		const fd = new FormData();
+		fd.append('title', title);
+		fd.append('content', content);
+		fd.append('tags', JSON.stringify(tags.split(',').map(t=>t.trim())));
+		if (file) fd.append('file', file);
 
-		const formData = new FormData();
-		formData.append('title', title);
-		formData.append('content', content);
-		formData.append('tags', JSON.stringify(tags.split(',').map(tag => tag.trim())));
-
-		if (newImage) {
-			formData.append('file', newImage);
-		}
-
-		try {
-			await updatePublication(`${HOST}${SERVICE}/user-publications/${selectedPublication._id}`, formData);
-			alert('Publicación actualizada con éxito');
-
-			const data = await getPublications(`${HOST}${SERVICE}/user-publications`, {});
-			setPublications(data.publications);
-			setSelectedPublication(null);
-		} catch (error) {
-			console.error('Error updating publication:', error);
-			alert('Error al actualizar la publicación');
-		}
+		await updatePublication(sel._id, fd);
+		alert('Publicación actualizada');
+		await load();
+		setSel(null);
 	};
 
-	const handleDelete = async (id: string) => {
-		try {
-			await deletePublication(`${HOST}${SERVICE}/publications/${id}`);
-			alert('Publicación eliminada con éxito');
-			setPublications(publications.filter(pub => pub._id !== id));
-		} catch (error) {
-			console.error('Error deleting publication:', error);
-			alert('Error al eliminar la publicación');
-		}
+	const remove = async (id: string) => {
+		await deletePublication(id);
+		alert('Publicación eliminada');
+		setPubs(pubs.filter(p => p._id !== id));
 	};
 
-	const renderFile = (publication: Publication) => {
-		if (!publication.filePath || !publication.fileType) return null;
+	//* helper archivo 
+	const renderFile = (p: Publication) => {
+		if (!p.filePath || !p.fileType) return null;
+		const url = `${HOST}/${p.filePath}`;
 
-		const fileUrl = `${HOST}/${publication.filePath}`;
+		if (p.fileType.startsWith('image/'))
+			return <img src={url} alt={p.title} style={{ width: 300 }} />;
 
-		if (publication.fileType.startsWith('image/')) {
-			return <img src={fileUrl} alt={publication.title} style={{ width: '300px', height: 'auto' }} />;
-		} else if (publication.fileType.startsWith('video/')) {
+		if (p.fileType.startsWith('video/'))
 			return (
-				<video controls style={{ width: '300px', height: 'auto' }}>
-					<source src={fileUrl} type={publication.fileType} />
-					Tu navegador no soporta la reproducción de video.
+				<video controls style={{ width: 300 }}>
+					<source src={url} type={p.fileType} />
 				</video>
 			);
-		} else if (publication.fileType === 'application/pdf') {
-			return (
-				<a href={fileUrl} target="_blank" rel="noopener noreferrer">
-					Ver PDF
-				</a>
-			);
-		} else {
-			return (
-				<a href={fileUrl} download>
-					Descargar archivo
-				</a>
-			);
-		}
+
+			if (p.fileType === 'application/pdf')
+				return <a href={url} target="_blank" rel="noreferrer">Ver PDF</a>;
+
+			return <a href={url} download>Descargar archivo</a>;
 	};
 
 	return (
 		<Container>
 			<h1>Mis Publicaciones</h1>
-			{publications.map(publication => (
-				<PublicationCard key={publication._id}>
-					<PublicationTitle>{publication.title}</PublicationTitle>
-					<PublicationContent>{publication.content}</PublicationContent>
-		  <Tags><strong>Etiquetas:</strong> {publication.tags.join(', ')}</Tags>
-					{renderFile(publication)}
-					<EditButton onClick={() => handleEdit(publication)}>Editar</EditButton>
-					<DeleteButton onClick={() => handleDelete(publication._id)}>Eliminar</DeleteButton>
+
+			{pubs.map(p => (
+				<PublicationCard key={p._id}>
+					<PublicationTitle>{p.title}</PublicationTitle>
+					<PublicationContent>{p.content}</PublicationContent>
+					<Tags><strong>Etiquetas:</strong> {(p.tags??[]).join(', ')}</Tags>
+					{renderFile(p)}
+					<EditButton   onClick={() => edit(p)}>Editar</EditButton>
+					<DeleteButton onClick={() => remove(p._id)}>Eliminar</DeleteButton>
 				</PublicationCard>
 			))}
 
-			{selectedPublication && (
+			{sel && (
 				<EditForm>
 					<h2>Editar Publicación</h2>
-					<Input
-						type="text"
-						placeholder="Título"
-						value={title}
-						onChange={(e) => setTitle(e.target.value)}
-					/>
-					<TextArea
-						placeholder="Contenido"
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
-					/>
-					<Input
-						type="text"
-						placeholder="Etiquetas (separadas por comas)"
-						value={tags}
-						onChange={(e) => setTags(e.target.value)}
-					/>
-					<FileInput
-						type="file"
-						onChange={(e) => setNewImage(e.target.files ? e.target.files[0] : null)}
-					/>
-					<UpdateButton onClick={handleUpdate}>Actualizar</UpdateButton>
-					<CancelButton onClick={() => setSelectedPublication(null)}>Cancelar</CancelButton>
+					<Input     value={title}   onChange={e=>setTitle(e.target.value)} placeholder="Título" />
+					<TextArea  value={content} onChange={e=>setContent(e.target.value)} placeholder="Contenido" />
+					<Input     value={tags}    onChange={e=>setTags(e.target.value)}  placeholder="Etiquetas (comas)" />
+					<FileInput type="file" onChange={e=>setFile(e.target.files?.[0] || null)} />
+
+					<UpdateButton onClick={save}>Actualizar</UpdateButton>
+					<CancelButton onClick={()=>setSel(null)}>Cancelar</CancelButton>
 				</EditForm>
 			)}
 		</Container>

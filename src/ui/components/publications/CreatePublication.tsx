@@ -1,225 +1,130 @@
+// src/ui/components/publications/CreatePublication.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Box, Button, Collapse } from '@mui/material';
-import { ExpandMore } from '@mui/icons-material';
-import getEnvVariables from '../../../config/configEnvs';
+import { Collapse, IconButton } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
 import {
-  FormContainer,
-  InputField,
-  TextArea,
-  SelectField,
-  FileInput,
-  SubmitButton,
-  FormTitle,
+	FormCard, FormHeader, FormBody, FormActions,
+	StyledTextField, StyledSelect, StyledButton,
 } from './createPublicationStyles';
-import Escudo_Universidad_Autónoma_Tomás_Frías from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
 
-interface Career {
-  _id: string;
-  name: string;
+import Escudo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
+
+import {
+	Career, Publication,
+	fetchCareers, createPublication,
+} from '../../../async/services/publicationService';
+
+interface Props {
+	onPublicationCreated: (p: Publication) => void;
 }
 
-interface Publication {
-  _id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  author: {
-    _id: string;
-    username: string;
-    profile?: {
-      profilePicture?: string;
-    };
-  };
-  filePath?: string;
-  fileType?: string;
-  likes: string[];
-}
+const CreatePublication: React.FC<Props> = ({ onPublicationCreated }) => {
+	const [title, setTitle]     = useState('');
+	const [content, setContent] = useState('');
+	const [tags, setTags]       = useState('');
+	const [file, setFile]       = useState<File | null>(null);
 
-interface CreatePublicationProps {
-  onPublicationCreated: (newPublication: Publication) => void;
-}
+	const [careers, setCareers] = useState<Career[]>([]);
+	const [careerId, setCareer] = useState('');
+	const [open, setOpen]       = useState(false);
 
-const CreatePublication: React.FC<CreatePublicationProps> = ({ onPublicationCreated }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [careers, setCareers] = useState<Career[]>([]);
-  const [selectedCareer, setSelectedCareer] = useState<string>('');
-  const [showForm, setShowForm] = useState(false); // Control de visibilidad del formulario
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
-  const { HOST, SERVICE } = getEnvVariables();
+	//*cargar carreras con caché
+	useEffect(() => {
+		fetchCareers()
+		.then((c) => {
+			setCareers(c);
+			if (c.length === 1) setCareer(c[0]._id);
+		})
+		.catch(console.error);
+	}, []);
 
-  useEffect(() => {
-    const fetchCareers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${HOST}${SERVICE}/careers`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCareers(response.data.careers);
-        if (response.data.careers.length === 1) {
-          setSelectedCareer(response.data.careers[0]._id);
-        }
-      } catch (error) {
-        console.error('Error fetching careers:', error);
-      }
-    };
+	const handleFile = (e: React.ChangeEvent<HTMLInputElement>) =>
+		e.target.files && setFile(e.target.files[0]);
 
-    fetchCareers();
-  }, [HOST, SERVICE]);
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const fd = new FormData();
+		fd.append('title', title);
+		fd.append('content', content);
+		if (file)             fd.append('file', file);
+		fd.append(
+			'tags',
+			JSON.stringify(tags.split(',').map(t => t.trim()).filter(Boolean)),
+		);
+		if (careerId)         fd.append('careerId', careerId);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
-  };
+		try {
+			const pub = await createPublication(fd);
+			onPublicationCreated(pub);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('content', content);
-    if (file) {
-      formData.append('file', file);
-    }
-    const tagsArray = tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag !== '');
-    formData.append('tags', JSON.stringify(tagsArray));
+			alert('Publicación creada con éxito');
+			/* reset */
+			setTitle(''); setContent(''); setTags('');
+			setFile(null); setCareer(''); setOpen(false);
+			// navigate('/publications');
+		} catch (err: any) {
+			const msg = err?.message ||
+				'Error al crear la publicación';
+			alert(msg);
+			console.error(err);
+		}
+	};
 
-    if (selectedCareer) {
-      formData.append('careerId', selectedCareer);
-    }
+	/* ───────────────── UI */
+	return (
+		<FormCard>
+			<FormHeader
+				avatar={<img src={Escudo} width={48} alt="UATF" />}
+				title="Crear publicación"
+				action={
+					<IconButton onClick={() => setOpen(v => !v)}>
+						<ExpandMoreIcon
+							sx={{
+								transform : open ? 'rotate(180deg)' : 'rotate(0deg)',
+								transition: 'transform .25s',
+							}}
+						/>
+					</IconButton>
+				}
+			/>
 
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${HOST}${SERVICE}/publications`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+			<Collapse in={open}>
+				<form onSubmit={handleSubmit}>
+					<FormBody>
+						<StyledTextField label="Título"       value={title}   onChange={e=>setTitle(e.target.value)}   required />
+						<StyledTextField label="Contenido"    value={content} onChange={e=>setContent(e.target.value)} multiline rows={4} required />
+						<StyledTextField label="Etiquetas (,)" value={tags}   onChange={e=>setTags(e.target.value)}   />
 
-      const newPublication: Publication = response.data.publication;
+						<input type="file" onChange={handleFile} />
 
-      // Llamar a la función de callback para notificar al componente padre
-      onPublicationCreated(newPublication);
+						{careers.length > 0 && (
+							<StyledSelect
+								native
+								value={careerId}
+								onChange={e => setCareer(e.target.value as string)}
+							>
+								<option value="">Selecciona carrera</option>
+								{careers.map(c => (
+									<option key={c._id} value={c._id}>{c.name}</option>
+								))}
+							</StyledSelect>
+						)}
+					</FormBody>
 
-      alert('Publicación creada con éxito');
-
-      // Limpiar los campos del formulario y cerrar el formulario
-      setTitle('');
-      setContent('');
-      setTags('');
-      setFile(null);
-      setSelectedCareer('');
-      setShowForm(false);
-
-      // Si deseas navegar a otra página, puedes descomentar la siguiente línea
-      // navigate('/publications');
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const errorMessage = error.response.data.message || 'Error al crear la publicación';
-        // Mostrar mensaje de advertencia si la imagen es inapropiada
-        if (errorMessage === 'Contenido inapropiado detectado en la imagen') {
-          alert('La imagen contiene contenido inapropiado. Por favor, elige otra imagen.');
-        } else {
-          alert(errorMessage);
-        }
-      } else {
-        alert('Ocurrió un error desconocido al crear la publicación');
-      }
-      console.error('Error al crear la publicación:', error);
-    }
-  };
-
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexDirection: 'column' }}>
-      {/* Contenedor del logo y botón */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          maxWidth: 600,
-          mb: 2,
-          mt: 2,
-        }}
-      >
-        {/* Logo de la universidad */}
-        <Box
-          component="img"
-          src={Escudo_Universidad_Autónoma_Tomás_Frías}
-          alt="Logo Universidad"
-          sx={{ width: 80, height: 80, mr: 2 }}
-        />
-
-        {/* Botón para abrir el formulario */}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setShowForm(!showForm)}
-          endIcon={<ExpandMore />}
-          sx={{
-            flex: 1,
-            padding: '15px',
-            fontSize: '20px',
-            backgroundColor: '#3f51b5',
-            '&:hover': { backgroundColor: '#303f9f' },
-            mb: 2, // Ajuste de margen inferior para más espacio
-          }}
-        >
-          Publicar
-        </Button>
-      </Box>
-
-      {/* Formulario que se desliza */}
-      <Collapse in={showForm} timeout="auto" unmountOnExit>
-        <FormContainer onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 600 }}>
-          <FormTitle>Crear Publicación</FormTitle>
-          <InputField
-            type="text"
-            placeholder="Título"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-          <TextArea
-            placeholder="Contenido"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          ></TextArea>
-          <InputField
-            type="text"
-            placeholder="Etiquetas (separadas por comas)"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
-          <FileInput type="file" onChange={handleFileChange} />
-          {careers.length > 0 && (
-            <SelectField
-              value={selectedCareer}
-              onChange={(e) => setSelectedCareer(e.target.value)}
-            >
-              <option value="">Selecciona una carrera (opcional)</option>
-              {careers.map((career) => (
-                <option key={career._id} value={career._id}>
-                  {career.name}
-                </option>
-              ))}
-            </SelectField>
-          )}
-          <SubmitButton type="submit">Crear Publicación</SubmitButton>
-        </FormContainer>
-      </Collapse>
-    </Box>
-  );
+					<FormActions>
+						<StyledButton variant="outlined" onClick={() => setOpen(false)}>Cancelar</StyledButton>
+						<StyledButton variant="contained" color="secondary" type="submit">
+							Publicar
+						</StyledButton>
+					</FormActions>
+				</form>
+			</Collapse>
+		</FormCard>
+	);
 };
 
 export default CreatePublication;

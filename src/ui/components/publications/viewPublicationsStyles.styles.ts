@@ -1,13 +1,29 @@
 import { styled } from '@mui/system';
 import mq from '../../../config/mq';
 
+// viewPublicationsStyles.styles.ts
+//  sólo muestra las líneas añadidas / modificadas
 export const SidebarContainer = styled('div')(({ theme }) => ({
-	padding: '20px',
+	/* …estilos que ya tenías… */
+	padding: 20,
 	backgroundColor: theme.palette.primary.light,
-	borderRadius: '10px',
+	borderRadius: 10,
 	boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+
+	/*  Sticky para escritorios  */
+	position: 'sticky',
+	top: theme.spacing(2),      // debajo del header
+	alignSelf: 'flex-start',        // evita que se estire a toda la altura
+	/*   En mobile se comporta “normal” */
+	[mq('md', 'max')]: {
+		position: 'static',      // deja de ser sticky < md
+		width: '100%',           // ocupa todo el ancho
+		marginBottom: theme.spacing(2),
+	},
+
+	/*   En ≥ md sigue con ancho fijo */
 	[mq('md', 'min')]: {
-		width: '300px',
+		width: 300,
 	},
 }));
 
