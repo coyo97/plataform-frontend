@@ -1,6 +1,7 @@
 import Reat from 'react';
 
 import ViewPublications from "./ViewPublications"
+import ViewPublicationsPage from './pages/publications/ViewPublications.page';
 import CreatePublication from './CreatePublication';
 
 const HomePublications: React.FC = () => {
@@ -8,7 +9,7 @@ const HomePublications: React.FC = () => {
 		<>
 			{//<CreatePublication/>
 			}
-			<ViewPublications/>
+			<ViewPublicationsPage/>
 		</>
     );
 }

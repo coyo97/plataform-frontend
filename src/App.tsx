@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Theme from './Theme/Theme';
-import NavMenu from './ui/components/navMenu/NavMenu';
+import NavMenu from './ui/features/navMenu/NavMenu';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import Welcome from './ui/components/welcome/Welcome';
-import FormLogin from './ui/components/auth/loginForm/FormLogin';
-import Canvas from './ui/components/canvas/Canvas';
-import UserForm from './ui/components/auth/regiterForm/UserForm';
-import Plataform from './ui/components/plaform/Publica';
+import Welcome from './ui/features/welcome/Welcome';
+import FormLogin from './ui/features/auth/loginForm/FormLogin';
+import Canvas from './ui/features/canvas/Canvas';
+import UserForm from './ui/features/auth/regiterForm/UserForm';
+import Plataform from './ui/features/plaform/Publica';
 import ProtectedRoute from './routes/ProtectedRoute';
-import HomePublications from './ui/components/publications/HomePublications';
-import HomeProfile from './ui/components/profile/HomeProfile';
-import Home from './ui/components/plaform/Home';
-import UserMaterials from './ui/components/publications/user/UserMaterials';
-import CreatePublication from './ui/components/publications/CreatePublication';
+import HomePublications from './ui/features/publications/HomePublications';
+import HomeProfile from './ui/features/profile/HomeProfile';
+import Home from './ui/features/plaform/Home';
+import UserMaterials from './ui/features/publications/user/UserMaterials';
+import CreatePublication from './ui/features/publications/CreatePublication';
 
-import AuthorProfile from './ui/components/profile/AuthorProfile';
-import ViewProfile from './ui/components/profile/ViewProfile';
-import UpdateProfile from './ui/components/profile/UpdateProfile';
-import Chat from './ui/components/chat/Chat';
-import CareerManager from './ui/components/careers/CareerManager';
-import HomeChat from './ui/components/chat/HomeChat';
-import UserManagement from './ui/components/admin/UserManagement';
-import Dashboard from './ui/components/admin/Dashboard';
-import HomeRoles from './ui/components/roles/HomeRoles';
-import Sidebar from './ui/components/admin/Sidebar';
-import HomeModerator from './ui/components/moderator/HomeModerator';
-import HomeAlert from './ui/components/centerAlert/HomeAlert';
-import HomeSetting from './ui/components/configFile/HomeSetting';
-import HomeStream from './ui/components/stream/HomeStream';
-import PublicationDetail from './ui/components/publications/PublicationDetail';
-import './ui/components/admin/adminLayout.css'; // Asegúrate de que la ruta sea correcta
-import ForgotPassword from './ui/components/auth/ForgotPassword';
-import ResetPassword from './ui/components/auth/ResetPassword';
+import AuthorProfile from './ui/features/profile/AuthorProfile';
+import ViewProfile from './ui/features/profile/ViewProfile';
+import UpdateProfile from './ui/features/profile/UpdateProfile';
+import Chat from './ui/features/chat/Chat';
+import CareerManager from './ui/features/careers/CareerManager';
+import HomeChat from './ui/features/chat/HomeChat';
+import UserManagement from './ui/features/admin/UserManagement';
+import Dashboard from './ui/features/admin/Dashboard';
+import HomeRoles from './ui/features/roles/HomeRoles';
+import Sidebar from './ui/features/admin/Sidebar';
+import HomeModerator from './ui/features/moderator/HomeModerator';
+import HomeAlert from './ui/features/centerAlert/HomeAlert';
+import HomeSetting from './ui/features/configFile/HomeSetting';
+import HomeStream from './ui/features/stream/HomeStream';
+import PublicationDetail from './ui/features/publications/PublicationDetail';
+import './ui/features/admin/adminLayout.css'; // Asegúrate de que la ruta sea correcta
+import ForgotPassword from './ui/features/auth/ForgotPassword';
+import ResetPassword from './ui/features/auth/ResetPassword';
 import AdminRoute from './routes/AdminRoute';
 
 function App() {
