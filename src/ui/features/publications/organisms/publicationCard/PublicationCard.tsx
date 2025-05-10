@@ -5,18 +5,10 @@ import PublicationHeader from '../../moleculas/publicationHeader/PublicationHead
 import PublicationActions from '../../moleculas/publicationActions/PublicationActions';
 import CommentSection from '../../../comments/CommentSection';
 import { CardRoot, Content } from './publicationCard.styles';
+import { Publication } from '../../../../../types/publication';
+import { getUserId } from '../../../../../utils/auth/getUserId';
+import {Box} from '@mui/system';
 
-/* Types reutilizados ------------------------------------ */
-export interface Publication {
-	_id:string; title:string; content:string;
-	tags?:string[];
-	author:{
-		_id:string; username:string;
-		profile?:{profilePicture?:string};
-	};
-	filePath?:string; fileType?:string;
-	likes?:string[];
-}
 
 interface Props{
 	HOST        : string;
@@ -32,7 +24,7 @@ const PublicationCard:React.FC<Props>=({
 	HOST, publication, renderFile,
 	onLike,onUnlike,onAuthor,onReport,
 })=>{
-	const uid    = localStorage.getItem('userId')||'';
+	const uid = getUserId();
 	const liked  = (publication.likes??[]).includes(uid);
 
 	return(
@@ -47,9 +39,11 @@ const PublicationCard:React.FC<Props>=({
 
 			<Content>
 				{publication.content}
+				<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
 				{(publication.tags??[]).map(t=>(
 					<TagChip key={t} label={`#${t}`} size="small" variant="outlined"/>
 				))}
+					</Box>
 				{renderFile(publication)}
 			</Content>
 
@@ -65,5 +59,5 @@ const PublicationCard:React.FC<Props>=({
 	);
 };
 
-export default PublicationCard;
+export default React.memo(PublicationCard);
 

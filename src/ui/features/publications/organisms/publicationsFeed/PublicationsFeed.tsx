@@ -4,7 +4,7 @@ import SearchInput from '../../../../shared/molecules/searchInput';
 import PublicationCard from '../publicationCard/PublicationCard';
 import { FeedWrapper }  from './publicationsFeed.styles';
 
-import { Publication } from '../publicationCard/PublicationCard';
+import { Publication } from '../../../../../types/publication';
 
 interface Props{
 	HOST : string;
@@ -20,11 +20,14 @@ interface Props{
 
 const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,onUnlike,onAuthor,onReport,onSearch,})=>(
 	<FeedWrapper>
-		<SearchInput onSearch={onSearch}/>
+		<SearchInput onSearch={onSearch} />
 
 		{list.map((p,idx)=>(
 			<div key={p._id}
-				ref={idx===list.length-1?lastRef:null}>
+				ref={idx===list.length-1?lastRef:null}
+				role='article'
+				//aria-label={`Publicación de ${p.author.username}`}
+			>
 				<PublicationCard
 					HOST={HOST}
 					publication={p}

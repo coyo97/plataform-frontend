@@ -2,6 +2,7 @@
 import { get, post, put, del } from '../api';
 import * as R                   from '../routes/publicationRoutes';
 import getEnvVariables          from '../../config/configEnvs';
+import type { Career, Publication } from '../../types/publication';
 
 type CacheEntry = { data: unknown; expiry: number };
 const CACHE  = new Map<string, CacheEntry>();
@@ -20,22 +21,6 @@ const clear = () => CACHE.clear();
 const { HOST, SERVICE } = getEnvVariables();
 const url = (path:string) => `${HOST}${SERVICE}${path}`;
 
-export interface Career { _id:string; name:string }
-
-export interface Publication {
-	_id   : string;
-	title : string;
-	content: string;
-	tags? : string[];         // opcional ⇒ evita errores TS18048
-	author: {
-		_id:string; username:string;
-		profile?:{ profilePicture?:string }
-	};
-	filePath?  : string;
-	fileType?  : string;
-	likes?     : string[];     // opcional ⇒ evita TS2322
-	commentsCount?: number;    // para “más comentados”
-}
 
 // queries con caché 
 export const fetchCareers = async ():Promise<Career[]> => {

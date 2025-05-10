@@ -14,8 +14,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
-import {IconButton} from '@mui/material';
+import {IconButton, Typography} from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';   
+import {Box} from '@mui/system';
 
 interface Comment {
 	_id: string;
@@ -206,7 +207,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 
 	return (
 		<div>
-			<h3>Comentarios</h3>
+			<Box sx={{ px: 2, pt: 2 }}>
+  <Typography variant="h6">Comentarios</Typography>
+			</Box>
 			<CommentsWrapper>
 				{comments.length > 0 ? (
 					comments.map((comment) => (
@@ -244,9 +247,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 						</CommentCard>
 					))
 				) : (
-					<p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
+				<Box sx={{ px: 2, pt: 2 }}>
+					<Typography>No hay comentarios aún. ¡Sé el primero en comentar!</Typography>
+				</Box>
 				)}
 			</CommentsWrapper>
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, px: 2, mb: 2 }}>
 			<CommentField
 				multiline
 				minRows={2}
@@ -256,7 +262,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ publicationId }) => {
 				onFocus={connectSocket}
 				onBlur={disconnectSocket}
 			/>
-			<PrimaryBtn variant='contained' onClick={handleAddComment} endIcon={<SendIcon/>}></PrimaryBtn>
+			<PrimaryBtn variant='contained' onClick={handleAddComment} endIcon={<SendIcon/>} ></PrimaryBtn>
+				</Box>
 			<ToastContainer />
 		</div>
 	);

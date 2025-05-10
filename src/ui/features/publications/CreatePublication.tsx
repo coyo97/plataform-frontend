@@ -11,7 +11,8 @@ import FormButton from '../../shared/atoms/form/FormButton';
 import FormFileInput from '../../shared/atoms/form/FormFileInput';
 
 import Escudo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
-import { Career, Publication, fetchCareers, createPublication } from '../../../async/services/publicationService';
+import { fetchCareers, createPublication } from '../../../async/services/publicationService';
+import { Career, Publication } from '../../../types/publication';
 
 interface Props {
 	onPublicationCreated: (p: Publication) => void;

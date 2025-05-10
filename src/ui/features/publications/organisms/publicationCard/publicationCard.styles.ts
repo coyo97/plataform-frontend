@@ -1,6 +1,7 @@
 // ui/organisms/PublicationCard/publicationCard.styles.ts
 import { styled } from '@mui/material/styles';
 import { Card, CardContent } from '@mui/material';
+import mq from '../../../../../config/mq';
 
 export const CardRoot = styled(Card)(({ theme }) => ({
 	marginBottom: theme.spacing(3),
@@ -8,6 +9,10 @@ export const CardRoot = styled(Card)(({ theme }) => ({
 	boxShadow   : theme.shadows[3],
 	transition  : 'box-shadow .25s',
 	'&:hover'   : { boxShadow: theme.shadows[6] },
+	[mq('xs', 'max')]: {
+		marginBottom: theme.spacing(2),
+	},
+
 }));
 
 export const Content = styled(CardContent)(({ theme }) => ({

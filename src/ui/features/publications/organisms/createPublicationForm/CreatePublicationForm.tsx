@@ -6,7 +6,7 @@ import FormButton      from '../../../../shared/atoms/form/FormButton';
 
 import { PublicationFormBody, PublicationFormActions } from '../../moleculas';
 
-import type { Career, Publication } from '../../../../../async/services/publicationService';
+import type { Career, Publication } from '../../../../../types/publication';
 
 interface Props {
 	careers   : Career[];

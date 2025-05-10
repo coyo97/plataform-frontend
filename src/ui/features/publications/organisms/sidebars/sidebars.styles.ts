@@ -3,24 +3,28 @@ import mq from '../../../../../config/mq';
 
 /* contenedor lateral (Create / Filter) */
 export const SidebarContainer = styled('aside')(({ theme }) => ({
-	padding      : theme.spacing(2.5),
-	background   : theme.palette.primary.light,
-	borderRadius : theme.shape.borderRadius * 2,
-	boxShadow    : theme.shadows[2],
-	alignSelf    : 'flex-start',
-	position     : 'sticky',
-	top          : `calc(${theme.mixins.toolbar.minHeight}px + ${theme.spacing(2)})`,
-	maxHeight    : `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(	4)})`, // 100 vh menos header y padding
-	overflowY: 'auto',
-	overflowX: 'hidden',
-		[mq('md','max')]: {
-			position : 'static',
-			width    : '100%',
-			marginBottom: theme.spacing(2),
-		},
-		[mq('md','min')]: {
-			width: 300,
-		},
+	boxSizing   : 'border-box',
+	padding     : theme.spacing(1),
+	background  : theme.palette.primary.light,
+	borderRadius: theme.shape.borderRadius * 2,
+	boxShadow   : theme.shadows[2],
+	alignSelf   : 'flex-start',
+	position    : 'sticky',
+	maxHeight   : `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(4)})`,
+	overflowY   : 'auto',
+	overflowX   : 'hidden',
+
+	/* Móviles — se apila y ocupa 100 % */
+	[mq('sm','max')]: {
+		position   : 'static',
+		width      : '100%',
+		marginBottom: theme.spacing(2),
+	},
+
+	/* >= 600 px — coincide con grid */
+	[mq('sm','min')]: {
+		width: 220,                       // ⬅  Misma anchura que el grid
+	},
 }));
 
 export const FilterTitle = styled('h3')(({ theme }) => ({
@@ -48,8 +52,9 @@ export const FilterButton = styled('button')<{active:boolean}>(({ theme, active 
 		},
 }));
 
+/* Si sigues usando la variante sidebarSX */
 export const sidebarSX: SxProps<Theme> = {
-	display   : { xs:'none', md:'none', lg:'block' },
+	display   : { xs:'none', sm:'block' },   // visible desde 600 px
 	position  : 'sticky',
 	top       : t => `calc(${t.mixins.toolbar.minHeight}px + ${t.spacing(2)})`,
 	maxHeight : t => `calc(100vh - ${t.mixins.toolbar.minHeight}px - ${t.spacing(4)})`,
@@ -59,4 +64,3 @@ export const sidebarSX: SxProps<Theme> = {
 	bgcolor   : 'primary.light',
 	boxShadow : 2,
 };
-

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-	Box, IconButton, Collapse, Typography,
+	Box,Button,Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -9,11 +9,13 @@ import { SidebarContainer } from './sidebars.styles';
 import CreatePublicationForm
 from '../createPublicationForm/CreatePublicationForm';
 import { FormCard } from '../../createPublicationStyles';
+import CreatePublicationDialog from '../CreatePublicationDialog';
 
 import {
 	fetchCareers, createPublication,
-	Career, Publication,
 } from '../../../../../async/services/publicationService';
+
+import { Career,Publication } from '../../../../../types/publication';
 
 interface Props {
 	onNew: (pub: Publication) => void;           // notifica a la Page/feed
@@ -21,55 +23,48 @@ interface Props {
 
 const CreateSidebar: React.FC<Props> = ({ onNew }) => {
 	/* ---------- estado ---------- */
-	const [open   , setOpen]    = useState(false);
+// Estado para el modal
+	const [dialogOpen, setDialogOpen] = useState(false);
+
+	// Estado para las carreras
 	const [careers, setCareers] = useState<Career[]>([]);
 
-	/* ---------- carreras (una sola vez) ---------- */
 	useEffect(() => {
 		fetchCareers().then(setCareers).catch(console.error);
 	}, []);
 
-	/* ---------- submit real ---------- */
+	// Envío real al backend
 	const handleSubmit = async (fd: FormData) => {
-		const pub = await createPublication(fd);   // llamada al backend
-		onNew(pub);                                // lo añade al feed
+		const pub = await createPublication(fd);
+		onNew(pub);
 		return pub;
 	};
 
 	return (
 		<SidebarContainer>
-			{/* Cabecera plegable */}
-			<Box sx={{
-				display:'flex', alignItems:'center', justifyContent:'space-between',
-				px: 1,
-				}}>
-				<Typography variant="subtitle1" fontWeight={600}>
+			<Box sx={{ px: 1 }}>
+				<Typography variant="subtitle1" fontWeight={600} gutterBottom>
 					Crear publicación
 				</Typography>
 
-				<IconButton
-					size="small"
-					onClick={()=>setOpen(o=>!o)}
-					sx={{
-						transform : open ? 'rotate(180deg)' : 'rotate(0deg)',
-						transition: 'transform .25s',
-					}}
+				<Button
+					variant="contained"
+					color="secondary"
+					fullWidth
+					onClick={() => setDialogOpen(true)}
 				>
-					<ExpandMoreIcon fontSize="small"/>
-				</IconButton>
+					Abrir formulario
+				</Button>
 			</Box>
-			{/* Formulario que se pliega */}
-			<Collapse in={open} unmountOnExit>
-				<FormCard elevation={0}>      {/*  ← tarjeta blanca */}
-					<CreatePublicationForm
-						careers   ={careers}
-						onSubmit  ={handleSubmit}
-						onCreated ={onNew}
-					/>
-				</FormCard>
-			</Collapse>
 
-			{/* — Aquí podrás añadir más widgets — */}
+			{/* Modal flotante */}
+			<CreatePublicationDialog
+				open={dialogOpen}
+				onClose={() => setDialogOpen(false)}
+				careers={careers}
+				onNew={onNew}
+				onSubmit={handleSubmit}
+			/>
 		</SidebarContainer>
 	);
 };

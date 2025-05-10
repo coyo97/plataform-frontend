@@ -7,9 +7,8 @@ import {
 	fetchPublications,
 	likePublication,
 	unlikePublication,
-	Career,
-	Publication,
 }                         from '../../../async/services/publicationService';
+import { Career, Publication } from '../../../types/publication';
 import * as R             from '../../../async/routes/publicationRoutes';
 import getEnvVariables    from '../../../config/configEnvs';
 

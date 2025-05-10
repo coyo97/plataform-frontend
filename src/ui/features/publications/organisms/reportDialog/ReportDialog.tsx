@@ -43,7 +43,7 @@ const ReportDialog: React.FC<Props> = ({ open, onClose, publicationId }) => {
 
 			<DialogActions>
 				<Button onClick={onClose}>Cancelar</Button>
-				<Button color="secondary" onClick={send}>Enviar</Button>
+				<Button color="secondary" onClick={send} disabled={!reason.trim()}>Enviar</Button>
 			</DialogActions>
 		</Dialog>
 	);

@@ -2,36 +2,39 @@
 import React, { useState } from 'react';
 import { TextField, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import {Box} from '@mui/system';
 
 interface Props {
-  /** callback disparado sólo al pulsar Enter o al hacer blur */
-  onSearch: (value: string) => void;
-  placeholder?: string;
+	/** callback disparado sólo al pulsar Enter o al hacer blur */
+	onSearch: (value: string) => void;
+	placeholder?: string;
 }
 
 const SearchInput: React.FC<Props> = ({ onSearch, placeholder }) => {
-  const [value, set] = useState('');
+	const [value, set] = useState('');
 
-  const fire = () => onSearch(value.trim());
+	const fire = () => onSearch(value.trim());
 
-  return (
-    <TextField
-      fullWidth
-      size="small"
-      value={value}
-      placeholder={placeholder ?? 'Buscar…'}
-      onChange={(e) => set(e.target.value)}
-      onKeyDown={(e) => e.key === 'Enter' && fire()}
-      onBlur={fire}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <SearchIcon fontSize="small" />
-          </InputAdornment>
-        ),
-      }}
-    />
-  );
+	return (
+		<Box sx={{ mt: 4, mb: 2 }}>
+		<TextField
+			fullWidth
+			size="small"
+			value={value}
+			placeholder={placeholder ?? 'Buscar…'}
+			onChange={(e) => set(e.target.value)}
+			onKeyDown={(e) => e.key === 'Enter' && fire()}
+			onBlur={fire}
+			InputProps={{
+				startAdornment: (
+					<InputAdornment position="start">
+						<SearchIcon fontSize="small" />
+					</InputAdornment>
+				),
+			}}
+		/>
+			</Box>
+	);
 };
 
 export default SearchInput;

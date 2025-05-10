@@ -8,8 +8,10 @@ export const FormCard = styled(Card)(({ theme }) => ({
 	borderRadius: theme.shape.borderRadius * 2,
 	boxShadow: theme.shadows[4],
 	overflow: 'hidden',
+	padding: theme.spacing(2),
 	[mq('xs', 'max')]: {
 		margin: theme.spacing(1),
+		padding: theme.spacing(1.5),
 	},
 }));
 

@@ -4,7 +4,7 @@ import SectionTitle   from '../../../../shared/atoms/titles/SectionTitle';
 import AccordionSection from '../../../../shared/molecules/accordionSection/AccordionSection';
 import { FilterButton } from './sidebars.styles';
 
-import type { Career } from '../../../../../async/services/publicationService';
+import { Career } from '../../../../../types/publication';
 export type Filter = 'mostRecent' | 'mostLiked' | 'mostCommented' | 'career';
 
 interface Props {

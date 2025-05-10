@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import {
 	fetchMyPublications, updatePublication, deletePublication,
-	Publication,
 } from '../../../../async/services/publicationService';
+
+import { Publication } from '../../../../types/publication';
 
 import getEnvVariables from '../../../../config/configEnvs';
 import {

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-	fetchCareers, Career,
-	createPublication, Publication,
+	fetchCareers, 
+	createPublication, 
 } from '../../../../../async/services/publicationService';
+import { Career, Publication } from '../../../../../types/publication';
 
 import CreatePublicationForm from '../../organisms/createPublicationForm/CreatePublicationForm';
 

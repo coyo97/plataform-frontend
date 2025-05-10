@@ -4,8 +4,8 @@ import { useParams }               from 'react-router-dom';
 
 import {
 	fetchPublications,               // ← mismo helper del feed
-	Publication
 }                                   from '../../../async/services/publicationService';
+import { Publication } from '../../../types/publication';
 import * as R                       from '../../../async/routes/publicationRoutes';
 import getEnvVariables              from '../../../config/configEnvs';
 import CommentSection               from '../comments/CommentSection';
