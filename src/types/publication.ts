@@ -20,5 +20,6 @@ export interface Publication {
 			profilePicture?: string;
 		};
 	};
+	created_at: string; // ← nombre común que estás usando
 }
 

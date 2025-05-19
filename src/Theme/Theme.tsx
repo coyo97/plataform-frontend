@@ -1,203 +1,187 @@
+// src/Theme/Theme.tsx
 import React, { ReactNode } from 'react';
-import { PaletteOptions } from '@mui/material/styles';
-import { ThemeProvider, CssBaseline, createTheme } from "@mui/material";
-import Inter from '../assets/fonts/Inter-Regular.ttf';
-import Poppins from '../assets/fonts/Poppins-Regular.ttf';
-import AllertaStencil from '../assets/fonts/AllertaStencil-Regular.ttf';
-import DMSans from '../assets/fonts/DMSans-Regular.ttf'; 
-import Alatsi from '../assets/fonts/Alatsi-Regular.ttf';
+import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
+import { colors } from './tokens/colors'; // asegúrate que esté bien exportado
 import '@fontsource/inter/400.css';
 import '@fontsource/allerta-stencil/400.css';
 import '@fontsource/quicksand';
 import '@fontsource/poppins';
-
-const InterRegular = {
-	fontFamily: "Inter-Regular",
-	fontStyle: "normal",
-	fontWeight: 100,
-	src: `url(${Inter})`,
-};
-const InterBold = {
-	fontFamily: "Inter-Bold",
-	fontStyle: "normal",
-	fontWeight: 700,
-	src: `url(${Inter})`,
-};
-const PoppinsRegular = {
-	fontFamily: "Poppins-Regular",
-	fontStyle: "normal",
-	fontWeight: 100,
-	src: `url(${Poppins})`,
-};
-const PoppinsBold = {
-	fontFamily: "Poppins-Bold",
-	fontStyle: "normal",
-	fontWeight: 700,
-	src: `url(${Poppins})`,
-};
-const AllertaStencilRegular = {
-	fontFamily: 'AllertaStencil-Regular',
-	fontStyle: 'normal',
-	fontWeight: 100,
-	src: `url(${AllertaStencil})`,
-};
-const AllertaStencilBold = {
-	fontFamily: 'AllertaStencil-Bold',
-	fontStyle: 'normal',
-	fontWeight: 700,
-	src: `url(${AllertaStencil})`,
-};
-const DMSansRegular ={
-	fontFamily: 'DMSans-Regular',
-	fontStyle: 'normal',
-	fontWeight: 100,
-	src: `url(${DMSans})`
-};
-const AlatsiRegular = {
-	fontFamily: 'Alatsi-Regular',
-	fontStyle: 'normal',
-	fontWeight: 100,
-	src: `url(${Alatsi})`
-};
-const AlatsiBold = {
-	fontFamily: 'Alatsi-Bold',
-	fontStyle: 'normal',
-	fontWeight: 700,
-	src: `url(${Alatsi})`
-};
-
-declare module '@mui/material/styles/createPalette' {
-  interface Palette {
-    colorHeader: { main: string };
-    colorForm: { main: string };
-    colorButton: { main: string; second: string };
-  }
-  interface PaletteOptions {
-    colorHeader?: { main: string };
-    colorForm?: { main: string };
-    colorButton?: { main: string; second: string };
-  }
-}
-declare module '@mui/material/styles' {
-  interface BreakpointOverrides {
-    xxs: true;
-  }
-}
+import { shadows as customShadows } from './tokens/shadows';
+import { radius } from './tokens/radius';
+import { padding } from './tokens/padding';
+import { values } from './tokens/values';
+import typographyTokens from './tokens/typography';
 
 declare module '@mui/material/styles' {
-  interface Palette {
-    sidebar: {
-      background: string;
-      text: string;
-      link: string;
-      hover: string;
-      accent: string;
-    };
-  }
+	interface Theme {
+		customColors: typeof colors;
+		radius: typeof radius;
+		padding: typeof padding;
+		values: typeof values;
+		typographyTokens: typeof typographyTokens;
+	}
+	interface ThemeOptions {
+		customColors?: typeof colors;
+		radius?: typeof radius;
+		padding?: typeof padding;
+		values?: typeof values;
+		typographyTokens?: typeof typographyTokens;
+	}
 
-  interface PaletteOptions {
-    sidebar?: {
-      background: string;
-      text: string;
-      link: string;
-      hover: string;
-      accent: string;
-    };
-  }
+	interface Palette {
+		colorHeader: { main: string };
+		colorForm: { main: string };
+		colorButton: { main: string; second: string };
+		sidebar: {
+			background: string;
+			text: string;
+			link: string;
+			hover: string;
+			accent: string;
+		};
+	}
+
+	interface PaletteOptions {
+		colorHeader?: { main: string };
+		colorForm?: { main: string };
+		colorButton?: { main: string; second: string };
+		sidebar?: {
+			background: string;
+			text: string;
+			link: string;
+			hover: string;
+			accent: string;
+		};
+	}
+
+	interface BreakpointOverrides {
+		xxs: true;
+	}
 }
 
 const theme = createTheme({
-  typography: {
-    fontFamily: [
-      'Inter',
-      'Poppins',
-      'Allerta Stencil',
-      'DM Sans',
-      'Alatsi',
-    ].join(","),
-  },
-  palette: {
-    primary: {
-      main: '#003366', // Azul oscuro
-      light: '#336699', // Azul intermedio
-      dark: '#002244',  // Azul más oscuro
-      contrastText: '#FFFFFF', // Texto blanco sobre fondo azul
-    },
-    secondary: {
-      main: '#CC0000', // Rojo
-      light: '#FF3333', // Rojo claro
-      dark: '#990000',  // Rojo oscuro
-      contrastText: '#FFFFFF', // Texto blanco sobre fondo rojo
-    },
-    warning: {
-      main: '#FFD700', // Amarillo dorado
-      contrastText: '#000000', // Texto negro sobre fondo amarillo
-    },
-    background: {
-      default: '#FFFFFF', // Blanco
-      paper: '#F5F5F5', // Gris claro para fondos secundarios
-    },
-    text: {
-      primary: '#000000', // Negro
-      secondary: '#003366', // Azul oscuro para textos secundarios
-    },
-    colorHeader: {
-      main: '#003366', // Azul oscuro para encabezados
-    },
-    colorForm: {
-      main: '#F5F5F5', // Gris claro para fondos de formularios
-    },
-    colorButton: {
-      main: '#003366', // Azul oscuro para botones principales
-      second: '#CC0000', // Rojo para botones secundarios
-    },
-    sidebar: {
-      background: '#003366',  // Fondo azul oscuro del sidebar
-      text: '#FFFFFF',        // Texto blanco
-      link: '#FFD700',        // Enlaces en amarillo
-      hover: '#FF3333',       // Rojo claro al hacer hover
-      accent: '#FFD700',      // Amarillo/dorado como acento
-    },
-    divider: '#CCCCCC', // Gris para divisores
-    action: {
-      hover: '#E6F2FF', // Azul muy claro al pasar el cursor
-    },
-  },
-  breakpoints: {
-    values: {
-      xxs: 0,
-      xs: 375,
-      sm: 600,
-      md: 900,
-      lg: 1200,
-      xl: 1800,
-    },
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          fontFamily: "Poppins, sans-serif",
-        },
-        "h1, h2, h3, h4, h5, h6": {
-          margin: 0,
-          padding: 0,
-        },
-      },
-    },
-  },
+	typography: {
+		fontFamily: ['Inter', 'Poppins', 'Allerta Stencil', 'DM Sans', 'Alatsi'].join(','),
+	},
+	shape: {
+		borderRadius: parseInt(radius.sm4x), // 8px como valor base global
+	},
+	typographyTokens,
+	palette: {
+		primary: {
+			main: colors.brand.primary[700],
+			light: colors.brand.primary[300],
+			dark: colors.brand.primary[900],
+			contrastText: colors.neutral.white[900],
+		},
+		secondary: {
+			main: colors.feedback.negative[500],
+			light: colors.feedback.negative[300],
+			dark: colors.feedback.negative[700],
+			contrastText: colors.neutral.white[900],
+		},
+		warning: {
+			main: colors.feedback.warning[500],
+			contrastText: colors.neutral.black[900],
+		},
+		background: {
+			default: colors.neutral.white[900],
+			paper: colors.neutral.graySoft[50],
+		},
+		text: {
+			primary: colors.neutral.black[900],
+			secondary: colors.brand.primary[700],
+		},
+		colorHeader: {
+			main: colors.brand.primary[700],
+		},
+		colorForm: {
+			main: colors.neutral.graySoft[50],
+		},
+		colorButton: {
+			main: colors.brand.primary[700],
+			second: colors.feedback.negative[500],
+		},
+		sidebar: {
+			background: colors.brand.primary[700],
+			text: colors.neutral.white[900],
+			link: colors.feedback.warning[500],
+			hover: colors.feedback.negative[300],
+			accent: colors.feedback.warning[500],
+		},
+		divider: colors.neutral.graySoft[200],
+		action: {
+			hover: colors.neutral.graySoft[100],
+		},
+	},
+	customColors: colors, // Aquí se agregan los tokens completos
+	breakpoints: {
+		values: {
+			xxs: 0,
+			xs: 375,
+			sm: 600,
+			md: 900,
+			lg: 1200,
+			xl: 1800,
+		},
+	},
+	components: {
+		MuiCssBaseline: {
+			styleOverrides: {
+				body: {
+					fontFamily: 'Poppins, sans-serif',
+				},
+				'h1, h2, h3, h4, h5, h6': {
+					margin: 0,
+					padding: 0,
+				},
+			},
+		},
+	},
+	shadows: [
+		'none',
+		customShadows.xs,   // 1
+		customShadows.sm,   // 2
+		customShadows.md,   // 3
+		customShadows.lg,   // 4
+		customShadows.xl,   // 5
+		customShadows.x3l,  // 6
+		'none', // 7
+		'none', // 8
+		'none', // 9
+		'none', // 10
+		'none', // 11
+		'none', // 12
+		'none', // 13
+		'none', // 14
+		'none', // 15
+		'none', // 16
+		'none', // 17
+		'none', // 18
+		'none', // 19
+		'none', // 20
+		'none', // 21
+		'none', // 22
+		'none', // 23
+		'none', // 24
+	],
 });
 
 type ThemeProps = {
-  children: ReactNode;
+	children: ReactNode;
 };
 
 const Theme: React.FC<ThemeProps> = ({ children }) => (
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
-    {children}
-  </ThemeProvider>
+	<ThemeProvider theme={theme}>
+		<CssBaseline />
+		{children}
+	</ThemeProvider>
 );
+theme.radius = radius;
+theme.padding = padding;
+theme.values = values;
+theme.typographyTokens = typographyTokens;
 
 export default Theme;
 export { theme };
+

@@ -16,7 +16,7 @@ const SearchInput: React.FC<Props> = ({ onSearch, placeholder }) => {
 	const fire = () => onSearch(value.trim());
 
 	return (
-		<Box sx={{ mt: 4, mb: 2 }}>
+		<Box sx={{ mt: 0, mb: 2 }}>
 		<TextField
 			fullWidth
 			size="small"

@@ -17,10 +17,9 @@ export const FeedWrapper = styled('section')(({ theme }) => ({
 	flex: 1,
 	minWidth: 0,          // evita que se encoja dentro del grid
 	animation: `${fadeSlide} .4s ease`,
-
 	/* Spacing horizontal */
 	marginLeft : theme.spacing(3),
-	marginRight: theme.spacing(1),
+	marginRight: theme.spacing(3),
 
 	[theme.breakpoints.down('md')]: {
 		marginInline: theme.spacing(1.5),

@@ -10,6 +10,7 @@ const FilterButton = styled(Button, {
 })<Props>(({ theme, active }) => ({
 	justifyContent: 'flex-start',
 	width: '100%',
+	boxShadow: theme.shadows[1], // xs
 	textTransform: 'none',
 	borderRadius: theme.shape.borderRadius,
 	padding: theme.spacing(1, 2),

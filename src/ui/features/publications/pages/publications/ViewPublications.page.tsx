@@ -25,6 +25,7 @@ import PublicationFile from '../../moleculas/publicationFile/PublicationFile';
 import PublicationsLayout from '../../templates/PublicationsLayout';
 import { sidebarSX }      from '../../organisms/sidebars/sidebars.styles';
 import { getUserId } from '../../../../../utils/auth/getUserId';
+import { breakPoints } from '../../../../../config/mq';
 
 /* ── MUI ──────────────────────────────────────────────── */
 import {
@@ -50,9 +51,15 @@ const ViewPublicationsPage: React.FC = () => {
 
 	/* misc */
 	const theme    = useTheme();
-	const mobile   = useMediaQuery(theme.breakpoints.down('sm'));   // <600
-	const lgUp     = useMediaQuery(theme.breakpoints.up('lg'));     // ≥1200
-	const mdOnly   = !mobile && !lgUp;                              // 600-1199
+	/* ────────────────────── media-queries ────────────────────── */
+	// ≤ 599 px  (móvil real)
+	const smDown = useMediaQuery(`(max-width:${breakPoints.values.sm - 1}px)`);
+	// ≥ 1200 px (desktop grande)
+	const lgUp   = useMediaQuery(`(min-width:${breakPoints.values.lg}px)`);
+
+	const isMobile  = smDown;
+	const isDesktop = lgUp;
+	const isTablet  = !isMobile && !isDesktop;       // 600 – 1199 px
 
 	const navigate  = useNavigate();
 	const { HOST }  = getEnvVariables();
@@ -118,46 +125,36 @@ const ViewPublicationsPage: React.FC = () => {
 	/* ---------- JSX --------------------------------------- */
 	return (
 		<PublicationsLayout>
-
-			{/* ① Create – LEFT sidebar */}
-			{lgUp ? (
-				<Box sx={sidebarSX}>
-					<CreateSidebar onNew={handleNewPost}/>
-				</Box>
-			) : mdOnly ? (
+			{/* ① CREATE – LEFT SIDEBAR */}
+			{isMobile ? (
 				<>
-					<Button variant="contained" startIcon={<AddIcon/>}
-						onClick={()=>setShowForm(true)}
-						sx={{position:'fixed',bottom:16,left:16,zIndex:1200}}>
-						Publicar
-					</Button>
-					<SwipeableDrawer anchor="left" open={showForm}
-						onClose={()=>setShowForm(false)}
-						onOpen={() => {}}
-						PaperProps={{sx:{width:300}}}>
-						<Box sx={{p:2}}>
-							<CreateSidebar onNew={handleNewPost}/>
+					{/* FAB + Dialog en móvil */}
+					<Fab
+						color="secondary"
+						sx={{ position:'fixed', bottom:16, right:16, zIndex:1200 }}
+						onClick={() => setShowForm(true)}
+					>
+						<AddIcon/>
+					</Fab>
+
+					<Dialog
+						fullScreen
+						open={showForm}
+						onClose={() => setShowForm(false)}
+					>
+						<Box sx={{ width:'100%' }}>
+							<CreateSidebar onNew={handleNewPost} />
 						</Box>
-					</SwipeableDrawer>
+					</Dialog>
 				</>
 			) : (
-			/* mobile */
-			<>
-				<Fab color="secondary"
-					sx={{position:'fixed',bottom:16,right:16,zIndex:1200}}
-					onClick={()=>setShowForm(true)}>
-					<AddIcon/>
-				</Fab>
-				<Dialog fullScreen open={showForm}
-					onClose={()=>setShowForm(false)}>
-					<Box sx={{width:'100%'}}>
-						<CreateSidebar onNew={handleNewPost}/>
-					</Box>
-				</Dialog>
-			</>
+			/* Tablet + Desktop → sidebar fijo */
+			<Box sx={sidebarSX}>
+				<CreateSidebar onNew={handleNewPost} />
+			</Box>
 			)}
 
-			{/* ② Feed (siempre) */}
+			{/* ② FEED (siempre) */}
 			<Box sx={{ flexGrow:1, minWidth:0, overflow:'auto' }}>
 				<PublicationsFeed
 					HOST={HOST}
@@ -175,30 +172,27 @@ const ViewPublicationsPage: React.FC = () => {
 				/>
 			</Box>
 
-			{/* ③ Filter – RIGHT sidebar */}
-			{lgUp ? (
-				<Box sx={sidebarSX}>
-					<FilterSidebar
-						careers={careers}
-						selectedCareer={careerId}
-						selectedFilter={filter}
-						setCareer={setCareer}
-						setFilter={setFilter}
-					/>
-				</Box>
-			) : (
+			{/* ③ FILTER – RIGHT SIDEBAR */}
+			{isMobile ? (
 				<>
-					<Button variant="outlined" startIcon={<FilterListIcon/>}
-						onClick={()=>setShowFilters(true)}
-						sx={{position:'fixed',top:72,right:16,zIndex:1100}}>
+					{/* Botón + Drawer en móvil */}
+					<Button
+						variant="outlined"
+						startIcon={<FilterListIcon/>}
+						onClick={() => setShowFilters(true)}
+						sx={{ position:'fixed', top:72, right:16, zIndex:1100 }}
+					>
 						Filtros
 					</Button>
 
-					<SwipeableDrawer anchor="right" open={showFilters}
-						onClose={()=>setShowFilters(false)}
+					<SwipeableDrawer
+						anchor="right"
+						open={showFilters}
+						onClose={() => setShowFilters(false)}
 						onOpen={() => {}}
-						PaperProps={{sx:{width:{xs:'80%',sm:320}}}}>
-						<Box sx={{p:2}}>
+						PaperProps={{ sx:{ width:'80%' } }}   // 80 % del viewport
+					>
+						<Box sx={{ p:2 }}>
 							<FilterSidebar
 								careers={careers}
 								selectedCareer={careerId}
@@ -209,13 +203,24 @@ const ViewPublicationsPage: React.FC = () => {
 						</Box>
 					</SwipeableDrawer>
 				</>
+			) : (
+			/* Tablet + Desktop → sidebar fijo */
+			<Box sx={sidebarSX}>
+				<FilterSidebar
+					careers={careers}
+					selectedCareer={careerId}
+					selectedFilter={filter}
+					setCareer={setCareer}
+					setFilter={setFilter}
+				/>
+			</Box>
 			)}
 
-			{/* ④ Report dialog */}
+			{/* ④ REPORT DIALOG */}
 			{report.open && (
 				<ReportDialog
 					open={report.open}
-					onClose={()=>setReport({open:false,id:''})}
+					onClose={() => setReport({ open:false, id:'' })}
 					publicationId={report.id}
 				/>
 			)}

@@ -18,10 +18,15 @@ interface Props{
 	onSearch   : (q:string)=>void;
 }
 
-const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,onUnlike,onAuthor,onReport,onSearch,})=>(
+const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,onUnlike,onAuthor,onReport,onSearch, })=>(
 	<FeedWrapper>
-		<SearchInput onSearch={onSearch} />
-
+		<div style={{
+			position: 'sticky',
+			top: 0,
+			background: 'white', // o theme.palette.background.default
+			}}>
+			<SearchInput onSearch={onSearch} />
+		</div>
 		{list.map((p,idx)=>(
 			<div key={p._id}
 				ref={idx===list.length-1?lastRef:null}
@@ -31,6 +36,7 @@ const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,on
 				<PublicationCard
 					HOST={HOST}
 					publication={p}
+					publishedAt={p.created_at}
 					renderFile ={renderFile}
 					onLike     ={onLike}
 					onUnlike   ={onUnlike}

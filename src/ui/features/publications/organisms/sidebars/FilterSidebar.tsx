@@ -3,6 +3,7 @@ import SectionTitle   from '../../../../shared/atoms/titles/SectionTitle';
 
 import AccordionSection from '../../../../shared/molecules/accordionSection/AccordionSection';
 import { FilterButton } from './sidebars.styles';
+import GhostButton from '../../../../shared/atoms/buttons/ghostButton/GhostButton';
 
 import { Career } from '../../../../../types/publication';
 export type Filter = 'mostRecent' | 'mostLiked' | 'mostCommented' | 'career';
@@ -33,12 +34,11 @@ const FilterSidebar:React.FC<Props>=({
 		</AccordionSection>
 
 		<AccordionSection title="Orden">
-			<FilterButton active={selectedFilter==='mostRecent'}
-				onClick={()=>setFilter('mostRecent')}>Más recientes</FilterButton>
-			<FilterButton active={selectedFilter==='mostLiked'}
-				onClick={()=>setFilter('mostLiked')}>Más gustadas</FilterButton>
-			<FilterButton active={selectedFilter==='mostCommented'}
-				onClick={()=>setFilter('mostCommented')}>Más comentadas</FilterButton>
+			<GhostButton label="Más recientes" colorType="primary"onClick={() => setFilter('mostRecent')}/>
+			<GhostButton label="Más gustadas" colorType='secondary' onClick={()=>setFilter('mostLiked')}/>
+			<GhostButton label='Más comentadas' colorType='primary' onClick={()=>setFilter('mostCommented')}/>
+			{/*<FilterButton active={selectedFilter==='mostCommented'}
+				onClick={()=>setFilter('mostCommented')}>Más comentadas</FilterButton>*/}
 		</AccordionSection>
 
 		<FilterButton active={selectedFilter==='mostRecent'&&selectedCareer===''}

@@ -35,6 +35,7 @@ interface Publication {
 	filePath?: string;
 	fileType?: string;
 	likes?: string[];                 // ← puede venir undefined
+	created_at: string; // ← nombre común que estás usando
 }
 
 interface Props {
