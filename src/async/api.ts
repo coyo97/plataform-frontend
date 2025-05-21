@@ -29,9 +29,9 @@ const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean,): R
 
 const request = async <T>(endpoint: string, payload: Payload, method: HttpMethod, isFile: boolean): Promise<T> => {
 	const options = buildOptions(payload, method, isFile);
-	console.log("here");
+	//console.log("here");
 	const response: Response = await fetch(endpoint, options);
-	console.log(response);
+	//console.log(response);
 	if (response.ok) {
 		try {
 			const data: T = await response.json();

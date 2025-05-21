@@ -18,14 +18,14 @@ import { useInfiniteScroll } from '../../../../shared/hooks/useInfiniteScroll';
 
 /* ── UI ────────────────────────────────────────────────── */
 import PublicationsFeed   from '../../organisms/publicationsFeed/PublicationsFeed';
-import CreateSidebar      from '../../organisms/sidebars/CreateSidebar';
-import FilterSidebar      from '../../organisms/sidebars/FilterSidebar';
 import ReportDialog       from '../../organisms/reportDialog/ReportDialog';
 import PublicationFile from '../../moleculas/publicationFile/PublicationFile';
 import PublicationsLayout from '../../templates/PublicationsLayout';
 import { sidebarSX }      from '../../organisms/sidebars/sidebars.styles';
 import { getUserId } from '../../../../../utils/auth/getUserId';
 import { breakPoints } from '../../../../../config/mq';
+import CreatePublicationSidebar from '../../organisms/sidebars/CreatePublicationSidebar';
+import FilterPublicationSidebar from '../../organisms/sidebars/FilterPublicationSidebar';
 
 /* ── MUI ──────────────────────────────────────────────── */
 import {
@@ -48,6 +48,8 @@ const ViewPublicationsPage: React.FC = () => {
 	const [showForm   , setShowForm]    = useState(false);
 	const [showFilters, setShowFilters] = useState(false);
 	const [report, setReport] = useState<{open:boolean; id:string}>({open:false,id:''});
+	const [createOpen, setCreateOpen]  = useState(false); // para CreatePublicationSidebar
+	const [filterOpen, setFilterOpen]  = useState(false); // para FilterPublicationSidebar
 
 	/* misc */
 	const theme    = useTheme();
@@ -128,30 +130,30 @@ const ViewPublicationsPage: React.FC = () => {
 			{/* ① CREATE – LEFT SIDEBAR */}
 			{isMobile ? (
 				<>
-					{/* FAB + Dialog en móvil */}
 					<Fab
 						color="secondary"
 						sx={{ position:'fixed', bottom:16, right:16, zIndex:1200 }}
-						onClick={() => setShowForm(true)}
+						onClick={() => setCreateOpen(true)}
 					>
 						<AddIcon/>
 					</Fab>
 
-					<Dialog
-						fullScreen
-						open={showForm}
-						onClose={() => setShowForm(false)}
-					>
-						<Box sx={{ width:'100%' }}>
-							<CreateSidebar onNew={handleNewPost} />
-						</Box>
+					<Dialog fullScreen open={createOpen} onClose={() => setCreateOpen(false)}>
+						<CreatePublicationSidebar
+							open
+							onClose={() => setCreateOpen(false)}
+							onNew={handleNewPost}
+						/>
 					</Dialog>
 				</>
 			) : (
-			/* Tablet + Desktop → sidebar fijo */
-			<Box sx={sidebarSX}>
-				<CreateSidebar onNew={handleNewPost} />
-			</Box>
+				<Box sx={sidebarSX}>
+					<CreatePublicationSidebar
+						open={createOpen}
+						onClose={() => setCreateOpen(false)}
+						onNew={handleNewPost}
+					/>
+				</Box>
 			)}
 
 			{/* ② FEED (siempre) */}
@@ -175,11 +177,10 @@ const ViewPublicationsPage: React.FC = () => {
 			{/* ③ FILTER – RIGHT SIDEBAR */}
 			{isMobile ? (
 				<>
-					{/* Botón + Drawer en móvil */}
 					<Button
 						variant="outlined"
 						startIcon={<FilterListIcon/>}
-						onClick={() => setShowFilters(true)}
+						onClick={() => setFilterOpen(true)}
 						sx={{ position:'fixed', top:72, right:16, zIndex:1100 }}
 					>
 						Filtros
@@ -187,35 +188,35 @@ const ViewPublicationsPage: React.FC = () => {
 
 					<SwipeableDrawer
 						anchor="right"
-						open={showFilters}
-						onClose={() => setShowFilters(false)}
+						open={filterOpen}
+						onClose={() => setFilterOpen(false)}
 						onOpen={() => {}}
-						PaperProps={{ sx:{ width:'80%' } }}   // 80 % del viewport
+						PaperProps={{ sx:{ width:'80%' } }}
 					>
-						<Box sx={{ p:2 }}>
-							<FilterSidebar
-								careers={careers}
-								selectedCareer={careerId}
-								selectedFilter={filter}
-								setCareer={setCareer}
-								setFilter={setFilter}
-							/>
-						</Box>
+						<FilterPublicationSidebar
+							open
+							onClose={() => setFilterOpen(false)}
+							careers={careers}
+							selectedCareer={careerId}
+							selectedFilter={filter}
+							setCareer={setCareer}
+							setFilter={setFilter}
+						/>
 					</SwipeableDrawer>
 				</>
 			) : (
-			/* Tablet + Desktop → sidebar fijo */
-			<Box sx={sidebarSX}>
-				<FilterSidebar
-					careers={careers}
-					selectedCareer={careerId}
-					selectedFilter={filter}
-					setCareer={setCareer}
-					setFilter={setFilter}
-				/>
-			</Box>
+				<Box sx={sidebarSX}>
+					<FilterPublicationSidebar
+						open={filterOpen}
+						onClose={() => setFilterOpen(false)}
+						careers={careers}
+						selectedCareer={careerId}
+						selectedFilter={filter}
+						setCareer={setCareer}
+						setFilter={setFilter}
+					/>
+				</Box>
 			)}
-
 			{/* ④ REPORT DIALOG */}
 			{report.open && (
 				<ReportDialog

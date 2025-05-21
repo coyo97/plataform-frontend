@@ -8,3 +8,5 @@ export const shadows = {
 	x3l: '0px 16px 32px rgba(0, 0, 0, 0.14)',
 };
 
+export type ShadowKey = keyof typeof shadows;
+

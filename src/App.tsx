@@ -13,7 +13,6 @@ import HomePublications from './ui/features/publications/HomePublications';
 import HomeProfile from './ui/features/profile/HomeProfile';
 import Home from './ui/features/plaform/Home';
 import UserMaterials from './ui/features/publications/user/UserMaterials';
-import CreatePublication from './ui/features/publications/CreatePublication';
 
 import AuthorProfile from './ui/features/profile/AuthorProfile';
 import ViewProfile from './ui/features/profile/ViewProfile';
@@ -29,7 +28,6 @@ import HomeModerator from './ui/features/moderator/HomeModerator';
 import HomeAlert from './ui/features/centerAlert/HomeAlert';
 import HomeSetting from './ui/features/configFile/HomeSetting';
 import HomeStream from './ui/features/stream/HomeStream';
-import PublicationDetail from './ui/features/publications/PublicationDetail';
 import './ui/features/admin/adminLayout.css'; // Asegúrate de que la ruta sea correcta
 import ForgotPassword from './ui/features/auth/ForgotPassword';
 import ResetPassword from './ui/features/auth/ResetPassword';
@@ -71,7 +69,6 @@ function App() {
 						<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
 						<Route path='/stream-academi' element={<HomeStream/>}></Route>
 						<Route path='/publications' element={<HomePublications/>}></Route>
-						<Route path="/publications/:publicationId" element={<PublicationDetail />} />
 						<Route path='/profile' element={<HomeProfile/>}></Route>
 						<Route path='/material-user' element={<UserMaterials/>}></Route>
 						<Route path="/profile/:id" element={<AuthorProfile />} />

@@ -1,24 +1,30 @@
-// FilledButton.tsx
+// shared/atoms/buttons/filledButton/FilledButton.tsx
 import React from 'react';
 import { StyledFilledButton } from './filledButton.styles';
-import { FilledButtonProps } from './FilledButton.type';
+import { FilledButtonProps }  from './FilledButton.type';
 
-const FilledButton: React.FC<FilledButtonProps> = ({
-	children,
-	colorType = 'primary',
-	btnVariant= 'default',
-	shape = 'rounded',
-	...rest
-}) => (
-	<StyledFilledButton
-		colorType={colorType}
-		btnVariant={btnVariant}
-		shape={shape}
-		{...rest}
-	>
-		{children}
-	</StyledFilledButton>
-);
+const FilledButton = React.forwardRef(
+  <C extends React.ElementType = 'button'>(
+    {
+      children,
+      colorType  = 'info',
+      btnVariant = 'outline',
+      shape      = 'rounded',
+      ...rest
+    }: FilledButtonProps<C>,
+    ref: React.Ref<Element>,
+  ) => (
+    <StyledFilledButton
+      ref={ref as any}
+      colorType={colorType}
+      btnVariant={btnVariant}
+      shape={shape}
+      {...rest}
+    >
+      {children}
+    </StyledFilledButton>
+));
 
+FilledButton.displayName = 'FilledButton';
 export default FilledButton;
 

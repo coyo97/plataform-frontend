@@ -1,36 +1,53 @@
-// ui/molecules/PublicationActions/PublicationActions.tsx
+// features/publications/moleculas/publicationActions/PublicationActions.tsx
 import React from 'react';
-import {  Tooltip, Typography } from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import CommentIcon from '@mui/icons-material/Comment';
-import { ActionsBar } from './publicationActions.styles';
-import IconButton from '../../../../shared/atoms/buttons/iconButton/IconButton';
 
-interface Props{
-	liked      : boolean;
-	likesCount : number;
-	onLike     : ()=>void;
-	onUnlike   : ()=>void;
+import IconButton from '../../../../shared/atoms/buttons/iconButton/IconButton';
+import TooltipBubble from '../../../../shared/atoms/tooltips/tooltipBubble/TooltipBubble';
+import Counter from '../../../../shared/atoms/counters/Counter';
+import LikeIcon from '../../../../shared/atoms/icons/LikeIcon';
+
+import { ActionsBar } from './publicationActions.styles';
+import CommentIcon from '../../../../shared/atoms/icons/CommentIcon';
+
+interface Props {
+	liked        : boolean;
+	likesCount   : number;
+	commentsCount?: number;
+	onLike       : () => void;
+	onUnlike     : () => void;
+	onComments?  : () => void;
 }
 
-const PublicationActions:React.FC<Props>=({liked,likesCount,onLike,onUnlike})=>(
+const PublicationActions: React.FC<Props> = ({
+	liked, likesCount, commentsCount = 0,
+	onLike, onUnlike, onComments,
+}) => (
 	<ActionsBar disableSpacing>
-		<Tooltip title={liked ? 'Quitar Me gusta' : 'Me gusta'}>
+
+		<TooltipBubble content={liked ? 'Quitar Me gusta' : 'Me gusta'}>
 			<IconButton
-				onClick={liked ? onUnlike : onLike}
 				ariaLabel={liked ? 'Quitar Me gusta' : 'Dar Me gusta'}
-				colorType='secondary'
+				colorType="success"
+				onClick={liked ? onUnlike : onLike}
 			>
-				{liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
+				<LikeIcon filled={liked} />
+		<Counter value={likesCount} />
 			</IconButton>
-		</Tooltip>
+		</TooltipBubble>
 
-		<Typography variant="body2">{likesCount}</Typography>
 
-		<Tooltip title="Comentarios">
-			<IconButton ariaLabel="Abrir comentarios"><CommentIcon/></IconButton>
-		</Tooltip>
+		<TooltipBubble content="Comentarios">
+			<IconButton
+				ariaLabel="Ver comentarios"
+				colorType="success"
+				onClick={onComments}
+			>
+				<CommentIcon />
+		<Counter value={commentsCount} />
+			</IconButton>
+		</TooltipBubble>
+
+
 	</ActionsBar>
 );
 

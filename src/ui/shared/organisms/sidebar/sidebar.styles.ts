@@ -42,30 +42,21 @@ export const SidebarContainer = styled('nav', {
 	position: SidebarPosition;
 }>(({ theme, open = true, sticky, width, variant, position }) => ({
 	width,
+	minWidth: 0,
 	flexShrink: 0,
 	boxSizing: 'border-box',
-	padding: theme.spacing(2),
+	padding: theme.spacing(1),
 	display: 'flex',
 	flexDirection: 'column',
 	borderRadius: radius.sm4x,
 	transition: 'transform 0.3s ease',
+	overflowX   : 'hidden',
 	...variantStyles(variant, theme),
 
 	// ▸ Desktop — left fixed o sticky
 	...(sticky
 		? {
-			position: 'sticky',
-			top: `calc(${theme.mixins.toolbar.minHeight}px + ${theme.spacing(2)})`,
-			maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(
-				4,
-			)})`,
-			overflowY: 'auto',
-		}
-			: {
-				position: 'fixed',
-				top: 0,
-				[position]: 0,
-				height: '100vh',
+			position: 'sticky', top: `calc( ${theme.spacing(0)})`, maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing( 4,)})`, overflowY: 'auto', } : { position: 'fixed', top: 0, [position]: 0, height: '100vh',
 			}),
 
 			// ▸ Mobile: slide-in/out
@@ -84,6 +75,7 @@ export const SidebarContainer = styled('nav', {
 export const SidebarContent = styled('div')({
 	flexGrow: 1,
 	overflowY: 'auto',
+	overflowX   : 'hidden',
 });
 
 export const Overlay = styled('div')(({ theme }) => ({

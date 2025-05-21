@@ -32,10 +32,12 @@ const TextItem: React.FC<TextItemProps> = ({
 				onChange={onCheckChange}
 				disabled={disabled}
 				variant={mapVariantToCheck(variant)}
-			>
+			/>
+
+			<TextItemContent>
 				<UsernameText>{username}</UsernameText>
-			</Check>
-			<TextItemContent>{text}</TextItemContent>
+				{text}
+			</TextItemContent>
 		</TextItemWrapper>
 	);
 };

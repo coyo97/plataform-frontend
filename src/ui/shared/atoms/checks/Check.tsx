@@ -1,38 +1,76 @@
+// shared/atoms/checks/Check.tsx
 import React from 'react';
 import {
-	CheckWrapper,
-	BoxVisual,
+	Wrapper,
+	HiddenCheckbox,
+	StyledBox,
 	CheckMark,
-	StyledLabel
 } from './check.styles';
-import { CheckProps } from './check.types';
+import type { CheckProps } from './check.types';
 
 const Check: React.FC<CheckProps> = ({
 	checked,
 	onChange,
 	disabled = false,
 	variant = 'default',
-	children,
+	label,
+	className,
 }) => {
 	const handleToggle = () => {
 		if (!disabled) onChange(!checked);
 	};
 
 	return (
-		<CheckWrapper
+		<Wrapper
 			role="checkbox"
 			aria-checked={checked}
 			aria-disabled={disabled}
-			onClick={handleToggle}
-			disabled={disabled}
+			onKeyDown={e => (e.key === ' ' || e.key === 'Enter') && handleToggle()}
+			tabIndex={disabled ? -1 : 0}
+			className={className}
 		>
-			<BoxVisual checked={checked} disabled={disabled} variant={variant}>
-				{checked && <CheckMark />}
-			</BoxVisual>
-			{children && <StyledLabel disabled={disabled}>{children}</StyledLabel>}
-		</CheckWrapper>
+			<HiddenCheckbox
+				type="checkbox"
+				checked={checked}
+				disabled={disabled}
+				onChange={() => {}}
+			/>
+
+			<StyledBox
+				$checked={checked}
+				$variant={variant}
+				$disabled={disabled}
+				onClick={handleToggle}
+			>
+				{checked && (
+					<CheckMark viewBox="0 0 16 16">
+						<polyline
+							points="2 8 6 12 14 4"
+							stroke="currentColor"
+							strokeWidth="2"
+							fill="none"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+					</CheckMark>
+				)}
+			</StyledBox>
+
+			{label && (
+				<span
+					style={{
+						userSelect: 'none',
+						color: disabled
+							? 'rgba(0,0,0,0.38)'
+							: 'inherit',
+					}}
+				>
+					{label}
+				</span>
+			)}
+		</Wrapper>
 	);
 };
 
-export default Check;
+export default React.memo(Check);
 

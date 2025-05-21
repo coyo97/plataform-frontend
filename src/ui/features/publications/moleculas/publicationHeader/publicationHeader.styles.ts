@@ -1,31 +1,27 @@
-// ui/features/publications/molecules/PublicationHeader/publicationHeader.styles.ts
+//features/publications/moleculas/publicationHeader/publicationHeader.styles.ts
 import { styled } from '@mui/material/styles';
 import { CardHeader } from '@mui/material';
 
-/*  ⬇︎  Solo estilos: el mismo CardHeader “envuelto” con ajustes responsivos */
+import mq from '../../../../../config/mq';
+import { radius } from '../../../../../Theme/tokens/radius';
+import { shadows } from '../../../../../Theme/tokens/shadows';
+
 export const StyledHeader = styled(CardHeader)(({ theme }) => ({
 	paddingInline: theme.spacing(2),
+	 alignItems: 'flex-start',         // ① avatar arriba a la izquierda
+  gap      : theme.spacing(1.5),    // ② separa avatar / texto
 
-	/* Avatar ─────────────────────────────────────────────── */
+	borderRadius : radius.md,
+	boxShadow    : shadows.xs,
+
 	'& .MuiCardHeader-avatar': {
-		width : 44,
-		height: 44,
-		[theme.breakpoints.down('sm')]: { width: 36, height: 36 },
+		marginRight: theme.spacing(1),
+		marginTop: 2,
 	},
 
-	/* Título ─────────────────────────────────────────────── */
-	'& .MuiCardHeader-title': {
-		fontWeight: 600,
-		fontSize  : '1.1rem',
-		lineHeight: 1.25,
-		[theme.breakpoints.down('sm')]: { fontSize: '1rem' },
-	},
-
-	/* Sub‑título (autor) ─────────────────────────────────── */
-	'& .MuiCardHeader-subheader': {
-		fontSize: '0.85rem',
-		color   : theme.palette.text.secondary,
-		[theme.breakpoints.down('sm')]: { fontSize: '0.75rem' },
+	/* avatar size tweaks */
+	[mq('sm', 'max')]: {
+		'& .MuiCardHeader-avatar': { width: 36, height: 36 },
 	},
 }));
 

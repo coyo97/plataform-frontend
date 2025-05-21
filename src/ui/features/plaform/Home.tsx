@@ -1,10 +1,10 @@
 
-import ViewPublications from '../publications/ViewPublications';
+import ViewPublicationsPage from '../publications/pages/publications/ViewPublications.page';
 
 const Home = () => {
 	return(
 		<>
-			<ViewPublications/>
+			<ViewPublicationsPage/>
 		</>
 	)
 }

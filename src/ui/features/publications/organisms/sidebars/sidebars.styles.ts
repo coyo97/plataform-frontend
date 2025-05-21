@@ -1,66 +1,68 @@
+// src/ui/features/publications/organisms/sidebars/sidebars.styles.ts
 import { styled, SxProps, Theme } from '@mui/material/styles';
 import mq from '../../../../../config/mq';
+import { radius } from '../../../../../Theme/tokens/radius';
+import { shadows } from '../../../../../Theme/tokens/shadows';
+import { colors } from '../../../../../Theme/tokens/colors';
+import { padding } from '../../../../../Theme/tokens/padding';
 
-/* contenedor lateral (Create / Filter) */
 export const SidebarContainer = styled('aside')(({ theme }) => ({
-	boxSizing   : 'border-box',
-	padding     : theme.spacing(1),
-	background  : theme.palette.primary.light,
-	borderRadius: theme.shape.borderRadius * 2,
-	boxShadow   : theme.shadows[2],
-	alignSelf   : 'flex-start',
-	position    : 'sticky',
-	maxHeight   : `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(4)})`,
-	overflowY   : 'auto',
-	overflowX   : 'hidden',
+	boxSizing: 'border-box',
+	padding: padding.px4, // ← token reutilizable
+	background: colors.brand.tertiary[600],
+	borderRadius: radius.md, // reemplazamos `theme.shape.borderRadius * 2`
+	boxShadow: shadows.sm,   // personalizado desde tokens
+	alignSelf: 'flex-start',
+	position: 'sticky',
+	maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(4)})`,
+	overflowY: 'auto',
+	overflowX: 'hidden',
 
-	/* Móviles — se apila y ocupa 100 % */
-	[mq('sm','max')]: {
-		position   : 'static',
-		width      : '100%',
-		marginBottom: theme.spacing(2),
+	[mq('sm', 'max')]: {
+		position: 'static',
+		width: '100%',
+		marginBottom: padding.px4,
 	},
 
-	/* >= 600 px — coincide con grid */
-	[mq('sm','min')]: {
-		width: 220,                       // ⬅  Misma anchura que el grid
+	[mq('sm', 'min')]: {
+		width: 220,
 	},
 }));
 
-export const FilterTitle = styled('h3')(({ theme }) => ({
-	fontSize     : 18,
-	marginBottom : theme.spacing(1.5),
-	color        : theme.palette.colorHeader.main,
+export const FilterTitle = styled('h3')(() => ({
+	fontSize: '1.125rem', // ≈ 18px
+	marginBottom: padding.px4,
+	color: colors.uatf.darkBlue,
 }));
 
-export const FilterButton = styled('button')<{active:boolean}>(({ theme, active }) => ({
-	display      : 'block',
-	width        : '100%',
-	padding      : theme.spacing(1.25),
-	marginBottom : theme.spacing(1.25),
-	fontSize     : 16,
-	textAlign    : 'left',
-	borderRadius : 5,
-	cursor       : 'pointer',
-	background   : active ? theme.palette.colorButton.main
-		: theme.palette.primary.light,
-		color        : active ? '#fff' : theme.palette.colorHeader.main,
-		border       : `1px solid ${theme.palette.colorHeader.main}`,
-		'&:hover'    : {
-			background : active ? theme.palette.colorButton.second
-				: theme.palette.primary.main,
-		},
+export const FilterButton = styled('button')<{ active: boolean }>(({ active }) => ({
+	display: 'block',
+	width: '100%',
+	padding: padding.px4,
+	marginBottom: padding.px4,
+	fontSize: 16,
+	textAlign: 'left',
+	borderRadius: radius.sm,
+	cursor: 'pointer',
+	background: active ? colors.uatf.red : colors.neutral.graySoft[50],
+	color: active ? '#fff' : colors.uatf.darkBlue,
+	border: `1px solid ${colors.uatf.darkBlue}`,
+	transition: 'background .2s ease',
+
+	'&:hover': {
+		background: active ? colors.uatf.lightRed : colors.neutral.graySoft[100],
+	},
 }));
 
-/* Si sigues usando la variante sidebarSX */
 export const sidebarSX: SxProps<Theme> = {
-	display   : { xs:'none', sm:'block' },   // visible desde 600 px
-	position  : 'sticky',
-	top       : t => `calc(${t.mixins.toolbar.minHeight}px + ${t.spacing(2)})`,
-	maxHeight : t => `calc(100vh - ${t.mixins.toolbar.minHeight}px - ${t.spacing(4)})`,
-	overflowY : 'auto',
-	p         : 2.5,
-	borderRadius: 2,
-	bgcolor   : 'primary.light',
-	boxShadow : 2,
+	display: { xs: 'none', sm: 'block' },
+	position: 'sticky',
+	top: t => `calc(${t.mixins.toolbar.minHeight}px + ${t.spacing(2)})`,
+	maxHeight: t => `calc(100vh - ${t.mixins.toolbar.minHeight}px - ${t.spacing(4)})`,
+	overflowY: 'auto',
+	p: 2.5,
+	borderRadius: radius.sm4x,
+	bgcolor: colors.uatf.darkBlue,
+	boxShadow: shadows.sm,
+	overflowX: 'hidden',// bloqueamos la barra
 };

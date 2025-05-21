@@ -1,10 +1,15 @@
+// features/publications/moleculas/publicationFile/PublicationFile.tsx
 import React from 'react';
 import { Box } from '@mui/material';
+
+import VideoPreview from '../../../../shared/atoms/filePreview/VideoPreview';
+import ImagePreview from '../../../../shared/atoms/filePreview/ImagePreview';
+import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledButton';
 import { Publication } from '../../../../../types/publication';
 
 interface Props {
 	publication: Publication;
-	baseUrl: string; // ej. HOST
+	baseUrl    : string;
 }
 
 const PublicationFile: React.FC<Props> = ({ publication, baseUrl }) => {
@@ -14,36 +19,40 @@ const PublicationFile: React.FC<Props> = ({ publication, baseUrl }) => {
 	const url = `${baseUrl}/${filePath}`;
 
 	return (
-		<Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+		<Box sx={{ display:'flex', justifyContent:'center', mt:2 }}>
 			{fileType.startsWith('image/') && (
-				<img
-					src={url}
-					alt={title}
-					style={{ width: '100%', maxWidth: 500, borderRadius: 8 }}
-				/>
+				<ImagePreview src={url} alt={title} />
 			)}
 
 			{fileType.startsWith('video/') && (
-				<video
-					controls
-					style={{ width: '100%', maxWidth: 500, borderRadius: 8 }}
-				>
-					<source src={url} type={fileType} />
-				</video>
+				<VideoPreview src={url} type={fileType} />
 			)}
 
 			{fileType === 'application/pdf' && (
-				<a href={url} target="_blank" rel="noreferrer">
+				<FilledButton
+					component="a"
+					href={url}
+					target="_blank"
+					rel="noreferrer"
+					colorType="success"
+					size="small"
+				>
 					Ver PDF
-				</a>
+				</FilledButton>
 			)}
 
-			{!fileType.startsWith('image/') &&
-				!fileType.startsWith('video/') &&
-				fileType !== 'application/pdf' && (
-					<a href={url} download>
+			{!fileType.startsWith('image/')
+				&& !fileType.startsWith('video/')
+				&& fileType !== 'application/pdf' && (
+					<FilledButton
+						component="a"
+						href={url}
+						download
+						colorType="success"
+						size="small"
+					>
 						Descargar archivo
-					</a>
+					</FilledButton>
 				)}
 		</Box>
 	);

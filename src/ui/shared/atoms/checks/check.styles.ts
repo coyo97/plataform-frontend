@@ -1,55 +1,70 @@
+// shared/atoms/checks/check.styles.ts
 import { styled } from '@mui/material/styles';
-import { CheckProps } from './check.types';
+import { colors } from '../../../../Theme/tokens/colors';
+import { radius } from '../../../../Theme/tokens/radius';
+import { shadows } from '../../../../Theme/tokens/shadows';
+import mq from '../../../../config/mq';
 
-export const CheckWrapper = styled('div')<{ disabled?: boolean }>(({ theme, disabled }) => ({
-	display: 'flex',
-	alignItems: 'center',
-	cursor: disabled ? 'not-allowed' : 'pointer',
-	opacity: disabled ? 0.6 : 1,
-	userSelect: 'none',
-}));
+const SIZE = 20; // px
 
-const getColor = (variant: CheckProps['variant'], theme: any) => {
-	switch (variant) {
-		case 'success':
-			return theme.palette.success.main;
-		case 'info':
-			return theme.palette.info.main;
-		case 'warning':
-			return theme.palette.warning.main;
-		case 'danger':
-			return theme.palette.error.main;
-		default:
-			return theme.palette.primary.main;
-	}
-};
+const variantMap = {
+	default: colors.neutral.black[500],
+	success: colors.feedback.positive[500],
+	info   : colors.brand.tertiary[500],
+	warning: colors.feedback.warning[500],
+	danger : colors.feedback.negative[500],
+} as const;
 
-export const BoxVisual = styled('div')<{
-	checked: boolean;
-	disabled?: boolean;
-	variant: CheckProps['variant'];
-}>(({ theme, checked, disabled, variant }) => ({
-	width: 20,
-	height: 20,
-	borderRadius: 4,
-	border: `2px solid ${checked ? getColor(variant, theme) : theme.palette.grey[400]}`,
-	backgroundColor: checked ? getColor(variant, theme) : theme.palette.background.paper,
-	display: 'flex',
-	alignItems: 'center',
+export const Wrapper = styled('label')({
+	display    : 'inline-flex',
+	alignItems : 'center',
+	cursor     : 'pointer',
+	gap        : 8,
+});
+
+export const HiddenCheckbox = styled('input')({
+	border    : 0,
+	clip      : 'rect(0 0 0 0)',
+	clippath  : 'inset(50%)',
+	height    : 1,
+	margin    : -1,
+	overflow  : 'hidden',
+	padding   : 0,
+	position  : 'absolute',
+	whiteSpace: 'nowrap',
+	width     : 1,
+});
+
+export const StyledBox = styled('span')<{
+	$checked : boolean;
+	$variant : keyof typeof variantMap;
+	$disabled: boolean | undefined;
+}>(({ $checked, $variant, $disabled, theme }) => ({
+	width        : SIZE,
+	height       : SIZE,
+	borderRadius : radius.sm,
+	border       : `2px solid ${variantMap[$variant]}`,
+	display      : 'flex',
+	alignItems   : 'center',
 	justifyContent: 'center',
-	transition: 'all 0.2s ease-in-out',
+	background   : $checked ? variantMap[$variant] : 'transparent',
+	transition   : 'all .2s',
+	boxShadow    : $checked ? shadows.sm : 'none',
+	...( $disabled && {
+		opacity: 0.5,
+		cursor : 'not-allowed',
+	}),
+	// modo hover solo si no está marcado ni deshabilitado
+	'&:hover': !$checked && !$disabled
+		? { background: variantMap[$variant] + '20' }   // 12% opacity
+		: {},
+		// ejemplo responsive opcional
+		[mq('xs','max')]: { width: 18, height: 18 },
 }));
 
-export const CheckMark = styled('div')(({ theme }) => ({
-	width: 10,
-	height: 10,
-	backgroundColor: theme.palette.common.white,
-	borderRadius: 2,
-}));
-
-export const StyledLabel = styled('span')<{ disabled?: boolean }>(({ theme, disabled }) => ({
-	marginLeft: theme.spacing(1),
-	color: disabled ? theme.palette.text.disabled : theme.palette.text.primary,
-	fontSize: 14,
-}));
+export const CheckMark = styled('svg')({
+	width : 12,
+	height: 12,
+	fill  : colors.neutral.white[900],
+});
 

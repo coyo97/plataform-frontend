@@ -135,3 +135,20 @@ const typography = {
 
 export default typography;
 
+export const sizes = {
+	xs: '0.75rem',   // 12 px
+	sm: '0.875rem',  // 14 px
+	md: '1rem',      // 16 px
+	lg: '1.125rem',  // 18 px
+	xl: '1.25rem',   // 20 px
+} as const;
+
+export const weights = {
+	light  : 300,
+	regular: 400,
+	medium : 500,
+	bold   : 700,
+} as const;
+
+// 👉  export default { heading, display, sizes, weights }
+
