@@ -26,7 +26,7 @@ interface Props {
 	publishedAt: string | Date | number;
 }
 const HeaderText: React.FC<{ title:string; meta:React.ReactNode }> = ({ title, meta }) => (
-	<SmartBox column gap={0.25}>
+	<SmartBox column center gap={0.5}>
 		<Text weight="bold" size="md">{title}</Text>
 		{meta}
 	</SmartBox>
@@ -44,9 +44,9 @@ const PublicationHeader: React.FC<Props> = ({
 
 		/* sub-header seguro */
 		const subHeader = hasAuthor ? (
-			<SmartBox row center gap={1}>
+			<SmartBox row gap={1}>
 				<Text size="sm" colorKey="neutral.black.500">
-					Publicado por&nbsp;
+					Publicado por &nbsp;
 					<strong
 						style={{ cursor: 'pointer' }}
 						onClick={() => author && onAuthor(author._id, author.username)}
@@ -79,7 +79,7 @@ const PublicationHeader: React.FC<Props> = ({
 				}
 				title={
 					<HeaderText
-						title={title}
+						title={`Titulo: ${title}`}
 						meta={subHeader}   // nombre + fecha
 					/>
 				}

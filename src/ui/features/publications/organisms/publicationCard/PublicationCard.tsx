@@ -47,8 +47,8 @@ const PublicationCard: React.FC<Props> = ({
 			/>
 
 			<Content>
-				{publication.content}
-
+				 <strong>Descripción: </strong>
+				 {publication.content}
 				{/* etiquetas */}
 				<SmartBox row flexWrap="wrap" gap="px8" mt="px8"> 
 					{(publication.tags ?? []).map(tag => (

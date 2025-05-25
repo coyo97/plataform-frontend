@@ -25,6 +25,12 @@ export const gridSettings = {
 		columns: 12,
 		gutter: 24,
 	},
+	vertical: {        // ⬅ NUEVO
+		containerWidth: 320,
+		marginX: 0,
+		columns: 1,
+		gutter: 8,
+	},
 };
 
 export const getColumnWidth = (

@@ -1,31 +1,33 @@
+// src/async/services/userService.ts
+import { get, post, put, del } from '../api';
+import * as R           from '../routes/userRoutes';
+import getEnvVariables  from '../../config/configEnvs';
+import type { User }    from '../../types/User';
+import type { LoginPayload, LoginResponse } from '../../types/auth';
 
-import { get, post } from '../api'
+const { HOST, SERVICE } = getEnvVariables();
+const url = (p:string) => `${HOST}${SERVICE}${p}`;
 
-// Define el tipo de los parámetros que se pasan a las funciones
-type Payload = any; // Puedes definir un tipo más específico si conoces la estructura del payload
+/* --- AUTH -------------------------------------------------- */
+export const login    = (payload: LoginPayload) =>
+	post<LoginResponse>(url(R.LOGIN), payload);
 
-export const getUser = async (endpoint: string, payload: Payload): Promise<void> => {
-	return await get<void>(endpoint, payload);
-}
+export const register = (payload: Partial<User>) =>
+	post<User>(url(R.REGISTER), payload);
 
-export const createUser = async (endpoint: string, payload: Payload): Promise<void> => {
-	return await post<void>(endpoint, payload);
-}
+/* --- PERFIL ------------------------------------------------ */
+export const me       = () => get<{ user: User }>(url(R.ME), {}).then(r=>r.user);
 
-// Define el tipo de respuesta para el inicio de sesión
-interface LoginResponse {
-  token: string;
-  userId: string;
-}
+export const getById  = (id:string) =>
+	get<{ user: User }>(url(R.BY_ID(id)), {}).then(r=>r.user);
 
-// Define el tipo de payload para el inicio de sesión
-interface LoginPayload {
-  email: string;
-  password: string;
-}
+export const update   = (id:string, payload: Partial<User>) =>
+	put<User>(url(R.BY_ID(id)), payload);
 
-// Función para iniciar sesión
-export const loginUser = async (endpoint: string, payload: LoginPayload): Promise<LoginResponse> => {
-  return await post<LoginResponse>(endpoint, payload);
-};
+export const remove   = (id:string) =>
+	del<void>(url(R.BY_ID(id)));
+
+/* --- UTIL -------------------------------------------------- */
+export const search   = (q:string) =>
+	get<{ users: User[] }>(url(R.SEARCH(q)), {}).then(r=>r.users);
 

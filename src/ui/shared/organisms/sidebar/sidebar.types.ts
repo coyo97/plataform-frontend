@@ -1,7 +1,7 @@
 // sidebar.types.ts
 import { ReactNode } from 'react';
 
-export type SidebarVariant = 'default' | 'primary' | 'surface' | 'elevated';
+export type SidebarVariant = 'default' | 'primary' | 'surface' | 'elevated' | 'flat';
 export type SidebarPosition = 'left' | 'right';
 
 export interface SidebarProps {

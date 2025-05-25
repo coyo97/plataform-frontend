@@ -8,6 +8,7 @@ import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledBu
 import FileButton from '../../../../shared/atoms/buttons/fileButton/FileButton';
 import PublicationFormBody from '../../../../shared/atoms/form/PublicationFormBody';
 import PublicationFormActions from '../../../../shared/atoms/form/PublicationFormActions';
+import { useModerationAlert } from '../../../../shared/hooks/useModerationAlert';
 
 import type { Career, Publication } from '../../../../../types/publication';
 import {Button} from '@mui/material';
@@ -26,6 +27,7 @@ const CreatePublicationForm: React.FC<Props> = ({
 	const [tags, setTags]       = useState('');
 	const [file, setFile]       = useState<File | null>(null);
 	const [careerId, setCareer] = useState('');
+	const showModerationAlert = useModerationAlert();
 
 	const handle = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -39,15 +41,9 @@ const CreatePublicationForm: React.FC<Props> = ({
 		);
 		if (careerId) fd.append('careerId', careerId);
 
-		const pub = await onSubmit(fd);
-
-		fd.forEach((v, k) => {
-			console.log('FormData ->', k, v);
-		});
-
 		try {
-			const pub = await onSubmit(fd);
-			onCreated(pub);
+			const pub = await onSubmit(fd);      
+			onCreated(pub);                        // notifica al padre
 
 			// reset
 			setTitle('');
@@ -55,8 +51,12 @@ const CreatePublicationForm: React.FC<Props> = ({
 			setTags('');
 			setFile(null);
 			setCareer('');
-		} catch (err) {
-			console.error(' Error al enviar el formulario:', err);
+
+		} catch (err: any) {
+
+			if (showModerationAlert(err)) return;
+
+			console.error('Error al crear la publicación:', err);
 		}
 	};
 

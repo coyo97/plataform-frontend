@@ -15,11 +15,13 @@ const CareerSelector: React.FC<CareerSelectorProps> = ({
 	value,
 	onChange,
 	label,
-	placeholder = 'Selecciona carrera',
+	placeholder = 'Filtrar',
 	error = false,
 	helperText,
 	disabled = false,
 	required = false,
+	variant = 'default',
+	dropdownMode = 'overlay',
 }) => {
 	const [open, setOpen]     = useState(false);
 	const [search, setSearch] = useState('');
@@ -57,23 +59,17 @@ const CareerSelector: React.FC<CareerSelectorProps> = ({
 					onClick={() => !disabled && setOpen(p => !p)}
 					aria-haspopup="listbox"
 					aria-expanded={open}
+					$variant={variant}
 				>
-					<Text>
+					<Text sx={{ color: '#FFD700' }}>
 						{selected?.name || placeholder}
 					</Text>
 
-					<IconButton
-						ariaLabel="Abrir lista"
-						size="small"
-						disableRipple
-						type='button'
-					>
-						<KeyboardArrowDownIcon fontSize="small" />
-					</IconButton>
+					<KeyboardArrowDownIcon fontSize="small" />
 				</SelectBox>
 
 				{open && (
-					<Dropdown role="listbox">
+					<Dropdown role="listbox" $variant={variant}        $dropdownMode={dropdownMode}   >
 						<SmartBox row gap="px4" p="px8" center>
 							<SearchIcon fontSize="small" />
 							<input

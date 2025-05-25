@@ -32,6 +32,8 @@ import './ui/features/admin/adminLayout.css'; // Asegúrate de que la ruta sea c
 import ForgotPassword from './ui/features/auth/ForgotPassword';
 import ResetPassword from './ui/features/auth/ResetPassword';
 import AdminRoute from './routes/AdminRoute';
+import HomeStreamPage from './ui/features/stream/pages/HomeStream.page';
+import { SocketProvider } from './ui/providers/SocketProvider';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -61,55 +63,57 @@ function App() {
 	return (
 		<Theme>
 			<QueryClientProvider client={queryClient}>
-				<Router>
-					<Routes>
-						<Route path="/" element={<Welcome />} />
-						<Route path="/login" element={<FormLogin />} />
-						<Route path="/register" element={<UserForm/>} />
-						<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
-						<Route path='/stream-academi' element={<HomeStream/>}></Route>
-						<Route path='/publications' element={<HomePublications/>}></Route>
-						<Route path='/profile' element={<HomeProfile/>}></Route>
-						<Route path='/material-user' element={<UserMaterials/>}></Route>
-						<Route path="/profile/:id" element={<AuthorProfile />} />
-						<Route path="/profile" element={<ViewProfile />} />
-						<Route path="/profile/update" element={<UpdateProfile />} />
-						<Route path='/message' element={<HomeChat/>}></Route>
-						<Route path="/forgot-password" element={<ForgotPassword/>} />
-						<Route path="/reset-password/:token" element={<ResetPassword/>} />
-						{/* Rutas del Dashboard con Sidebar */}
-						<Route
-							path="/administrator/*"
-							element={
-								<AdminRoute
-									element={
-										<div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-											<Sidebar isVisible={isSidebarOpen} />
-											<div className="admin-content">
-												{/* Botón de menú para pantallas pequeñas */}
-												<button
-													className="menu-button"
-													onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-												>
-													☰
-												</button>
-												<Routes>
-													<Route path="/" element={<Dashboard />} />
-													<Route path="users" element={<UserManagement />} />
-													<Route path="roles" element={<HomeRoles />} />
-													<Route path="moderator" element={<HomeModerator />} />
-													<Route path="center-alert" element={<HomeAlert />} />
-													<Route path="career" element={<CareerManager />} />
-													<Route path="conf-file" element={<HomeSetting />} />
-												</Routes>
+				<SocketProvider>
+					<Router>
+						<Routes>
+							<Route path="/" element={<Welcome />} />
+							<Route path="/login" element={<FormLogin />} />
+							<Route path="/register" element={<UserForm/>} />
+							<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
+							<Route path='/stream-academi' element={<HomeStreamPage/>}></Route>
+							<Route path='/publications' element={<HomePublications/>}></Route>
+							<Route path='/profile' element={<HomeProfile/>}></Route>
+							<Route path='/material-user' element={<UserMaterials/>}></Route>
+							<Route path="/profile/:id" element={<AuthorProfile />} />
+							<Route path="/profile" element={<ViewProfile />} />
+							<Route path="/profile/update" element={<UpdateProfile />} />
+							<Route path='/message' element={<HomeChat/>}></Route>
+							<Route path="/forgot-password" element={<ForgotPassword/>} />
+							<Route path="/reset-password/:token" element={<ResetPassword/>} />
+							{/* Rutas del Dashboard con Sidebar */}
+							<Route
+								path="/administrator/*"
+								element={
+									<AdminRoute
+										element={
+											<div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+												<Sidebar isVisible={isSidebarOpen} />
+												<div className="admin-content">
+													{/* Botón de menú para pantallas pequeñas */}
+													<button
+														className="menu-button"
+														onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+													>
+														☰
+													</button>
+													<Routes>
+														<Route path="/" element={<Dashboard />} />
+														<Route path="users" element={<UserManagement />} />
+														<Route path="roles" element={<HomeRoles />} />
+														<Route path="moderator" element={<HomeModerator />} />
+														<Route path="center-alert" element={<HomeAlert />} />
+														<Route path="career" element={<CareerManager />} />
+														<Route path="conf-file" element={<HomeSetting />} />
+													</Routes>
+												</div>
 											</div>
-										</div>
-									}
-								/>
-							}
-						/>
-					</Routes>
-				</Router>
+										}
+									/>
+								}
+							/>
+						</Routes>
+					</Router>
+				</SocketProvider>
 			</QueryClientProvider>
 		</Theme>
 	);

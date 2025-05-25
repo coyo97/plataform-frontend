@@ -23,6 +23,13 @@ const variantStyles = (variant: SidebarVariant, theme: any) => {
 			color: theme.palette.text.primary,
 			boxShadow: theme.shadows[4],
 		};
+		case 'flat':
+			return {                 // sin fondo, sin shadow
+			background: 'transparent',
+			color     : theme.palette.text.primary,
+			boxShadow  : 'none',
+			padding    : 0,        // opcional: sin padding
+		};
 		default:
 			return {
 			background: theme.palette.sidebar?.background ?? theme.palette.grey[100],

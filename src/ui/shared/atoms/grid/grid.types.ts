@@ -1,4 +1,4 @@
-export type GridVariant = 'mobile' | 'tablet' | 'desktopFixed' | 'desktopFluid';
+export type GridVariant = 'mobile' | 'tablet' | 'desktopFixed' | 'desktopFluid' | 'vertical';  
 
 export interface GridContainerProps {
 	variant?: GridVariant;

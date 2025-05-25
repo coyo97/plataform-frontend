@@ -8,7 +8,7 @@ import { shadows } from '../../../../../Theme/tokens/shadows';
 
 export const StyledHeader = styled(CardHeader)(({ theme }) => ({
 	paddingInline: theme.spacing(2),
-	 alignItems: 'flex-start',         // ① avatar arriba a la izquierda
+	 alignItems: 'center',         // ① avatar arriba a la izquierda
   gap      : theme.spacing(1.5),    // ② separa avatar / texto
 
 	borderRadius : radius.md,
@@ -16,7 +16,6 @@ export const StyledHeader = styled(CardHeader)(({ theme }) => ({
 
 	'& .MuiCardHeader-avatar': {
 		marginRight: theme.spacing(1),
-		marginTop: 2,
 	},
 
 	/* avatar size tweaks */
