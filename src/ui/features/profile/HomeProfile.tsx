@@ -4,10 +4,15 @@ import ViewProfile from './ViewProfile';
 import FriendRequests from '../friends/FriendRequests';
 import UserSearch from '../friends/UserSearch';
 import FriendsList from '../friends/FriendsList';
-import BlockedUsersList from '../friends/BlockedUsersList';
+import BlockedUsersList from '../friends/pages/BlockedUsersList';
 import Notifications from '../centerAlert/Notifications';
 import { SidebarContainer, SidebarLink, ContentArea, ToggleButton } from './sidebar.styles';
 import { Menu as MenuIcon } from '@mui/icons-material';
+import ViewProfilePage from './pages/ViewProfile.page';
+import UpdateProfilePage from './pages/UpdateProfile.page';
+import FriendRequestsPage from '../friends/pages/FriendRequests.page';
+import UserSearchPage from '../friends/pages/UserSearch.page';
+import FriendsListPage from '../friends/pages/FriendsList.page';
 
 const HomeProfile: React.FC = () => {
 	const [selectedSection, setSelectedSection] = useState('viewProfile');
@@ -16,17 +21,17 @@ const HomeProfile: React.FC = () => {
 	const renderContent = () => {
 		switch (selectedSection) {
 			case 'updateProfile':
-				return <UpdateProfile />;
+				return <UpdateProfilePage/>;
 			case 'viewProfile':
-				return <ViewProfile />;
+				return <ViewProfilePage />;
 			case 'friendRequests':
-				return <FriendRequests />;
+			return <FriendRequestsPage/>;
 			case 'userSearch':
-				return <UserSearch />;
+				return <UserSearchPage/>;
 			case 'friendsList':
-				return <FriendsList />;
+				return <FriendsListPage/>;
 			case 'blockedUsersList':
-				return <BlockedUsersList />;
+				return <BlockedUsersList/>;
 			case 'notifications':
 				return <Notifications />;
 			default:

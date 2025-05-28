@@ -20,5 +20,7 @@ export const EVENTS = {
 	START_SCREEN_SHARE: 'start-screen-share',
 	KICK_VIEWER:        'kick-viewer',
 	LEAVE_STREAM: 'leave-stream',
+	TOGGLE_CAMERA : 'toggle-camera',
+	TOGGLE_MIC    : 'toggle-mic',
 } as const;
 

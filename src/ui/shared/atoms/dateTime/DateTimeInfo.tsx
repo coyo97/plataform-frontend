@@ -1,11 +1,11 @@
-// src/ui/shared/atoms/dateTime/DateTimeInfo.tsx
 import React from 'react';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import EventIcon from '@mui/icons-material/Event';
 import { Tooltip } from '@mui/material';
 import { formatDate } from '../../../../utils/dateTime/formatTime';
 import { DateTimeInfoProps } from './dateTimeInfo.types';
-import { Wrapper, Text, IconWrapper } from './dateTimeInfo.styles';
+import { Wrapper, IconWrapper } from './dateTimeInfo.styles';
+import Text from '../typography/Text';
 
 const DateTimeInfo: React.FC<DateTimeInfoProps> = ({
 	timestamp,
@@ -27,7 +27,14 @@ const DateTimeInfo: React.FC<DateTimeInfoProps> = ({
 	const content = (
 		<Wrapper className={className} variant={variant} size={size}>
 			{showIcon && iconPosition === 'left' && <IconWrapper>{icon}</IconWrapper>}
-			<Text>{timeText}</Text>
+			<Text
+				size={
+					size === 'small' ? 'sm' : size === 'large' ? 'lg' : 'md'
+				}
+				weight={variant === 'compact' ? 'regular' : 'medium'}
+			>
+				{timeText}
+			</Text>
 			{showIcon && iconPosition === 'right' && <IconWrapper>{icon}</IconWrapper>}
 		</Wrapper>
 	);

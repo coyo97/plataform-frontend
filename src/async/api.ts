@@ -8,6 +8,7 @@ const getHeaders = (): Headers => {
 	const token = localStorage.getItem('token'); // O la forma en que guardas el token
 	const headers: Headers = {
 		"Content-Type": "application/json",
+		"ngrok-skip-browser-warning": "true",
 		...(token && { "Authorization": `Bearer ${token}` }) // Añade el token si está presente
 	};
 	return headers;
@@ -32,6 +33,11 @@ const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean,): R
 const request = async <T>(endpoint: string, payload: Payload, method: HttpMethod, isFile: boolean): Promise<T> => {
 	const options = buildOptions(payload, method, isFile);
 	//console.log("here");
+	if (method === 'GET' && payload && Object.keys(payload).length) {//helper get() para que acepte params
+		const qs = new URLSearchParams(payload).toString();
+		endpoint += `?${qs}`;
+		payload = {};               // no queremos body en GET
+	}
 	const response: Response = await fetch(endpoint, options);
 	//console.log(response);
 	if (response.ok) {
@@ -65,7 +71,7 @@ const request = async <T>(endpoint: string, payload: Payload, method: HttpMethod
 export const post = async <T>(endpoint: string, payload: Payload, isFile: boolean = false): Promise<T> =>
 	request<T>(endpoint, payload, "POST", isFile);
 
-export const get = async <T>(endpoint: string, payload: Payload, isFile: boolean = false): Promise<T> =>
+export const get = async <T>(endpoint: string, payload?: Payload, isFile: boolean = false): Promise<T> =>
 	request<T>(endpoint, payload, "GET", isFile);
 
 

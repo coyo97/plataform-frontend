@@ -27,7 +27,6 @@ import Sidebar from './ui/features/admin/Sidebar';
 import HomeModerator from './ui/features/moderator/HomeModerator';
 import HomeAlert from './ui/features/centerAlert/HomeAlert';
 import HomeSetting from './ui/features/configFile/HomeSetting';
-import HomeStream from './ui/features/stream/HomeStream';
 import './ui/features/admin/adminLayout.css'; // Asegúrate de que la ruta sea correcta
 import ForgotPassword from './ui/features/auth/ForgotPassword';
 import ResetPassword from './ui/features/auth/ResetPassword';

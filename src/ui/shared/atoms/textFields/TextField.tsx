@@ -15,6 +15,8 @@ const TextField: React.FC<TextFieldProps> = ({
 	size = 'medium',
 	className,
 	type = 'text',
+	multiline = false,   //  valor por defecto
+	rows       = 3,      // 
 }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		onChange(e.target.value);
@@ -39,6 +41,8 @@ const TextField: React.FC<TextFieldProps> = ({
 					hasRightIcon={!!rightIcon}
 					aria-invalid={error}
 					aria-label={label}
+					as={multiline ? 'textarea' : 'input'}       
+					{...(multiline && { rows })}
 				/>
 
 				{rightIcon && <IconWrapper position="right">{rightIcon}</IconWrapper>}

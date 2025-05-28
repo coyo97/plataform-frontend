@@ -15,6 +15,5 @@ export const listViewers = async (streamId: string) => {
 export const kickViewer  = (streamId:string, viewerId:string) =>
 	post<void>(url(RV.KICK(streamId)), { viewerId });
 
-
-export const listLive  = () => listViewers('?live=true');     // solo activos
-export const listEnded = () => listViewers('?ended=true');
+//export const listLive  = () => listViewers('?live=true');     // solo activos
+//export const listEnded = () => listViewers('?ended=true');

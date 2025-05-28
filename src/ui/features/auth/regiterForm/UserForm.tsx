@@ -25,8 +25,11 @@ const UserForm: React.FC = () => {
 		const fetchCareers = async () => {
 			try {
 				const response = await axios.get(`${HOST}${SERVICE}/careers`, {
-					headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+					headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 
+						'ngrok-skip-browser-warning': 'true'  
+					},
 				});
+				console.log("Careers API response:", response.data);
 				setAvailableCareers(response.data.careers);
 			} catch (error) {
 				console.error('Error fetching careers:', error);
@@ -97,7 +100,7 @@ const UserForm: React.FC = () => {
 						width: '100%',
 					}}
 				>
-					{availableCareers.map(career => (
+					{availableCareers?.map(career => (
 						<option key={career._id} value={career._id}>
 							{career.name}
 						</option>
