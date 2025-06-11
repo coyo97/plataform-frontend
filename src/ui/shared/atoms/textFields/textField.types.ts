@@ -15,5 +15,6 @@ export interface TextFieldProps {
 	type?: 'text' | 'email' | 'password' | 'number';
 	multiline?: boolean;
 	rows?: number;
+	autoResize?: boolean;
 }
 

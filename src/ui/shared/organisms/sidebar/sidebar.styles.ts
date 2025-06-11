@@ -8,7 +8,7 @@ const variantStyles = (variant: SidebarVariant, theme: any) => {
 	switch (variant) {
 		case 'primary':
 			return {
-			background: theme.palette.primary.main,
+			background: theme.palette.primary.dark,
 			color: theme.palette.primary.contrastText,
 		};
 		case 'surface':

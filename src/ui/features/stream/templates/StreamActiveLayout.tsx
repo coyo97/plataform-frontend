@@ -39,7 +39,7 @@ const StreamActiveLayout: React.FC<Props> = ({
 	return (
 		<Grid container spacing={theme.padding.px6}>
 			{/* StreamPlayer grande */}
-			<Grid item xs={12} md={8}>
+			<Grid item xs={12} md={8} sx={{ minHeight: 300 }}>
 				<StreamPlayer
 					streamId={streamId}
 					isStreamer={isStreamer}

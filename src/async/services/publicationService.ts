@@ -58,6 +58,11 @@ export const fetchMyPublications = async ():Promise<Publication[]> => {
 	return publications;
 };
 
+export const fetchPublicationById = async (id: string): Promise<Publication> => {
+	const { publication } = await get<{ publication: Publication }>(url(R.PUB_BY_ID(id)), {});
+	return publication;
+};
+
 export const createPublication = (fd:FormData) =>
 	post<Publication>(url(R.PUBS), fd, true)
 .finally(clear);

@@ -24,6 +24,7 @@ const StreamList: React.FC<Props> = ({ type = 'live', dense = false, onSelect })
 					key={s._id}
 					id={s._id}
 					title={s.title}
+					description={s.description}
 					visibility={s.visibility}
 					viewerCount={s.viewerCount ?? 0}
 					thumbnailUrl={s.thumbnailUrl}

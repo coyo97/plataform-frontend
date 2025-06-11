@@ -9,7 +9,7 @@ const sizeMap = {
 	large: 60,
 };
 
-const Loader: React.FC<LoaderProps> = ({ size = 'medium', centered = false }) => (
+const Loader: React.FC<LoaderProps> = ({ size = 'medium', centered = true}) => (//false
 	<LoaderWrapper centered={centered}>
 		<CircularProgress size={sizeMap[size]} />
 	</LoaderWrapper>

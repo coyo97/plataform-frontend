@@ -24,3 +24,11 @@ export const EVENTS = {
 	TOGGLE_MIC    : 'toggle-mic',
 } as const;
 
+
+export const CHAT_EVENTS = {
+  MESSAGE_NEW   : 'chat:message:new',
+  MESSAGE_DELETE: 'chat:message:deleted',
+} as const;
+
+export type ChatEvent = typeof CHAT_EVENTS[keyof typeof CHAT_EVENTS];
+

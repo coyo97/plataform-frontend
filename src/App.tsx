@@ -33,6 +33,10 @@ import ResetPassword from './ui/features/auth/ResetPassword';
 import AdminRoute from './routes/AdminRoute';
 import HomeStreamPage from './ui/features/stream/pages/HomeStream.page';
 import { SocketProvider } from './ui/providers/SocketProvider';
+import HomeProfilePage from './ui/features/profile/HomeProfile.page';
+import PublicationDetail from './ui/features/publications/pages/publications/PublicationDetail';
+import AcademicHelpDetailPage from './ui/features/academicHelp/pages/AcademicHelpDetail.page';
+import HomeAcademicHelp from './ui/features/academicHelp/HomeAcademicHelp.page';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -70,8 +74,11 @@ function App() {
 							<Route path="/register" element={<UserForm/>} />
 							<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
 							<Route path='/stream-academi' element={<HomeStreamPage/>}></Route>
+							<Route path="/academic-help" element={<HomeAcademicHelp/>} />
+							<Route path="/academic-help/:helpId" element={<AcademicHelpDetailPage />} />
 							<Route path='/publications' element={<HomePublications/>}></Route>
-							<Route path='/profile' element={<HomeProfile/>}></Route>
+							<Route path="/publications/:publicationId" element={<PublicationDetail />} />
+							<Route path='/profile' element={<HomeProfilePage/>}></Route>
 							<Route path='/material-user' element={<UserMaterials/>}></Route>
 							<Route path="/profile/:id" element={<AuthorProfile />} />
 							<Route path="/profile" element={<ViewProfile />} />

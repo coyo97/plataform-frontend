@@ -1,119 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
+import React, { useEffect, useState } from 'react';
 import {
-	Container,
-	Title,
-	Input,
-	Textarea,
-	Button,
-	CareerList,
-	CareerItem,
-	CareerName,
-	ActionButton,
+	fetchCareers, fetchFaculties,
+	createCareer, updateCareer, deleteCareer
+} from '../../../async/services/careerService';
+
+import {
+	Container, Title, Input, Textarea, Button,
+	CareerList, CareerItem, CareerName, ActionButton
 } from './careerManagerStyles';
 
-interface Career {
-	_id: string;
-	name: string;
-	description?: string;
-}
+import FormSelect from '../../shared/atoms/form/FormSelect';
+import Loader     from '../../shared/atoms/feedback/loader/Loader';
+import FacultyManager from './FacultyManager';
+import CycleManager from './CycleManager';
 
-const CareerManager: React.FC = () => {
-	const [careers, setCareers] = useState<Career[]>([]);
-	const [name, setName] = useState('');
+interface Faculty { _id:string; name:string }
+interface Career  { _id:string; name:string; description?:string; facultyId?:string; mode?:'semester'|'trimester'|'year'; }
+
+const CareerManager:React.FC = () => {
+	/* catálogos */
+	const [faculties, setFaculties] = useState<Faculty[]>([]);
+	const [careers,   setCareers]   = useState<Career[]>([]);
+	/* formulario */
+	const [selected,    setSelected]    = useState<Career|null>(null);
+	const [name,        setName]        = useState('');
 	const [description, setDescription] = useState('');
-	const [selectedCareer, setSelectedCareer] = useState<Career | null>(null);
+	const [facultyId,   setFacultyId]   = useState('');
 
-	const { HOST, SERVICE } = getEnvVariables();
+ const [mode,setMode]         =useState<'semester'|'trimester'|'year'>('year');
 
-	useEffect(() => {
-		fetchCareers();
-	}, []);
+	/* estado */
+	const [loading, setLoading] = useState(true);
 
-	const fetchCareers = async () => {
-		try {
-			const response = await axios.get(`${HOST}${SERVICE}/careers`);
-			setCareers(response.data.careers);
-		} catch (error) {
-			console.error('Error fetching careers:', error);
-		}
+	/* ---------- load ---------- */
+	const loadAll = async () => {
+		setLoading(true);
+		const [fac, car] = await Promise.all([
+			fetchFaculties(), fetchCareers()
+		]);
+		setFaculties(fac);  setCareers(car);  setLoading(false);
+	};
+	useEffect(()=>{ loadAll(); },[]);
+
+	/* ---------- CRUD ---------- */
+	const clearForm = ()=>{ setSelected(null); setName(''); setDescription(''); setFacultyId(''); };
+
+	const handleSave = async () => {
+		const payload = { name, description, facultyId: facultyId||undefined, mode };
+		if (selected) await updateCareer(selected._id, payload);
+		else          await createCareer(payload);
+		clearForm(); loadAll();
+		alert(selected ? 'Carrera actualizada' : 'Carrera creada');
 	};
 
-	const handleCreateOrUpdateCareer = async () => {
-		try {
-			const token = localStorage.getItem('token');
-			const headers = { Authorization: `Bearer ${token}` };
-
-			if (selectedCareer) {
-				await axios.put(
-					`${HOST}${SERVICE}/careers/${selectedCareer._id}`,
-					{ name, description },
-					{ headers }
-				);
-				alert('Carrera actualizada con éxito');
-			} else {
-				await axios.post(`${HOST}${SERVICE}/careers`, { name, description }, { headers });
-				alert('Carrera creada con éxito');
-			}
-			setName('');
-			setDescription('');
-			setSelectedCareer(null);
-			fetchCareers();
-		} catch (error) {
-			console.error('Error al crear o actualizar carrera:', error);
-		}
+	const handleEdit = (c:Career)=> {
+		setSelected(c);
+		setName(c.name); setDescription(c.description||''); setFacultyId(c.facultyId||'');
 	};
 
-	const handleDeleteCareer = async (id: string) => {
-		try {
-			const token = localStorage.getItem('token');
-			await axios.delete(`${HOST}${SERVICE}/careers/${id}`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			alert('Carrera eliminada con éxito');
-			fetchCareers();
-		} catch (error) {
-			console.error('Error al eliminar la carrera:', error);
-		}
+	const handleDelete = async(id:string)=>{
+		await deleteCareer(id); loadAll(); alert('Carrera eliminada');
 	};
 
-	const handleEditCareer = (career: Career) => {
-		setSelectedCareer(career);
-		setName(career.name);
-		setDescription(career.description || '');
-	};
+	/* ---------- UI ---------- */
+	if(loading) return <Loader/>;
 
-	return (
+	return(
 		<Container>
 			<Title>Gestión de Carreras</Title>
+
+			{/* Selector facultad */}
+			<FormSelect
+				label="Facultad (opcional)"
+				value={facultyId}
+				onChange={(value) => setFacultyId(value)}
+				options={[
+					{ value: '', label: '— Ninguna —' },
+					...faculties.map(f => ({ value: f._id, label: f.name })),
+				]}
+			/>
+
 			<Input
-				type="text"
 				placeholder="Nombre de la carrera"
 				value={name}
-				onChange={(e) => setName(e.target.value)}
+				onChange={e=>setName(e.target.value)}
 			/>
 			<Textarea
 				placeholder="Descripción"
 				value={description}
-				onChange={(e) => setDescription(e.target.value)}
+				onChange={e=>setDescription(e.target.value)}
 			/>
-			<Button onClick={handleCreateOrUpdateCareer}>
-				{selectedCareer ? 'Actualizar Carrera' : 'Crear Carrera'}
+
+			 <FormSelect
+   label="Modo académico (opcional)"
+   value={mode}
+   onChange={v=>setMode(v as any)}
+   options={[
+     {value:'year', label:'Anual'},
+     {value:'semester', label:'Semestral'},
+     {value:'trimester', label:'Trimestral'},
+   ]}
+ />
+
+			<Button onClick={handleSave}>
+				{selected ? 'Actualizar carrera' : 'Crear carrera'}
 			</Button>
+
+			{/* listado */}
 			<CareerList>
-				{careers.map((career) => (
-					<CareerItem key={career._id}>
-						<CareerName>
-							{career.name} - {career.description}
-						</CareerName>
+				{careers.map(c => (
+					<CareerItem key={c._id}>
+						<CareerName>{c.name}</CareerName>
+
+						{/* descripción ‒ visible solo si existe */}
+						{c.description && (
+							<p style={{ margin:'4px 0', fontSize:'0.85rem', color:'#555' }}>
+								{c.description}
+							</p>
+						)}
+
+						{/* facultad */}
+						{c.facultyId && (
+							<p style={{ margin:0, fontSize:'0.8rem', color:'#777' }}>
+								Facultad: {(typeof c.facultyId === 'string')
+									? faculties.find(f=>f._id===c.facultyId)?.name
+									: (c.facultyId as any).name}
+							</p>
+						)}
+
 						<div>
-							<ActionButton onClick={() => handleEditCareer(career)}>Editar</ActionButton>
-							<ActionButton onClick={() => handleDeleteCareer(career._id)}>Eliminar</ActionButton>
+							<ActionButton onClick={()=>handleEdit(c)}>Editar</ActionButton>
+							<ActionButton onClick={()=>handleDelete(c._id)}>Eliminar</ActionButton>
 						</div>
 					</CareerItem>
 				))}
 			</CareerList>
+
+			<FacultyManager/>
+			<CycleManager/>
 		</Container>
 	);
 };

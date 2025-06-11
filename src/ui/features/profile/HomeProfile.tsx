@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import UpdateProfile from './UpdateProfile';
 import ViewProfile from './ViewProfile';
-import FriendRequests from '../friends/FriendRequests';
-import UserSearch from '../friends/UserSearch';
-import FriendsList from '../friends/FriendsList';
 import BlockedUsersList from '../friends/pages/BlockedUsersList';
 import Notifications from '../centerAlert/Notifications';
 import { SidebarContainer, SidebarLink, ContentArea, ToggleButton } from './sidebar.styles';

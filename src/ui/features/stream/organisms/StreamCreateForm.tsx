@@ -15,6 +15,7 @@ interface Props {
 
 const StreamCreateForm: React.FC<Props> = ({ onStreamCreated }) => {
 	const [title, setTitle] = useState('');
+	const [description, setDescription] = useState('');
 	const [visibility, setVisibility] = useState<'university' | 'career' | 'private'>('university');
 	const [careers, setCareers] = useState<Career[]>([]);
 	const [careerId, setCareerId] = useState('');
@@ -30,6 +31,7 @@ const StreamCreateForm: React.FC<Props> = ({ onStreamCreated }) => {
 		const payload: any = {
 			title,
 			visibility,
+			description
 		};
 		if (visibility === 'career') {
 			payload.careerIds = [careerId]; // compatibilidad con backend
@@ -57,6 +59,11 @@ const StreamCreateForm: React.FC<Props> = ({ onStreamCreated }) => {
 					label="Título del stream"
 					value={title}
 					onChange={setTitle}
+				/>
+				<TextField
+					label="Descripción del stream"
+					value={description}
+					onChange={setDescription}
 				/>
 
 				<select

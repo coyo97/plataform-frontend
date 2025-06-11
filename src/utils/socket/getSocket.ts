@@ -6,9 +6,18 @@ let socket: Socket | null = null;
 
 export default function getSocket(): Socket {
 	if (socket) return socket;
+	
 	const { HOST } = getEnv();
 	const token    = localStorage.getItem('token');
-	socket = io(HOST, { auth: { token } });
+
+	socket = io(HOST, {
+		transports: ['polling'], // ⚠️ evita WebSocket con ngrok free
+		extraHeaders: {
+			'ngrok-skip-browser-warning': 'true', // ⚠️ evita respuesta HTML de ngrok
+		},
+		auth: { token },
+	});
+
 	return socket;
 }
 

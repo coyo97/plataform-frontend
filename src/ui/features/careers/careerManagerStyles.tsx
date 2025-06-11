@@ -89,3 +89,37 @@ export const ActionButton = styled('button')(({ theme }) => ({
 	},
 }));
 
+
+export const Select = styled('select')(({ theme }) => ({
+	width: '100%',
+	padding: '10px',
+	marginBottom: '10px',
+	borderRadius: '4px',
+	border: `1px solid ${theme.palette.divider}`,
+	fontSize: '16px',
+	backgroundColor: theme.palette.background.paper,
+	[mq('md', 'max')]: {
+		fontSize: '14px',
+	},
+}));
+
+export const Option = styled('option')({
+	fontSize: '16px',
+});
+
+export const List = styled('ul')({
+	listStyle: 'none',
+	padding: 0,
+	marginTop: '20px',
+});
+
+export const Item = styled('li')(({ theme }) => ({
+	display: 'flex',
+	alignItems: 'center',
+	justifyContent: 'space-between',
+	padding: '10px',
+	borderBottom: `1px solid ${theme.palette.divider}`,
+	'&:hover': {
+		backgroundColor: theme.palette.action.hover,
+	},
+}));

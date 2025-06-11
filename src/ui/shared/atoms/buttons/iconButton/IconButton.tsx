@@ -1,4 +1,3 @@
-// src/ui/shared/atoms/buttons/iconButton/IconButton.tsx
 import React from 'react';
 import { StyledIconButton } from './iconButton.styles';
 import { IconButtonProps } from './IconButton.types';
@@ -9,18 +8,26 @@ const IconButton: React.FC<IconButtonProps> = ({
 	colorType = 'primary',
 	sizeType = 'md',
 	shape = 'rounded',
+	href, // ← capturamos href explícitamente
 	...rest
-}) => (
-	<StyledIconButton
-		colorType={colorType}
-		sizeType={sizeType}
-		shape={shape}
-		aria-label={ariaLabel}
-		{...rest}
-	>
-		{children}
-	</StyledIconButton>
-);
+}) => {
+	const extraProps = href
+		? { component: 'a', href }
+		: {};
+
+	return (
+		<StyledIconButton
+			colorType={colorType}
+			sizeType={sizeType}
+			shape={shape}
+			aria-label={ariaLabel}
+			{...extraProps}
+			{...rest}
+		>
+			{children}
+		</StyledIconButton>
+	);
+};
 
 export default IconButton;
 

@@ -44,11 +44,13 @@ const PublicationCard: React.FC<Props> = ({
 				onAuthor={onAuthor}
 				onReport={() => onReport(publication._id)}
 				publishedAt={publication.created_at}
+				onShare={() => `${window.location.origin}/publications/${publication._id}`}
+
 			/>
 
 			<Content>
-				 <strong>Descripción: </strong>
-				 {publication.content}
+				<strong>Descripción: </strong>
+				{publication.content}
 				{/* etiquetas */}
 				<SmartBox row flexWrap="wrap" gap="px8" mt="px8"> 
 					{(publication.tags ?? []).map(tag => (

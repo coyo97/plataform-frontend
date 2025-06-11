@@ -6,3 +6,6 @@ export const REGISTER      = `${BASE}/register`;
 export const LOGIN         = `${BASE}/login`;
 export const SEARCH        = (q: string) => `${BASE}/search?query=${encodeURIComponent(q)}`;
 
+export const USERS = '/users';
+export default { USERS };
+

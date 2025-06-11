@@ -8,5 +8,6 @@ export interface StreamCardProps {
 	isLive: boolean;
 	onClick?: () => void;
 	dense?: boolean; // ZZ
+	description?: string;
 }
 

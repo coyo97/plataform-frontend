@@ -19,6 +19,7 @@ import type { StreamCardProps } from './streamCard.types';
 export const StreamCard: React.FC<StreamCardProps> = ({
 	id,
 	title,
+	description,
 	visibility,
 	viewerCount,
 	thumbnailUrl,
@@ -26,7 +27,7 @@ export const StreamCard: React.FC<StreamCardProps> = ({
 	onClick,
 	dense = false,
 }) => {
-return (
+	return (
 		<GridColumn span={dense ? 1 : 2}>
 			<CardContainer onClick={onClick} dense={dense}>
 				<Thumbnail
@@ -38,6 +39,12 @@ return (
 
 				<Content dense={dense}>
 					<Text size="md" weight="bold">{title}</Text>
+					{description && (
+						<Text size="sm"  style={{ marginTop: 4 }}>
+							{description}
+						</Text>
+					)}
+
 
 					<InfoRow>
 						<TagChip

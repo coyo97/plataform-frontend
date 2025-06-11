@@ -59,6 +59,10 @@ export const useStreamConnection = ({
 	const screenRef        = useRef<RTCPeerConnection|null>(null);
 	const localStreamRef   = useRef<MediaStream|null>(null);
 	const pc2Ref = useRef<RTCPeerConnection|null>(null);
+	const pcMap = useRef<Record<string, RTCPeerConnection>>({});
+	const viewerPcMap = useRef<Record<string, RTCPeerConnection>>({}); // 
+
+
 	const leaveStream = () => {
 		// 1) cortamos media
 		localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -85,11 +89,20 @@ export const useStreamConnection = ({
 	const log = (...args: any[]) =>
 		console.log(`[%cSCREEN%c]`, 'color:#0af', 'color:inherit', ...args);
 
+
 	/* ───────────────────── inicialización ───────────────────── */
 	useEffect(() => {
 
 		sock.emit(EVENTS.JOIN_STREAM, { streamId, accessCode });
 		/* unirse a la sala */
+		if (!isStreamer) {
+			// Avísale al streamer que, si ya está compartiendo, nos envíe su pantalla
+			sock.emit('request-screen-share', { streamId, viewerSocketId: socket.id });
+			/* 1️⃣  Solicita la pantalla tan pronto el socket está listo */
+			socket.on('connect', () => {
+				sock.emit('request-screen-share', { streamId });  // el backend puede usar socket.id
+			});
+		}
 
 		/* peer conexión principal */
 		const pc = new RTCPeerConnection({
@@ -97,8 +110,38 @@ export const useStreamConnection = ({
 		});
 
 		pc.onicecandidate = (e) => {
-			if (e.candidate) sock.emit('ice-candidate', streamId, e.candidate);
+			if (e.candidate)
+				sock.emit('ice-candidate', { streamId, candidate: e.candidate });
 		};
+		/* …dentro de la rama viewer (else) ─────────────────────────────────────── */
+		if (!isStreamer) {
+			socket.on('offer', async ({ offer, from }) => {
+				/* crea una pc exclusiva para el streamer */
+				const pcFromStreamer = new RTCPeerConnection({
+					iceServers: [{ urls:'stun:stun.l.google.com:19302' }],
+				});
+				viewerPcMap.current[from] = pcFromStreamer;   // guarda la PC por el socketId del streamer
+
+				/* guarda audio/vídeo entrante */
+				pcFromStreamer.ontrack = ev => {
+					const camVideo = document.getElementById('remoteVideo') as HTMLVideoElement|null;
+					if (camVideo && camVideo.srcObject !== ev.streams[0])
+						camVideo.srcObject = ev.streams[0];
+				};
+
+				/* envía ICE de vuelta dirigido al streamer */
+				pcFromStreamer.onicecandidate = e => {
+					if (e.candidate)
+						socket.emit('ice-candidate', { streamId, to: from, candidate: e.candidate });
+				};
+
+				/* procesa oferta y responde */
+				await pcFromStreamer.setRemoteDescription(new RTCSessionDescription(offer));
+				const answer = await pcFromStreamer.createAnswer();
+				await pcFromStreamer.setLocalDescription(answer);
+				socket.emit('answer', { streamId, to: from, answer });
+			});
+		}
 
 		/* ───── streamer ───── */
 		if (isStreamer) {
@@ -117,10 +160,32 @@ export const useStreamConnection = ({
 
 				pc.createOffer().then((offer) => {
 					pc.setLocalDescription(offer);
-					sock.emit('offer', streamId, offer);
+					sock.emit('offer', { streamId, offer });   // ✅ formato nuevo (broadcast)
 				});
 				// … (dentro del if isStreamer) …
+				socket.on('request-offer', ({ viewerSocketId }) => {
+					sendOfferTo(viewerSocketId);              // 👈 función declarada justo debajo
+				});
 
+				async function sendOfferTo(viewerSocketId: string) {
+					/* crea pc dedicada al viewer */
+					const pc = new RTCPeerConnection({ iceServers: [{ urls:'stun:stun.l.google.com:19302' }] });
+					pcMap.current[viewerSocketId] = pc;
+
+					/* relaya ICE de esta pc */
+					pc.onicecandidate = e => {
+						if (e.candidate)
+							socket.emit('ice-candidate', { streamId, to: viewerSocketId, candidate: e.candidate });
+					};
+
+					/* añade todas las pistas locales (cammic) */
+					stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+					/* genera y envía oferta dirigida */
+					const offer = await pc.createOffer();
+					await pc.setLocalDescription(offer);
+					socket.emit('offer', { streamId, to: viewerSocketId, offer });
+				}
 
 			})	.catch(console.error);
 		} 
@@ -139,33 +204,44 @@ export const useStreamConnection = ({
 						ev.track.label.toLowerCase().includes('window')) {
 						if (screenVideo && screenVideo.srcObject !== remoteStream) {
 							screenVideo.srcObject = remoteStream;
+							screenVideo.onloadedmetadata = () => {
+								screenVideo.play().catch(console.error);
+							};
 						}
 					} else {
 						if (camVideo && camVideo.srcObject !== remoteStream) {
 							camVideo.srcObject = remoteStream;
+							camVideo.onloadedmetadata = () => {
+								camVideo.play().catch(console.error);
+							};
 						}
 					}
 				} else if (ev.track.kind === 'audio') {
 					// el audio lo reproducimos en el mismo elemento de cámara
 					if (camVideo && camVideo.srcObject !== remoteStream) {
 						camVideo.srcObject = remoteStream;
+						camVideo.onloadedmetadata = () => {
+							camVideo.play().catch(console.error);
+						};
 					}
 				}
+
 			};
 
 			setPeerConnection(pc);
 		}
 
-		/* ───────── sockets comunes ───────── */
-		sock.on(EVENTS.OFFER, async (offer) => {
-			if (!isStreamer && pc) {
-				if (pc.signalingState !== 'stable') return;
-				await pc.setRemoteDescription(new RTCSessionDescription(offer));
-				const answer = await pc.createAnswer();
-				await pc.setLocalDescription(answer);
-				sock.emit('answer', streamId, answer);
-			}
-		});
+		/* ───────── sockets comunes ───────── 
+		   sock.on(EVENTS.OFFER, async (offer) => {
+		   if (!isStreamer && pc) {
+		   if (pc.signalingState !== 'stable') return;
+		   await pc.setRemoteDescription(new RTCSessionDescription(offer));
+		   const answer = await pc.createAnswer();
+		   await pc.setLocalDescription(answer);
+		   sock.emit('answer', streamId, answer);
+		   }
+		   });
+		 */
 
 		sock.on(EVENTS.ANSWER, async (answer) => {
 			if (isStreamer && pc) {
@@ -173,17 +249,31 @@ export const useStreamConnection = ({
 				await pc.setRemoteDescription(new RTCSessionDescription(answer));
 			}
 		});
+		/* ——— ICE CANDIDATE universal ——— */
+		sock.on('ice-candidate', async ({ from, candidate }) => {
+			const pcTarget = isStreamer
+				? pcMap.current[from]         // el streamer recibe ICE de cada viewer
+				: viewerPcMap.current[from];  // el viewer recibe ICE del streamer
+
+				if (!pcTarget) return;          // todavía no hay PC negociada
+				try {
+					await pcTarget.addIceCandidate(new RTCIceCandidate(candidate));
+				} catch (e) {
+					console.warn('ICE add err', e);
+				}
+		});
+
 
 		// ② al recibir candidatos:
-		sock.on(EVENTS.ICE_CANDIDATE, async (cand) => {
+		sock.on('ice-candidate', async ({ candidate }) => {
 			if (!pc) return;
-
 			if (pc.remoteDescription) {
-				await pc.addIceCandidate(new RTCIceCandidate(cand));
+				await pc.addIceCandidate(new RTCIceCandidate(candidate));
 			} else {
-				pendingCandidates.current.push(cand);
+				pendingCandidates.current.push(candidate);
 			}
 		});
+
 		socket.on('kicked', () => {
 			kicked.current = true;
 			leaveStream();
@@ -224,24 +314,61 @@ export const useStreamConnection = ({
 			});
 
 			pc2Ref.current = pc2;
+			if (!isStreamer) {
+				// Avísale al streamer que, si ya está compartiendo, nos envíe su pantalla
+				sock.emit('request-screen-share', { streamId, viewerSocketId: socket.id });
+			}
 
 			pc2.ontrack = ev => {
 				const video = document.getElementById('screenVideo') as HTMLVideoElement | null;
-				if (video && video.srcObject !== ev.streams[0]) video.srcObject = ev.streams[0];
+				if (video && video.srcObject !== ev.streams[0]) {
+					video.srcObject = ev.streams[0];
+					video.style.display = 'block';
+				}
 			};
 
 			/* oferta desde el streamer */
+			/* oferta desde el streamer (pantalla) */
 			sock.on('screen-share-offer', async ({ offer }) => {
-				await pc2.setRemoteDescription(new RTCSessionDescription(offer));
+				// 1️⃣  crea-o-recrea la PC si no existe o está cerrada
+				let pc = pc2Ref.current;
+				if (!pc || pc.signalingState === 'closed') {
+					pc = new RTCPeerConnection({
+						iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+					});
+					pc2Ref.current = pc;
 
-				if (pc2.signalingState === 'have-remote-offer') {   // solo 1.ª vez
-					const answer = await pc2.createAnswer();
-					await pc2.setLocalDescription(answer);
+					// ontrack: asigna stream y lo muestra
+					pc.ontrack = ev => {
+						const video = document.getElementById('screenVideo') as HTMLVideoElement | null;
+						if (video) {
+							video.srcObject = ev.streams[0];
+							video.style.display = 'block';            //  asegura visibilidad inmediata
+						}
+					};
+
+					// reléa ICE
+					pc.onicecandidate = e => {
+						if (e.candidate)
+							sock.emit('screen-share-ice', { streamId, candidate: e.candidate });
+					};
+				}  /*  Evita setRemoteDescription duplicado */
+				if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') {
+					console.log('[viewer] ignorando oferta duplicada; state =', pc.signalingState);
+					return;
+				}
+
+
+				//   procesa la oferta
+				await pc.setRemoteDescription(new RTCSessionDescription(offer));
+				/* Sólo respondemos si todavía no enviamos answer */
+				if (pc.signalingState === 'have-remote-offer') {
+					const answer = await pc.createAnswer();
+					await pc.setLocalDescription(answer);
 					sock.emit('screen-share-answer', { streamId, answer });
-				} else {
-					console.log('[viewer] offer duplicada – state =', pc2.signalingState);
 				}
 			});
+
 
 			/* ICE desde el streamer */
 			sock.on('screen-share-ice', async ({ candidate }) => {
@@ -251,10 +378,15 @@ export const useStreamConnection = ({
 
 			/* el streamer dejó de compartir */
 			sock.on('stop-screen-share', () => {
-				pc2.close();
+				pc2Ref.current?.close();
+				pc2Ref.current = null;                        // 🔑 deja la referencia en null
 				const v = document.getElementById('screenVideo') as HTMLVideoElement | null;
-				if (v) v.srcObject = null;
+				if (v) {
+					v.srcObject = null;
+					v.style.display = 'none';                   // oculta el <video>
+				}
 			});
+
 		}
 
 		/* limpieza al desmontar hook */
@@ -267,7 +399,8 @@ export const useStreamConnection = ({
 			sock.off(EVENTS.TOGGLE_CAMERA).off(EVENTS.TOGGLE_MIC)
 			.off('screen-share-offer')
 			.off('screen-share-ice')
-			.off('stop-screen-share');
+			.off('stop-screen-share')
+			socket.off('offer');
 		};
 	}, []);
 	/* ───────────────────────── listeners de pantalla (streamer) ───────────────────────── */

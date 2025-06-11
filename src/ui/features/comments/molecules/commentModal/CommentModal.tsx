@@ -38,6 +38,9 @@ const CommentModal: React.FC<Props> = ({
 						value={text}
 						onChange={setText}
 						placeholder="Escribe tu comentario…"
+						multiline
+						rows={1}
+						autoResize
 						error={text.length > 500}
 						helperText={text.length > 500 ? 'Máximo 500 caracteres' : ''}
 					/>

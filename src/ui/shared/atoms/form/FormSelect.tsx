@@ -1,22 +1,45 @@
+// shared/atoms/form/FormSelect.tsx
+import { MenuItem, SelectChangeEvent } from '@mui/material';
 import React, { forwardRef } from 'react';
-import { Select, SelectProps } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { StyledFormSelect } from './formSelect.styles';
+import { FormSelectProps } from './FormSelect.types';
 
-/** ——— 100 % width y mismo margen en todo el proyecto ——— */
-const StyledSelect = styled(Select)({
-  width: '100%',
-});
+const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
+	(
+		{
+			colorType = 'primary',
+			variantType = 'solid',
+			label,
+			options = [],
+			onChange,
+			value,
+			...props
+		},
+		ref
+	) => {
+		const handleChange = (e: SelectChangeEvent<unknown>) => {
+			const value = e.target.value as string;
+			if (onChange) onChange(value, e as SelectChangeEvent<string>);
+		};
 
-const FormSelect = forwardRef<HTMLSelectElement, SelectProps>((props, ref) => (
-  <StyledSelect
-    /**  
-     *  `ref` se pasa a `inputRef` porque MUI lo expone así  
-     *   (mantiene tipado y funciona con react-hook-form, etc.)  
-     */
-    inputRef={ref}
-    {...props}
-  />
-));
+		return (
+			<StyledFormSelect
+				inputRef={ref}
+				colorType={colorType}
+				variantType={variantType}
+				value={value}
+				onChange={handleChange}
+				{...props}
+			>
+				{options.map(opt => (
+					<MenuItem key={opt.value} value={opt.value}>
+						{opt.label}
+					</MenuItem>
+				))}
+			</StyledFormSelect>
+		)
+	}
+)
 
 FormSelect.displayName = 'FormSelect';
 export default FormSelect;
