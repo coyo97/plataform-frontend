@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import {
-	Box, Button, Typography, FormControl, Select, InputLabel,
-	MenuItem, List, ListItem, ListItemText,
-} from '@mui/material';
-import GroupIcon from '@mui/icons-material/Group';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import React, { useEffect, useState } from 'react';
+import GroupIcon        from '@mui/icons-material/Group';
+import PersonAddIcon    from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+
+import FilledButton from '../../shared/atoms/buttons/filledButton/FilledButton';
+import Text         from '../../shared/atoms/typography/Text';
+import Loader       from '../../shared/atoms/feedback/loader/Loader';
+import Alert        from '../../shared/atoms/feedback/alert/Alert';
+import SmartBox     from '../../shared/atoms/box/SmartBox';
 
 import {
 	listGroups,
@@ -14,173 +16,147 @@ import {
 	removeUserFromGroup,
 } from '../../../async/services/groupService';
 import { listUsers } from '../../../async/services/userService';
+import type { Group } from '../../../types/types';
+import type { User  } from '../../../types/User';
 
-import { Group } from '../../../types/types';
-import { User } from '../../../types/User';
+import { Wrapper, Section, Row, ListBox, ListItemBox } from './groupUser.styles';
 
 const GroupUser: React.FC = () => {
-	const [groups, setGroups]           = useState<Group[]>([]);
-	const [users, setUsers]             = useState<User[]>([]);
-	const [groupMembers, setGroupMembers] = useState<User[]>([]);
+	const [groups, setGroups]             = useState<Group[]>([]);
+	const [users, setUsers]               = useState<User[]>([]);
+	const [members, setMembers]           = useState<User[]>([]);
+	const [groupId, setGroupId]           = useState('');
+	const [userToAdd, setUserToAdd]       = useState('');
+	const [userToRemove, setUserToRemove] = useState('');
+	const [loading, setLoading]           = useState(true);
+	const [error, setError]               = useState<string | null>(null);
+	const [message, setMessage]           = useState('');
 
-	const [groupId,        setGroupId]        = useState('');
-	const [userToAddId,    setUserToAddId]    = useState('');
-	const [userToRemoveId, setUserToRemoveId] = useState('');
-	const [message,        setMessage]        = useState('');
-
-	/* cargar grupos y usuarios una sola vez */
 	useEffect(() => {
-		listGroups().then(setGroups).catch(err => console.error('Grupos:', err));
-		listUsers().then(setUsers).catch(err => console.error('Usuarios:', err));
+		Promise.all([listGroups(), listUsers()])
+		.then(([g, u]) => { setGroups(g); setUsers(u); })
+		.catch(() => setError('No se pudieron cargar datos'))
+		.finally(() => setLoading(false));
 	}, []);
 
-	/* cargar miembros cuando cambia el grupo */
 	useEffect(() => {
-		if (groupId) {
-			listGroupMembers(groupId)
-			.then(setGroupMembers)
-			.catch(err => {
-				console.error('Miembros:', err);
-				setGroupMembers([]);
-			});
-		} else {
-			setGroupMembers([]);
-		}
+		if (!groupId) { setMembers([]); return; }
+		listGroupMembers(groupId)
+		.then(setMembers)
+		.catch(() => setError('No se pudieron cargar los miembros'));
 	}, [groupId]);
 
-	/* --- handlers --- */
-	const handleAddUser = async (e: React.FormEvent) => {
-		e.preventDefault();
+	const refreshMembers = () => groupId && listGroupMembers(groupId).then(setMembers);
+	const resetFeedback  = () => { setError(null); setMessage(''); };
+
+	const handleAdd = async (e: React.FormEvent) => {
+		e.preventDefault(); resetFeedback();
 		try {
-			const { group } = await addUserToGroup(groupId, userToAddId);
+			const { group } = await addUserToGroup(groupId, userToAdd);
 			setMessage(`Usuario agregado a ${group.name}`);
-			setUserToAddId('');
-			const members = await listGroupMembers(groupId);
-			setGroupMembers(members);
-		} catch (err) {
-			console.error(err);
-			setMessage('Error al agregar usuario');
-		}
+			setUserToAdd('');
+			refreshMembers();
+		} catch { setError('Error al agregar usuario'); }
 	};
 
-	const handleRemoveUser = async (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleRemove = async (e: React.FormEvent) => {
+		e.preventDefault(); resetFeedback();
 		try {
-			const { group } = await removeUserFromGroup(groupId, userToRemoveId);
+			const { group } = await removeUserFromGroup(groupId, userToRemove);
 			setMessage(`Usuario eliminado de ${group.name}`);
-			setUserToRemoveId('');
-			const members = await listGroupMembers(groupId);
-			setGroupMembers(members);
-		} catch (err) {
-			console.error(err);
-			setMessage('Error al eliminar usuario');
-		}
+			setUserToRemove('');
+			refreshMembers();
+		} catch { setError('Error al eliminar usuario'); }
 	};
 
-	/* --- UI --- */
 	return (
-		<Box sx={{ p: 3 }}>
-			<Typography variant="h5" gutterBottom>
-				<GroupIcon sx={{ mr: 1 }} />
-				Gestión de Usuarios del Grupo
-			</Typography>
+		<Wrapper>
+			<Text as="h1" size="lg" weight="bold">
+				<GroupIcon style={{ verticalAlign: 'text-bottom', marginRight: 6 }} />
+				Gestión&nbsp;de&nbsp;Usuarios&nbsp;de&nbsp;Grupos
+			</Text>
 
-			{message && <Typography color="primary">{message}</Typography>}
+			{loading && <Loader />}
+			{error   && <Alert type="error" onClose={() => setError(null)}>{error}</Alert>}
+			{message && <Alert type="success" onClose={() => setMessage('')}>{message}</Alert>}
 
 			{/* selector de grupo */}
-			<FormControl fullWidth sx={{ mb: 2 }}>
-				<InputLabel>Seleccionar Grupo</InputLabel>
-				<Select value={groupId} label="Seleccionar Grupo" onChange={e => setGroupId(e.target.value)}>
-					<MenuItem value=""><em>Seleccione un grupo</em></MenuItem>
+			<Section>
+				<Text weight="medium">Seleccionar grupo</Text>
+				<select value={groupId} onChange={e => setGroupId(e.target.value)}>
+					<option value="">-- Seleccione un grupo --</option>
 					{groups.map(g => (
-						<MenuItem key={g._id} value={g._id}>{g.name}</MenuItem>
+						<option key={g._id} value={g._id}>{g.name}</option>
 					))}
-				</Select>
-			</FormControl>
+				</select>
+			</Section>
 
 			{groupId && (
 				<>
-					{/* botón refrescar miembros */}
-					<Box sx={{ display: 'flex', mb: 2 }}>
-						<Button
-							variant="contained"
-							onClick={() => listGroupMembers(groupId).then(setGroupMembers)}
-							startIcon={<GroupIcon />}
-						>
-							Ver Miembros del Grupo
-						</Button>
-					</Box>
+					{/* miembros */}
+					<Section>
+						<Row>
+							<FilledButton onClick={refreshMembers} colorType="primary" startIcon={<GroupIcon />}>
+								Ver miembros
+							</FilledButton>
+						</Row>
 
-					{/* listado de miembros */}
-					{groupMembers.length > 0 && (
-						<List sx={{ mb: 3 }}>
-							<Typography variant="h6">Miembros del Grupo</Typography>
-							{groupMembers.map(m => (
-								<ListItem key={m._id}>
-									<ListItemText primary={`${m.username} (${m.email})`} />
-								</ListItem>
-							))}
-						</List>
-					)}
+						{members.length > 0 && (
+							<ListBox>
+								<Text as="h3" weight="medium" style={{ padding: '4px 8px' }}>Miembros</Text>
+								{members.map(m => (
+									<ListItemBox key={m._id}>
+										<Text size="sm">{m.username} ({m.email})</Text>
+									</ListItemBox>
+								))}
+							</ListBox>
+						)}
+					</Section>
 
-					{/* formulario agregar */}
-					<Box component="form" onSubmit={handleAddUser} sx={{ mb: 3 }}>
-						<Typography variant="h6">Agregar Usuario al Grupo</Typography>
-						<FormControl fullWidth sx={{ mt: 1 }}>
-							<InputLabel>Seleccionar Usuario</InputLabel>
-							<Select
-								value={userToAddId}
-								label="Seleccionar Usuario"
-								onChange={e => setUserToAddId(e.target.value)}
+		  {/* agregar usuario */}
+					<Section as="form" onSubmit={handleAdd}>
+						<Text weight="medium">Agregar usuario</Text>
+						<Row>
+							<select
+								value={userToAdd}
+								onChange={e => setUserToAdd(e.target.value)}
 								required
+								style={{ flex: 1 }}
 							>
-								<MenuItem value=""><em>Seleccione un usuario</em></MenuItem>
+								<option value="">-- Seleccione usuario --</option>
 								{users.map(u => (
-									<MenuItem key={u._id} value={u._id}>{u.username}</MenuItem>
+									<option key={u._id} value={u._id}>{u.username}</option>
 								))}
-							</Select>
-						</FormControl>
-						<Button
-							type="submit"
-							variant="contained"
-							color="success"
-							startIcon={<PersonAddIcon />}
-							sx={{ mt: 1 }}
-						>
-							Agregar Usuario
-						</Button>
-					</Box>
+							</select>
+							<FilledButton type="submit" colorType="success" startIcon={<PersonAddIcon />}>
+								Agregar
+							</FilledButton>
+						</Row>
+					</Section>
 
-		  {/* formulario eliminar */}
-					<Box component="form" onSubmit={handleRemoveUser}>
-						<Typography variant="h6">Eliminar Usuario del Grupo</Typography>
-						<FormControl fullWidth sx={{ mt: 1 }}>
-							<InputLabel>Seleccionar Miembro</InputLabel>
-							<Select
-								value={userToRemoveId}
-								label="Seleccionar Miembro"
-								onChange={e => setUserToRemoveId(e.target.value)}
+					{/* eliminar usuario */}
+					<Section as="form" onSubmit={handleRemove}>
+						<Text weight="medium">Eliminar usuario</Text>
+						<Row>
+							<select
+								value={userToRemove}
+								onChange={e => setUserToRemove(e.target.value)}
 								required
+								style={{ flex: 1 }}
 							>
-								<MenuItem value=""><em>Seleccione un miembro</em></MenuItem>
-								{groupMembers.map(m => (
-									<MenuItem key={m._id} value={m._id}>{m.username}</MenuItem>
+								<option value="">-- Seleccione miembro --</option>
+								{members.map(m => (
+									<option key={m._id} value={m._id}>{m.username}</option>
 								))}
-							</Select>
-						</FormControl>
-						<Button
-							type="submit"
-							variant="contained"
-							color="error"
-							startIcon={<PersonRemoveIcon />}
-							sx={{ mt: 1 }}
-						>
-							Eliminar Usuario
-						</Button>
-					</Box>
+							</select>
+							<FilledButton type="submit" colorType="error" startIcon={<PersonRemoveIcon />}>
+								Eliminar
+							</FilledButton>
+						</Row>
+					</Section>
 				</>
 			)}
-		</Box>
+		</Wrapper>
 	);
 };
 

@@ -1,107 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
 import {
-  Container,
-  Title,
-  StyledTableContainer,
-  StyledTableRow,
-  StyledTableCell,
+	Container,
+	StyledTableContainer,
+	StyledTableRow,
+	StyledTableCell,
 } from './userListWithRoles.styles';
+
+import SectionTitle from '../../shared/atoms/titles/SectionTitle';
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import Text from '../../shared/atoms/typography/Text';
+
 import { Table, TableBody, TableHead, Pagination } from '@mui/material';
+import { fetchUsersPaginated } from '../../../async/services/userService';
 
-interface Role {
-  _id: string;
-  name: string;
-}
-
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-  roles: Role[];
-}
+interface Role { _id: string; name: string; }
+interface User { _id: string; username: string; email: string; roles: Role[] }
 
 const UserListWithRoles: React.FC = () => {
-  const [list, setUsers] = useState<User[]>([]);
-  const { HOST, SERVICE } = getEnvVariables();
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const usersPerPage = 10;
+	const [users, setUsers]       = useState<User[]>([]);
+	const [currentPage, setPage]  = useState(1);
+	const [totalPages, setTotal]  = useState(1);
+	const usersPerPage            = 10;
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No se encontró el token. Por favor, inicia sesión.');
-      return;
-    }
+	const load = (page: number) => {
+		fetchUsersPaginated(page, usersPerPage)
+			.then(({ list, totalPages }) => {
+				setUsers(list);
+				setTotal(totalPages);
+			})
+			.catch(err => {
+				console.error(err);
+				alert('Error al obtener usuarios');
+			});
+	};
 
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get(`${HOST}${SERVICE}/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            page: currentPage,
-            limit: usersPerPage,
-          },
-        });
+	useEffect(() => {
+		load(currentPage);
+	}, [currentPage]);
 
-        if (response.data && response.data.list) {
-          setUsers(response.data.list);
-          setTotalPages(response.data.totalPages);
-        } else {
-          console.error('La respuesta no contiene la lista de usuarios esperada.');
-        }
-      } catch (error) {
-        console.error('Error al obtener usuarios:', error);
-        alert('Error al obtener usuarios');
-      }
-    };
+	return (
+		<Container>
+			<SectionTitle variant="h5">Lista de Usuarios con sus Roles</SectionTitle>
 
-    fetchUsers();
-  }, [HOST, SERVICE, currentPage]);
+			<StyledTableContainer>
+				<Table>
+					<TableHead>
+						<StyledTableRow>
+							<StyledTableCell>Usuario</StyledTableCell>
+							<StyledTableCell>Email</StyledTableCell>
+							<StyledTableCell>Roles</StyledTableCell>
+						</StyledTableRow>
+					</TableHead>
+					<TableBody>
+						{users.map(user => (
+							<StyledTableRow key={user._id}>
+								<StyledTableCell>
+									<Text>{user.username}</Text>
+								</StyledTableCell>
+								<StyledTableCell>
+									<Text size="sm" colorKey="text.secondary">{user.email}</Text>
+								</StyledTableCell>
+								<StyledTableCell>
+									<Text>
+										{user.roles?.length
+											? user.roles.map(role => role.name).join(', ')
+											: 'Sin roles asignados'}
+									</Text>
+								</StyledTableCell>
+							</StyledTableRow>
+						))}
+					</TableBody>
+				</Table>
+			</StyledTableContainer>
 
-  return (
-    <Container>
-      <Title variant="h4">Lista de Usuarios con sus Roles</Title>
-      <StyledTableContainer>
-        <Table>
-          <TableHead>
-            <StyledTableRow>
-              <StyledTableCell>Usuario</StyledTableCell>
-              <StyledTableCell>Email</StyledTableCell>
-              <StyledTableCell>Roles</StyledTableCell>
-            </StyledTableRow>
-          </TableHead>
-          <TableBody>
-            {list.map((user) => (
-              <StyledTableRow key={user._id}>
-                <StyledTableCell>{user.username}</StyledTableCell>
-                <StyledTableCell>{user.email}</StyledTableCell>
-                <StyledTableCell>
-                  {user.roles && user.roles.length > 0 ? (
-                    user.roles.map((role) => role.name).join(', ')
-                  ) : (
-                    'Sin roles asignados'
-                  )}
-                </StyledTableCell>
-              </StyledTableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </StyledTableContainer>
-
-      {/* Componente de paginación */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-        <Pagination
-          count={totalPages}
-          page={currentPage}
-          onChange={(event, value) => setCurrentPage(value)}
-          color="primary"
-        />
-      </div>
-    </Container>
-  );
+			<SmartBox center mt='px4'>
+				<Pagination
+					count={totalPages}
+					page={currentPage}
+					onChange={(_, val) => setPage(val)}
+					color="primary"
+				/>
+			</SmartBox>
+		</Container>
+	);
 };
 
 export default UserListWithRoles;

@@ -1,43 +1,31 @@
-// src/ui/components/roles/CreateRole.tsx
-
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
+
+import { fetchModules }     from '../../../async/services/moduleService';
+import { fetchActions }     from '../../../async/services/actionService';
+import { createPermission } from '../../../async/services/permissionService';
+import { createRole }       from '../../../async/services/roleService';
+
+import SectionTitle from '../../shared/atoms/titles/SectionTitle';
+import MainInput from '../../shared/atoms/inputs/MainInput';
+import Text from '../../shared/atoms/typography/Text';
+import FilledButton from '../../shared/atoms/buttons/filledButton/FilledButton';
+import GhostButton from '../../shared/atoms/buttons/ghostButton/GhostButton';
+import SmartBox from '../../shared/atoms/box/SmartBox';
+
 import {
 	RoleContainer,
-	Title,
-	FormField,
 	PermissionList,
 	PermissionItem,
-	AddPermissionButton,
-	SubmitButton,
 } from './createRole.styles';
+
 import {
-	Button,
-	Typography,
-	MenuItem,
-	Select,
-	FormControl,
-	InputLabel,
-	SelectChangeEvent,
-	Checkbox,
+	Button, Typography, MenuItem, Select, FormControl, InputLabel, Checkbox,
 } from '@mui/material';
 
-interface Module {
-	_id: string;
-	name: string;
-}
-
-interface Action {
-	_id: string;
-	name: string;
-}
-
+interface Module { _id: string; name: string; }
+interface Action { _id: string; name: string; }
 interface Permission {
-	_id: string;
-	name: string;
-	module: Module;
-	action: Action;
+	_id: string; name: string; module: Module; action: Action;
 }
 
 const CreateRole: React.FC = () => {
@@ -48,266 +36,144 @@ const CreateRole: React.FC = () => {
 	const [actions, setActions] = useState<Action[]>([]);
 	const [selectedModules, setSelectedModules] = useState<string[]>([]);
 	const [selectedActions, setSelectedActions] = useState<string[]>([]);
-	const { HOST, SERVICE } = getEnvVariables();
 
 	useEffect(() => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
-
-		const fetchData = async () => {
-			try {
-				// Obtener módulos
-				const modulesResponse = await axios.get(`${HOST}${SERVICE}/modules`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (modulesResponse.data && modulesResponse.data.modules) {
-					setModules(modulesResponse.data.modules);
-				} else {
-					console.error('La respuesta no contiene los módulos esperados.');
-				}
-
-				// Obtener acciones
-				const actionsResponse = await axios.get(`${HOST}${SERVICE}/actions`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (actionsResponse.data && actionsResponse.data.actions) {
-					setActions(actionsResponse.data.actions);
-				} else {
-					console.error('La respuesta no contiene las acciones esperadas.');
-				}
-			} catch (error) {
-				console.error('Error al obtener módulos o acciones:', error);
-			}
-		};
-
-		fetchData();
-	}, [HOST, SERVICE]);
+		fetchModules().then(setModules);
+		fetchActions().then(setActions);
+	}, []);
 
 	const addPermission = async () => {
-		if (selectedModules.length === 0 || selectedActions.length === 0) {
-			alert('Debe seleccionar al menos un módulo y una acción.');
-			return;
-		}
-
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
+		if (!selectedModules.length || !selectedActions.length) {
+			return alert('Seleccione módulo(s) y acción(es)');
 		}
 
 		try {
-			const newPermissions: Permission[] = [];
+			const newPerms: Permission[] = [];
 
-			for (const moduleId of selectedModules) {
-				const moduleName = modules.find((mod) => mod._id === moduleId)?.name || '';
+			for (const modId of selectedModules) {
+				const mod = modules.find(m => m._id === modId)!;
 
-				for (const actionId of selectedActions) {
-					const actionName = actions.find((act) => act._id === actionId)?.name || '';
+				for (const actId of selectedActions) {
+					if (permissions.some(p => p.module._id === modId && p.action._id === actId)) continue;
 
-					// Verificar si el permiso ya existe en la lista local
-					const existingPermission = permissions.find(
-						(perm) =>
-							perm.module._id === moduleId && perm.action._id === actionId
-					);
+					const act = actions.find(a => a._id === actId)!;
+					const namePerm = `${mod.name} - ${act.name}`;
 
-					if (existingPermission) {
-						continue; // Saltar si el permiso ya está agregado
-					}
-
-					// Crear el nombre del permiso combinando el módulo y la acción
-					const permissionName = `${moduleName} - ${actionName}`;
-
-					// Mostrar los datos que se enviarán al backend
-					console.log('Enviando datos al backend:', {
-						moduleId: moduleId,
-						actionId: actionId,
-						name: permissionName,
+					const { permission } = await createPermission({
+						moduleId: modId,
+						actionId: actId,
+						name: namePerm,
 					});
 
-					// Crear el permiso en el backend
-					const response = await axios.post(
-						`${HOST}${SERVICE}/permissions`,
-						{
-							moduleId: moduleId,
-							actionId: actionId,
-							name: permissionName,
-						},
-						{ headers: { Authorization: `Bearer ${token}` } }
-					);
-
-					if (response.data && response.data.permission) {
-						newPermissions.push(response.data.permission);
-					} else {
-						console.error('Error al crear el permiso.');
-					}
+					newPerms.push({ ...permission, module: mod, action: act });
 				}
 			}
 
-			setPermissions([...permissions, ...newPermissions]);
-
-			// Limpiar las selecciones
+			setPermissions(prev => [...prev, ...newPerms]);
 			setSelectedModules([]);
 			setSelectedActions([]);
-		} catch (error) {
-			if (axios.isAxiosError(error)) {
-				console.error('Error al agregar el permiso:', error.response?.data || error.message);
-				alert(`Error al agregar el permiso: ${error.response?.data?.message || error.message}`);
-			} else {
-				console.error('Error desconocido:', error);
-				alert('Error desconocido al agregar el permiso');
-			}
+		} catch (err: any) {
+			console.error(err);
+			alert('Error al agregar permiso');
 		}
 	};
 
-	const removePermission = (index: number) => {
-		setPermissions(permissions.filter((_, i) => i !== index));
-	};
+	const removePermission = (i: number) =>
+		setPermissions(prev => prev.filter((_, idx) => idx !== i));
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-
-		if (permissions.length === 0) {
-			alert('Debe agregar al menos un permiso al rol.');
-			return;
-		}
-
-		const token = localStorage.getItem('token');
-		if (!token) {
-			alert('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
+		if (!permissions.length) return alert('Agregue al menos un permiso');
 
 		try {
-			const permissionIds = permissions.map((perm) => perm._id);
-			await axios.post(
-				`${HOST}${SERVICE}/roles`,
-				{ name, description, permissions: permissionIds },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
+			const ids = permissions.map(p => p._id);
+			await createRole({ name, description, permissions: ids });
 			alert('Rol creado exitosamente');
-			// Restablecer estados si es necesario
-		} catch (error) {
-			console.error('Error al crear rol:', error);
+			// TODO: resetear formulario si se desea
+		} catch {
 			alert('Error al crear rol');
 		}
 	};
 
 	return (
 		<RoleContainer>
-			<Title>Crear Nuevo Rol</Title>
+			<SectionTitle>Crear Nuevo Rol</SectionTitle>
+
 			<form onSubmit={handleSubmit}>
-				<FormField
-					label="Nombre del Rol"
-					variant="outlined"
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					required
-				/>
-				<FormField
-					label="Descripción"
-					variant="outlined"
-					multiline
-					rows={3}
-					value={description}
-					onChange={(e) => setDescription(e.target.value)}
-				/>
+				<SmartBox column gap={3}>
+					<MainInput
+						label="Nombre del Rol"
+						value={name}
+						onChange={setName}
+						placeholder="Ej. Administrador"
+					/>
 
-				<Typography variant="h6">Permisos</Typography>
+					<MainInput
+						label="Descripción"
+						value={description}
+						onChange={setDescription}
+						placeholder="Ej. Tiene acceso completo al sistema"
+						multiline
+						rows={3}
+					/>
 
-				{/* Selector de Módulos */}
-				<FormControl variant="outlined" fullWidth margin="normal">
-					<InputLabel id="module-label">Módulo(s)</InputLabel>
-					<Select
-						labelId="module-label"
-						label="Módulo(s)"
-						multiple
-						value={selectedModules}
-						onChange={(e) => setSelectedModules(e.target.value as string[])}
-						renderValue={(selected) =>
-							modules
-						.filter((module) => selected.includes(module._id))
-						.map((module) => module.name)
-						.join(', ')
-						}
-						MenuProps={{
-							anchorOrigin: {
-								vertical: 'bottom',
-								horizontal: 'left',
-						},
-						}}
-					>
-						{modules.map((module) => (
-							<MenuItem key={module._id} value={module._id}>
-								<Checkbox checked={selectedModules.includes(module._id)} />
-								{module.name}
-							</MenuItem>
+					<Text size="lg" weight="medium">Permisos</Text>
+
+					{/* Módulos */}
+					<FormControl fullWidth margin="normal">
+						<InputLabel id="module-label">Módulo(s)</InputLabel>
+						<Select
+							labelId="module-label"
+							multiple
+							value={selectedModules}
+							onChange={e => setSelectedModules(e.target.value as string[])}
+							renderValue={sel =>
+								modules.filter(m => sel.includes(m._id)).map(m => m.name).join(', ')
+							}
+						>
+							{modules.map(m => (
+								<MenuItem key={m._id} value={m._id}>
+									<Checkbox checked={selectedModules.includes(m._id)} />
+									{m.name}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+
+					{/* Acciones */}
+					<FormControl fullWidth margin="normal">
+						<InputLabel id="action-label">Acción(es)</InputLabel>
+						<Select
+							labelId="action-label"
+							multiple
+							value={selectedActions}
+							onChange={e => setSelectedActions(e.target.value as string[])}
+							renderValue={sel =>
+								actions.filter(a => sel.includes(a._id)).map(a => a.name).join(', ')
+							}
+						>
+							{actions.map(a => (
+								<MenuItem key={a._id} value={a._id}>
+									<Checkbox checked={selectedActions.includes(a._id)} />
+									{a.name}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+
+					<FilledButton onClick={addPermission}>Agregar Permiso</FilledButton>
+
+					<PermissionList>
+						{permissions.map((p, i) => (
+							<PermissionItem key={i}>
+								<Text size="md">{p.module.name} - {p.action.name}</Text>
+								<GhostButton label="Eliminar" onClick={() => removePermission(i)} />
+							</PermissionItem>
 						))}
-					</Select>
-				</FormControl>
+					</PermissionList>
 
-				{/* Selector de Acciones */}
-				<FormControl variant="outlined" fullWidth margin="normal">
-					<InputLabel id="action-label">Acción(es)</InputLabel>
-					<Select
-						labelId="action-label"
-						label="Acción(es)"
-						multiple
-						value={selectedActions}
-						onChange={(e) => setSelectedActions(e.target.value as string[])}
-						renderValue={(selected) =>
-							actions
-						.filter((action) => selected.includes(action._id))
-						.map((action) => action.name)
-						.join(', ')
-						}
-						MenuProps={{
-							anchorOrigin: {
-								vertical: 'bottom',
-								horizontal: 'left',
-						},
-						}}
-					>
-						{actions.map((action) => (
-							<MenuItem key={action._id} value={action._id}>
-								<Checkbox checked={selectedActions.includes(action._id)} />
-								{action.name}
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
-
-				<AddPermissionButton
-					variant="contained"
-					color="primary"
-					onClick={addPermission}
-					fullWidth
-				>
-					Agregar Permiso
-				</AddPermissionButton>
-
-				<PermissionList>
-					{permissions.map((perm, index) => (
-						<PermissionItem key={index}>
-							<Typography>
-								{perm.module.name} - {perm.action.name}
-							</Typography>
-							<Button
-								variant="outlined"
-								color="secondary"
-								onClick={() => removePermission(index)}
-							>
-								Eliminar
-							</Button>
-						</PermissionItem>
-					))}
-				</PermissionList>
-
-				<SubmitButton type="submit" variant="contained" color="primary" fullWidth>
-					Crear Rol
-				</SubmitButton>
+					<FilledButton type="submit">Crear Rol</FilledButton>
+				</SmartBox>
 			</form>
 		</RoleContainer>
 	);

@@ -1,5 +1,4 @@
-// ui/features/plaform/Header.tsx
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
 	AppBar,
@@ -31,6 +30,7 @@ import Notifications from '../centerAlert/Notifications';
 import Logo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
 import { logout, getUserRole } from '../../../utils/auth/getUserId';
 
+/* ─ Links de navegación ─ */
 const navLinks = [
 	{ label: 'Estudiante', to: '/profile', icon: <SchoolIcon /> },
 	{ label: 'Material', to: '/material-user', icon: <ArticleIcon /> },
@@ -45,6 +45,7 @@ const Header: React.FC = () => {
 	const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
 	const [userAnchor, setUserAnchor] = useState<null | HTMLElement>(null);
 
+	/* Cerrar drawer si se cambia a desktop */
 	useEffect(() => {
 		const onResize = () => {
 			if (window.innerWidth >= 600) setDrawerOpen(false);
@@ -53,41 +54,48 @@ const Header: React.FC = () => {
 		return () => window.removeEventListener('resize', onResize);
 	}, []);
 
-	const toggleDrawer = () => setDrawerOpen(prev => !prev);      // A
+	const toggleDrawer = () => setDrawerOpen(prev => !prev);
 	const closeDrawer  = () => setDrawerOpen(false);
-
 
 	const userRole = getUserRole();
 
-
 	return (
 		<>
+			{/* ──────────── BARRA SUPERIOR ──────────── */}
 			<AppBar
 				position="fixed"
 				sx={{
 					backgroundColor: colors.brand.primary[600],
-					zIndex: (theme) => theme.zIndex.drawer + 1,
+					zIndex: theme => theme.zIndex.drawer + 1,
 				}}
 			>
-				<Toolbar sx={{ gap: 2 }}>
-					{/* Menú hamburguesa (mobile) */}
-					<IconButton
-						edge="start"
-						color="inherit"
-						aria-label="Menú"
-						sx={{ display: { sm: 'none' } }}
-						onClick={toggleDrawer}
-					>
-						<MenuIcon />
-					</IconButton>
+				{/* Usamos justifyContent para un reparto correcto */}
+				<Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2 }}>
+					{/* Grupo izquierda: menú (xs) + logo */}
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						{/* Menú hamburguesa solo en móviles */}
+						<IconButton
+							edge="start"
+							color="inherit"
+							aria-label="Abrir menú de navegación"
+							sx={{ display: { sm: 'none' } }}
+							onClick={toggleDrawer}
+						>
+							<MenuIcon />
+						</IconButton>
 
-					{/* Logo */}
-					<Box component={RouterLink} to="/plataform" sx={{ display: 'flex', alignItems: 'center' }}>
-						<img src={Logo} alt="Logo UATF" style={{ height: 36 }} />
+						{/* Logo (si lo quieres clicable) */}
+						<Box
+							component={RouterLink}
+							to="/plataform"
+							sx={{ display: 'flex', alignItems: 'center' }}
+						>
+							<img src={Logo} alt="Logo UATF" style={{ height: 36 }} />
+						</Box>
 					</Box>
 
-					{/* Links desktop */}
-					<Box sx={{ display: { xs: 'none', sm: 'flex' }, ml: 3, gap: 2 }}>
+					{/* Links desktop (centrados automáticamente) */}
+					<Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 2 }}>
 						{userRole === 'admi' && (
 							<Box component={RouterLink} to="/administrator" sx={linkStyle}>
 								Administrador
@@ -101,27 +109,32 @@ const Header: React.FC = () => {
 						))}
 					</Box>
 
-					{/* Empuja a la derecha */}
-					<Box sx={{ ml:'auto', display:'flex', alignItems:'center', gap:1 }}>
-						{/* Botón notificaciones */}
+					{/* Grupo derecha: notificaciones + avatar */}
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						{/* Notificaciones */}
 						<IconButton
 							color="inherit"
-							onClick={(e) => setNotifAnchor(e.currentTarget)}
+							aria-label="Ver notificaciones"
+							onClick={e => setNotifAnchor(e.currentTarget)}
 						>
 							<Badge color="error" variant="dot">
 								<NotificationsIcon />
 							</Badge>
 						</IconButton>
 
-						{/* Avatar + logout */}
-						<IconButton color="inherit" onClick={(e) => setUserAnchor(e.currentTarget)}>
+						{/* Cuenta */}
+						<IconButton
+							color="inherit"
+							aria-label="Opciones de cuenta"
+							onClick={e => setUserAnchor(e.currentTarget)}
+						>
 							<Avatar sx={{ width: 32, height: 32 }}>A</Avatar>
 						</IconButton>
 					</Box>
 				</Toolbar>
 			</AppBar>
 
-			{/* Drawer móvil */}
+			{/* ──────────── DRAWER MÓVIL ──────────── */}
 			<Drawer
 				anchor="left"
 				open={drawerOpen}
@@ -133,7 +146,7 @@ const Header: React.FC = () => {
 						{userRole === 'admi' && (
 							<ListItem button component={RouterLink} to="/administrator" onClick={closeDrawer}>
 								<ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
-								<ListItemText primary="Administrador" />
+				<ListItemText primary="Administrador" />
 							</ListItem>
 						)}
 						{navLinks.map(({ label, to, icon }) => (
@@ -150,7 +163,7 @@ const Header: React.FC = () => {
 				</Box>
 			</Drawer>
 
-			{/* Popover de notificaciones */}
+			{/* ──────────── NOTIFICACIONES ──────────── */}
 			<Menu
 				anchorEl={notifAnchor}
 				open={Boolean(notifAnchor)}
@@ -160,7 +173,7 @@ const Header: React.FC = () => {
 				<Notifications />
 			</Menu>
 
-			{/* Menú usuario / logout */}
+	  {/* ──────────── MENÚ DE USUARIO ──────────── */}
 			<Menu
 				anchorEl={userAnchor}
 				open={Boolean(userAnchor)}
@@ -175,6 +188,7 @@ const Header: React.FC = () => {
 	);
 };
 
+/* ─ Estilo compartido para links ─ */
 const linkStyle = {
 	display: 'flex',
 	alignItems: 'center',
@@ -189,7 +203,6 @@ const linkStyle = {
 		textDecoration: 'none',
 	},
 };
-
 
 export default Header;
 

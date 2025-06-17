@@ -1,4 +1,3 @@
-// src/ui/features/stream/templates/HomeStreamLayout.tsx
 import React, { useState } from 'react';
 import {
 	Box,
@@ -9,30 +8,36 @@ import {
 	SelectChangeEvent,
 	useTheme,
 } from '@mui/material';
-import SmartBox       from '../../../shared/atoms/box/SmartBox';
-import Sidebar        from '../../../shared/organisms/sidebar/Sidebar';
-import SectionTitle   from '../../../shared/atoms/titles/SectionTitle';
-import StreamCreateForm from '../organisms/StreamCreateForm';
-import StreamList       from '../organisms/StreamList';
-import type { Stream }  from '../../../../types/stream';
+
+import MenuIcon from '@mui/icons-material/Menu';
+
+import SmartBox          from '../../../shared/atoms/box/SmartBox';
+import Sidebar           from '../../../shared/organisms/sidebar/Sidebar';
+import SectionTitle      from '../../../shared/atoms/titles/SectionTitle';
+import StreamCreateForm  from '../organisms/StreamCreateForm';
+import StreamList        from '../organisms/StreamList';
+import type { Stream }   from '../../../../types/stream';
+
+import { styles }        from './homeStreamLayout.styles';
 
 interface LayoutProps {
 	children?: React.ReactNode;                 // <StreamActiveLayout/> cuando se está dentro
 	onStreamCreated: (id: string, access?: string) => void;
-	onStreamSelected: (s: Stream) => void;          // ① NUEVO
+	onStreamSelected: (s: Stream) => void;      // ① NUEVO
 }
 
 const HomeStreamLayout: React.FC<LayoutProps> = ({
 	children,
 	onStreamCreated,
-	onStreamSelected
+	onStreamSelected,
 }) => {
 	const theme = useTheme();
 
 	/* ─ Sidebar (mobile) ─ */
-	const [openSidebar, setOpenSidebar] = useState(true);
+	const [openSidebar, setOpenSidebar] = useState(false);
 
 	const hasChild = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
+
 	/* ─ Filtro de lista ─ */
 	const [filter, setFilter] = useState<'live' | 'ended' | 'all'>('live');
 	const handleFilterChange = (e: SelectChangeEvent) =>
@@ -41,27 +46,22 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 	return (
 		<>
 			{/* Header superior */}
-			<Box
-				sx={{
-					width: '100%',
-					bgcolor: theme.customColors.uatf.red,
-					py: theme.padding.px6,
-					px: theme.padding.px10,
-					boxShadow: theme.shadows[10],
-				}}
-			>
-				<Box
-					component="h2"
-					sx={{
-						fontFamily: `'Allerta Stencil', serif`,
-						color: theme.customColors.neutral.white[900],
-						fontSize: theme.typographyTokens.display.lg.monospace,
-					}}
-				>
-					STREAM ACADÉMICO
-				</Box>
-			</Box>
+<Box sx={styles.headerBox(theme)}>
+  <Box sx={styles.headerInner}>
+    {/* Botón para abrir sidebar */}
+    <Box
+      component="button"
+      onClick={() => setOpenSidebar(true)}
+      sx={styles.menuButton(theme)}
+    >
+      <MenuIcon />
+    </Box>
 
+    <Box component="h2" sx={styles.headerTitle(theme)}>
+      STREAM ACADÉMICO
+    </Box>
+  </Box>
+</Box>
 			{/* Contenedor general */}
 			<SmartBox row>
 				{/* 1️⃣ Sidebar */}
@@ -78,14 +78,14 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 				</Sidebar>
 
 				{/* 2️⃣ Zona central */}
-				<Box sx={{ flex: 1, px: theme.padding.px10, py: theme.padding.px6 }}>
+				<Box sx={styles.contentBox(theme)}>
 					{hasChild ? (
 						/* Stream activo (StreamActiveLayout) */
 						children
 					) : (
 					/* Lista + filtro */
 					<>
-						<FormControl size="small" sx={{ minWidth: 160, mb: theme.padding.px6 }}>
+						<FormControl size="small" sx={styles.formControl(theme)}>
 							<InputLabel id="stream-filter-label">Mostrar</InputLabel>
 							<Select
 								labelId="stream-filter-label"

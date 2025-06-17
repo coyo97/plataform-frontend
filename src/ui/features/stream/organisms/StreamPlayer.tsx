@@ -1,6 +1,6 @@
 // src/ui/features/stream/organisms/StreamPlayer.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useStreamConnection } from '../hooks/useStreamConnection';
+import { useStreamConnection } from '../hooks/useStreamConnection/useStreamConnection';
 
 import Text         from '../../../shared/atoms/typography/Text';
 import SmartBox     from '../../../shared/atoms/box/SmartBox';
@@ -35,7 +35,7 @@ const StreamPlayer: React.FC<StreamPlayerProps> = ({
 	} = useStreamConnection({ streamId, isStreamer, accessCode, onStreamEnd, });
 
 	const [showViewers, setShowViewers] = useState(false);
-
+const [audioEnabled, setAudioEnabled] = useState(false);
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
 	const containerRef = useRef<HTMLDivElement>(null);        // general
@@ -60,8 +60,25 @@ const StreamPlayer: React.FC<StreamPlayerProps> = ({
 				: 'none';
 	});
 
+	const getFullscreenTarget = () => {
+		if (isStreamer) {
+			// Prioriza la pantalla si la está mostrando
+			if (isScreenSharing) {
+				const screenEl = document.getElementById('screenVideo') as HTMLVideoElement | null;
+				if (screenEl && screenEl.style.display !== 'none') return screenEl;
+			}
+			return localVideoRef.current;
+		} else {
+			// Viewer: pantalla compartida si existe, si no la cámara
+			if (screenRef.current && screenRef.current.style.display !== 'none') {
+				return screenRef.current;
+			}
+			return remoteVideoRef.current;
+		}
+	};
+
 	const toggleFullscreen = () => {
-		const el = isStreamer ? localVideoRef.current : remoteVideoRef.current;
+		const el = getFullscreenTarget();
 		if (!el) return;
 
 		if (!document.fullscreenElement) {
@@ -94,12 +111,12 @@ const StreamPlayer: React.FC<StreamPlayerProps> = ({
 						<Text>Transmitiendo…</Text>
 
 						{/* cámara propia */}
-						<video id="localVideo" ref={localVideoRef} autoPlay playsInline muted style={{ width:'100%' }} />
+						<video id="localVideo" ref={localVideoRef} autoPlay muted playsInline style={{ width:'100%' }} />
 
 						{/* pantalla propia (solo visible cuando comparte) */}
 						<video
 							id="screenVideo"
-							autoPlay playsInline muted
+							autoPlay playsInline 
 							style={{ width:'100%', marginTop:8, display:isScreenSharing?'block':'none' }}
 						/>
 						<SmartBox row gap="px4">
@@ -168,13 +185,30 @@ const StreamPlayer: React.FC<StreamPlayerProps> = ({
 						autoPlay playsInline
 						style={{ width:'100%', marginTop:8, display:'none' }}
 					/>
+					<SmartBox row gap="px4" sx={{ mt: 1 }}>
+<GhostButton
+  label={audioEnabled ? 'Silenciar' : 'Escuchar'}
+  onClick={() => {
+    const v = remoteVideoRef.current;
+    if (!v) return;
+    if (audioEnabled) {
+      v.muted = true;
+      setAudioEnabled(false);
+    } else {
+      v.muted = false;
+      v.volume = 1;
+      v.play().catch(console.error);   // ← ahora sí hay gesto del usuario
+      setAudioEnabled(true);
+    }
+  }}
+/>
+						<GhostButton
+							label={isFullscreen ? 'Salir pantalla completa' : 'Pantalla completa'}
+							onClick={toggleFullscreen}
+						/>
 
-					<GhostButton label="Salir" onClick={handleLeaveStream} />
-					<GhostButton
-						label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-						onClick={toggleFullscreen}
-					/>
-
+						<GhostButton label="Salir" onClick={handleLeaveStream} />
+					</SmartBox>
 				</>
 				)}
 			</SmartBox>

@@ -1,33 +1,41 @@
 import { Box, Button, Typography, styled } from '@mui/material';
 import mq from '../../../config/mq';
+import { padding } from '../../../Theme/tokens/padding';
+import { radius } from '../../../Theme/tokens/radius';
+import { shadows } from '../../../Theme/tokens/shadows';
+import typography from '../../../Theme/tokens/typography';
+import { colors } from '../../../Theme/tokens/colors';
 
 export const ModuleManagementContainer = styled(Box)(({ theme }) => ({
-	padding: theme.spacing(3),
-	backgroundColor: theme.palette.background.default,
-	borderRadius: theme.shape.borderRadius,
-	boxShadow: theme.shadows[3],
+	padding: padding.px12,
+	backgroundColor: colors.neutral.graySoft[50],
+	borderRadius: radius.md,
+	boxShadow: shadows.md,
 	width: '100%',
 	maxWidth: '800px',
-	margin: '0 auto', // Centrar el contenido en pantallas grandes
+	margin: '0 auto',
+
 	[mq('sm', 'max')]: {
-		padding: theme.spacing(2),
-		maxWidth: '100%', // Ocupa todo el ancho en pantallas pequeñas
+		padding: padding.px8,
+		maxWidth: '100%',
 	},
 }));
 
 export const SectionTitle = styled(Typography)(({ theme }) => ({
-	fontWeight: 'bold',
-	marginBottom: '1rem',
+	...typography.heading.h2.sans.semiBold,
+	marginBottom: padding.px12,
 	textAlign: 'center',
 	width: '100%',
 	wordWrap: 'break-word',
-	wordBreak: 'break-word', // Permite que el texto se ajuste en varias líneas
-	[theme.breakpoints.down('sm')]: {
-		fontSize: '1.2rem',
+	wordBreak: 'break-word',
+
+	[mq('sm', 'max')]: {
+		...typography.heading.h3.sans.regular,
 		textAlign: 'left',
 	},
-	[theme.breakpoints.up('md')]: {
-		fontSize: '1.5rem',
+
+	[mq('md', 'min')]: {
+		...typography.heading.h2.sans.regular,
 	},
 }));
 
@@ -40,37 +48,42 @@ export const ModuleList = styled('ul')({
 
 export const ModuleItem = styled(Box)(({ theme }) => ({
 	display: 'flex',
-	flexDirection: 'column', // Por defecto, los elementos estarán en columna
-	alignItems: 'flex-start', // Alinear texto a la izquierda
+	flexDirection: 'column',
+	alignItems: 'flex-start',
 	justifyContent: 'space-between',
-	padding: theme.spacing(1),
-	borderBottom: `1px solid ${theme.palette.divider}`,
-	gap: theme.spacing(1),
+	padding: padding.px8,
+	borderBottom: `1px solid ${colors.neutral.graySoft[200]}`,
+	gap: padding.px8,
+
 	'&:nth-of-type(even)': {
-		backgroundColor: theme.palette.action.hover,
+		backgroundColor: colors.neutral.graySoft[50],
 	},
-	[theme.breakpoints.up('sm')]: {
-		flexDirection: 'row', // En pantallas más grandes, alinear en fila
+
+	[mq('sm', 'min')]: {
+		flexDirection: 'row',
 		alignItems: 'center',
 	},
 }));
 
 export const ActionButton = styled(Button)(({ theme }) => ({
-	fontSize: '0.875rem',
-	padding: theme.spacing(1),
-	width: '100%', // Ocupa el ancho completo en móviles
-	[theme.breakpoints.up('sm')]: {
-		width: 'auto', // Ajustar tamaño automáticamente en pantallas grandes
+	...typography.heading.h3.sans.regular,
+	padding: padding.px8,
+	width: '100%',
+	textTransform: 'none',
+
+	[mq('sm', 'min')]: {
+		width: 'auto',
 	},
 }));
 
 export const InputContainer = styled(Box)(({ theme }) => ({
 	display: 'flex',
 	flexDirection: 'column',
-	gap: theme.spacing(2),
-	marginBottom: theme.spacing(3),
-	alignItems: 'stretch', // Asegura que los elementos ocupen el ancho disponible
-	[theme.breakpoints.up('sm')]: {
+	gap: padding.px12,
+	marginBottom: padding.px12,
+	alignItems: 'stretch',
+
+	[mq('sm', 'min')]: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',

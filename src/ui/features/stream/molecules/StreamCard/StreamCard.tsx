@@ -53,7 +53,10 @@ export const StreamCard: React.FC<StreamCardProps> = ({
 						/>
 						<span style={{ display: 'flex', alignItems: 'center' }}>
 							<VisibilityIcon fontSize="small" style={{ marginRight: 4 }} />
-							<Text size="sm" weight="regular">{viewerCount}</Text>
+							<Text size="sm" weight="regular">
+  {viewerCount} {viewerCount === 1 ? 'persona viendo' : 'personas viendo'}
+</Text>
+
 						</span>
 					</InfoRow>
 				</Content>

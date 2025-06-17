@@ -1,231 +1,188 @@
-// ModuleManagement.tsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
 import {
-	ModuleManagementContainer,
-	SectionTitle,
-	ModuleList,
-	ModuleItem,
-	ActionButton,
-	InputContainer,
-} from './moduleManagement.styles';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
+	fetchModules,
+	createModule,
+	updateModule,
+	deleteModule,
+	Module,
+} from '../../../async/services/moduleService';
 
-import { Box, TextField, Typography, Button, Grid } from '@mui/material';
-
-interface Module {
-	_id: string;
-	name: string;
-}
+import SectionTitle from '../../shared/atoms/titles/SectionTitle';
+import MainInput from '../../shared/atoms/inputs/MainInput';
+import FilledButton from '../../shared/atoms/buttons/filledButton/FilledButton';
+import GhostButton from '../../shared/atoms/buttons/ghostButton/GhostButton';
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import Text from '../../shared/atoms/typography/Text';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 const ModuleManagement: React.FC = () => {
-	const [modules, setModules] = useState<Module[]>([]);
-	const [newModuleName, setNewModuleName] = useState('');
-	const [editingModule, setEditingModule] = useState<Module | null>(null);
-	const [editingModuleName, setEditingModuleName] = useState('');
-	const { HOST, SERVICE } = getEnvVariables();
-	const token = localStorage.getItem('token');
+	const [modules, setModules]      = useState<Module[]>([]);
+	const [newName, setNewName]      = useState('');
+	const [editing, setEditing]      = useState<Module | null>(null);
+	const [editingName, setEditName] = useState('');
+
 	const theme = useTheme();
-	const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+	const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
 
 	useEffect(() => {
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
+		fetchModules()
+		.then(setModules)
+		.catch(err => console.error('Error al obtener módulos', err));
+	}, []);
 
-		const fetchModules = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/modules`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (response.data && response.data.modules) {
-					setModules(response.data.modules);
-				} else {
-					console.error('La respuesta no contiene los módulos esperados.');
-				}
-			} catch (error) {
-				console.error('Error al obtener módulos:', error);
-			}
-		};
-
-		fetchModules();
-	}, [HOST, SERVICE, token]);
-
-	const handleCreateModule = async () => {
-		if (!newModuleName.trim()) {
-			alert('El nombre del módulo no puede estar vacío.');
-			return;
-		}
-
+	const handleCreate = async () => {
+		if (!newName.trim()) return alert('Nombre vacío');
 		try {
-			const response = await axios.post(
-				`${HOST}${SERVICE}/modules`,
-				{ name: newModuleName },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setModules([...modules, response.data.module]);
-			setNewModuleName('');
-		} catch (error) {
-			console.error('Error al crear módulo:', error);
+			const module = await createModule(newName.trim());
+			setModules(prev => [...prev, module]);
+			setNewName('');
+		} catch {
 			alert('Error al crear módulo');
 		}
 	};
 
-	const startEditingModule = (module: Module) => {
-		setEditingModule(module);
-		setEditingModuleName(module.name);
+	const startEdit = (m: Module) => {
+		setEditing(m);
+		setEditName(m.name);
 	};
 
-	const cancelEditing = () => {
-		setEditingModule(null);
-		setEditingModuleName('');
+	const cancelEdit = () => {
+		setEditing(null);
+		setEditName('');
 	};
 
-	const handleUpdateModule = async () => {
-		if (!editingModule || !editingModuleName.trim()) {
-			alert('El nombre del módulo no puede estar vacío.');
-			return;
-		}
-
+	const handleUpdate = async () => {
+		if (!editing || !editingName.trim()) return alert('Nombre vacío');
 		try {
-			const response = await axios.put(
-				`${HOST}${SERVICE}/modules/${editingModule._id}`,
-				{ name: editingModuleName },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setModules(
-				modules.map((module) =>
-							module._id === editingModule._id ? response.data.module : module
-						   )
-			);
-			cancelEditing();
-		} catch (error) {
-			console.error('Error al actualizar módulo:', error);
+			const module = await updateModule(editing._id, editingName.trim());
+			setModules(prev => prev.map(m => (m._id === module._id ? module : m)));
+			cancelEdit();
+		} catch {
 			alert('Error al actualizar módulo');
 		}
 	};
 
-	const handleDeleteModule = async (id: string) => {
-		if (!window.confirm('¿Estás seguro de que deseas eliminar este módulo?')) {
-			return;
-		}
-
+	const handleDelete = async (id: string) => {
+		if (!window.confirm('¿Eliminar módulo?')) return;
 		try {
-			await axios.delete(`${HOST}${SERVICE}/modules/${id}`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			setModules(modules.filter((module) => module._id !== id));
-		} catch (error) {
-			console.error('Error al eliminar módulo:', error);
+			await deleteModule(id);
+			setModules(prev => prev.filter(m => m._id !== id));
+		} catch {
 			alert('Error al eliminar módulo');
 		}
 	};
 
 	return (
-		<ModuleManagementContainer>
-			<SectionTitle variant="h6">Gestión de Módulos</SectionTitle>
+		<SmartBox column gap={3} p='px2' radius="md" shadow="md" sx={{ maxWidth: '800px', margin: '0 auto' }}>
 
-			<Typography variant="subtitle1">Crear Nuevo Módulo</Typography>
-			<InputContainer>
-				<TextField
-					label="Nombre del Módulo"
-					value={newModuleName}
-					onChange={(e) => setNewModuleName(e.target.value)}
-					variant="outlined"
-					fullWidth
-				/>
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={handleCreateModule}
-					fullWidth
-					size={isSmallScreen ? 'small' : 'medium'}
+			{isDesktop ? (
+				<SmartBox column between gap={2}>
+					<MainInput
+						label="Nombre del Módulo"
+						value={newName}
+						onChange={setNewName}
+						placeholder="Nombre del Módulo"
+					/>
+					<FilledButton onClick={handleCreate}>Crear Módulo</FilledButton>
+				</SmartBox>
+			) : (
+				<SmartBox
 					sx={{
-						width: '100%',
-						maxWidth: '200px',
-						whiteSpace: 'nowrap',
-						overflow: 'hidden',
-						textOverflow: 'ellipsis',
+						display: 'flex',
+						flexDirection: { xxs: 'column', sm: 'row' },
+					gap: 1,
+					alignItems: 'stretch',
+					'& > *:first-of-type': { flex: 1 },
+					'& > button': {
+						width: { xxs: '100%', sm: 'auto' },
+					maxWidth: { sm: 200 },
+					py: 1,
+					},
 					}}
 				>
-					Crear Módulo
-				</Button>
-			</InputContainer>
+					<MainInput
+						label="Nombre del Módulo"
+						value={newName}
+						onChange={setNewName}
+						placeholder="Nombre del Módulo"
+					/>
+					<FilledButton onClick={handleCreate}>Crear Módulo</FilledButton>
+				</SmartBox>
+			)}
 
-			<Typography variant="subtitle1">Lista de Módulos</Typography>
-			<ModuleList>
-				{modules.map((module) => (
-					<ModuleItem key={module._id}>
-						{editingModule && editingModule._id === module._id ? (
-							<Grid
-								container
-								spacing={2}
-								sx={{ marginBottom: 3 }}
-								alignItems="flex-start"
-							>
-								<Grid item xs={12} sm={8}>
-									<TextField
+			<Text size="lg" weight="medium">Lista de Módulos</Text>
+			<ul style={{ listStyle: 'none', padding: 0, margin: 0, width: '100%' }}>
+				{modules.map(m => (
+					<li key={m._id}>
+						<SmartBox
+							sx={{
+								display: 'flex',
+								flexDirection: { xxs: 'column', sm: 'row' },
+							justifyContent: 'space-between',
+							alignItems: { xxs: 'flex-start', sm: 'center' },
+							gap: { xxs: 1, sm: 2 },
+							padding: { xxs: 1, sm: 2 },
+							borderBottom: '1px solid #E0E2E7',
+							}}
+						>
+							{editing && editing._id === m._id ? (
+								<SmartBox column gap={2} sx={{ width: '100%' }}>
+									<MainInput
 										label="Nombre del Módulo"
-										value={editingModuleName}
-										onChange={(e) => setEditingModuleName(e.target.value)}
-										variant="outlined"
-										fullWidth
+										value={editingName}
+										onChange={setEditName}
+										placeholder="Editar nombre del módulo"
 									/>
-								</Grid>
-								<Grid item xs={12} sm={4}>
-									<Button
-										variant="contained"
-										color="primary"
-										onClick={handleUpdateModule}
-										fullWidth
-										size={isSmallScreen ? 'small' : 'medium'}
+									<SmartBox
 										sx={{
-											height: '100%',
-											whiteSpace: 'nowrap',
+											display: 'flex',
+											flexDirection: { xxs: 'column', sm: 'row' },
+										gap: 1,
+										width: '100%',
+										'& button': {
+											width: { xxs: '100%', sm: 'auto' },
+										py: 1,
+										},
 										}}
 									>
-										Guardar Cambios
-									</Button>
-								</Grid>
-							</Grid>
-						) : (
-							<InputContainer>
-								<Typography>{module.name}</Typography>
-								<Box
+										<FilledButton onClick={handleUpdate}>Guardar</FilledButton>
+										<GhostButton label="Cancelar" onClick={cancelEdit} />
+									</SmartBox>
+								</SmartBox>
+							) : (
+								<SmartBox
 									sx={{
 										display: 'flex',
-										flexDirection: { xs: 'column', sm: 'row' },
+										flexDirection: { xxs: 'column', sm: 'row' },
+									alignItems: { xxs: 'flex-start', sm: 'center' },
 									gap: 1,
+									width: '100%',
+									'& > :first-of-type': { flex: 1 },
 									}}
 								>
-									<ActionButton
-										variant="contained"
-										color="secondary"
-										onClick={() => startEditingModule(module)}
-										fullWidth={!(window.innerWidth >= 600)}
-										size="small"
+									<Text size="md">{m.name}</Text>
+									<SmartBox
+										sx={{
+											display: 'flex',
+											flexDirection: { xxs: 'column', xs: 'row' },
+										gap: 1,
+										'& button': {
+											width: { xxs: '100%', xs: '50%', sm: 'auto' },
+										minWidth: 90,
+										py: 1,
+										},
+										}}
 									>
-										Editar
-									</ActionButton>
-									<ActionButton
-										variant="outlined"
-										color="error"
-										onClick={() => handleDeleteModule(module._id)}
-										fullWidth={!(window.innerWidth >= 600)}
-										size="small"
-									>
-										Eliminar
-									</ActionButton>
-								</Box>
-							</InputContainer>
-						)}
-					</ModuleItem>
+										<FilledButton onClick={() => startEdit(m)}>Editar</FilledButton>
+										<GhostButton label="Eliminar" onClick={() => handleDelete(m._id)} />
+									</SmartBox>
+								</SmartBox>
+							)}
+						</SmartBox>
+					</li>
 				))}
-			</ModuleList>
-		</ModuleManagementContainer>
+			</ul>
+		</SmartBox>
 	);
 };
 

@@ -1,20 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Socket } from 'socket.io-client';
-import {useSocket} from '../../../shared/hooks/useSocket';
-import { EVENTS } from '../../../../utils/socket/events';
+import {useSocket} from '../../../../shared/hooks/useSocket';
+import { EVENTS } from '../../../../../utils/socket/events';
 import { useRef } from 'react';
+import { STUN_SERVERS }           from './constants';
+import { createMediaControls }    from './mediaControls';
+import { createScreenShare }      from './screenShare';
+import { createRecorder }         from './recording';
+import { createLeaveHandlers }    from './leaveStream';
+import { Viewer,UseStreamConnectionProps } from './types';
+import { registerSignaling } from './signaling';
 
-interface Viewer {
-	_id: string;
-	username: string;
-}
-
-interface UseStreamConnectionProps {
-	streamId: string;
-	isStreamer: boolean;
-	accessCode?: string;
-	onStreamEnd?: () => void;   // callback opcional cuando el stream termina
-}
 
 export const useStreamConnection = ({
 	streamId,
@@ -37,21 +33,7 @@ export const useStreamConnection = ({
 	const [isCamOn, setCamOn] = useState(true);
 	const [isMicOn, setMicOn] = useState(true);
 	const pendingViewers = useRef<string[]>([]);
-	const toggleCamera = () => {
-		const track = localStream?.getVideoTracks()?.[0];
-		if (!track) return;
-		track.enabled = !track.enabled;
-		setCamOn(track.enabled);
-		sock.emit(EVENTS.TOGGLE_CAMERA, { streamId, enabled: track.enabled });
-	};
 
-	const toggleMic = () => {
-		const track = localStream?.getAudioTracks()?.[0];
-		if (!track) return;
-		track.enabled = !track.enabled;
-		setMicOn(track.enabled);
-		sock.emit(EVENTS.TOGGLE_MIC, { streamId, enabled: track.enabled });
-	};
 	const [isSharing,      setSharing]        = useState(false);
 	const kicked           = useRef(false);        // ⬅️  NUEVO
 	const socket           = useSocket();
@@ -62,30 +44,44 @@ export const useStreamConnection = ({
 	const pcMap = useRef<Record<string, RTCPeerConnection>>({});
 	const viewerPcMap = useRef<Record<string, RTCPeerConnection>>({}); // 
 
+	const { startRecording, stopRecording } = createRecorder({ streamId, isStreamer });
+	const viewerMicRef = useRef<MediaStream|null>(null);
 
-	const leaveStream = () => {
-		// 1) cortamos media
-		localStreamRef.current?.getTracks().forEach(t => t.stop());
-		peerRef.current?.getSenders().forEach(s => s.track?.stop());
-		screenRef.current?.getSenders().forEach(s => s.track?.stop());
-		peerRef.current?.close();
-		screenRef.current?.close();
+	const pendingScrIce = useRef<RTCIceCandidateInit[]>([]);
+const pendingPc2Ice = useRef<RTCIceCandidateInit[]>([]);
 
-		// 2) avisamos al backend
-		socket.emit(EVENTS.LEAVE_STREAM, { streamId });
+	const { toggleCamera, toggleMic } = createMediaControls({
+		streamId,
+		isStreamer,
+		sock,
+		localStream: () => isStreamer ? localStream : localStreamRef.current,
+		setCamOn,
+		setMicOn,
+	});
 
-		// 3) limpiamos vídeos y storage
-		['localVideo','remoteVideo','screenVideo'].forEach(id=>{
-			const v=document.getElementById(id) as HTMLVideoElement|null;
-			if (v) v.srcObject = null;
-		});
-		localStorage.removeItem('joinedStreamId');
-		localStorage.removeItem('isViewer');
-		localStorage.removeItem('accessCode');
+	const {
+		startScreenShare,
+		stopScreenShare,
+	} = createScreenShare({
+		streamId,
+		sock,
+		getScrPC : () => scrPC,
+		setScrPC,
+		setIsScreenSharing,
+	});
 
-		// 4) callback a la página contenedora
-		onStreamEnd?.();
-	};
+	const {
+		leaveStream : handleLeaveStream,
+		stopLocalMedia,
+	} = createLeaveHandlers({
+		streamId,
+		socket,
+		onStreamEnd,
+		localStreamRef,
+		peerRef,
+		screenRef,
+	});
+
 	const log = (...args: any[]) =>
 		console.log(`[%cSCREEN%c]`, 'color:#0af', 'color:inherit', ...args);
 
@@ -112,8 +108,17 @@ export const useStreamConnection = ({
 			if (e.candidate)
 				sock.emit('ice-candidate', { streamId, candidate: e.candidate });
 		};
+		// justo al entrar en el useEffect (arriba de socket.on('offer', …))
+		let viewerMic: MediaStream | null = null;
+		if (!isStreamer) {
+			navigator.mediaDevices.getUserMedia({ audio: true })
+			.then(str => { viewerMic = str; localStreamRef.current = str; })
+			.catch(console.error);
+		}
+
 		/* …dentro de la rama viewer (else) ─────────────────────────────────────── */
 		if (!isStreamer) {
+
 			socket.on('offer', async ({ offer, from }) => {
 				/* crea una pc exclusiva para el streamer */
 				const pcFromStreamer = new RTCPeerConnection({
@@ -121,6 +126,16 @@ export const useStreamConnection = ({
 				});
 				viewerPcMap.current[from] = pcFromStreamer;   // guarda la PC por el socketId del streamer
 
+				if (viewerMic) {
+					viewerMic.getAudioTracks().forEach(t => pcFromStreamer.addTrack(t, viewerMic!));
+				}
+
+				const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				micStream.getAudioTracks().forEach(t => pcFromStreamer.addTrack(t, micStream));
+				localStreamRef.current = micStream;
+
+				/* guardamos referencia para controles */
+				localStreamRef.current = micStream;
 				/* guarda audio/vídeo entrante */
 				pcFromStreamer.ontrack = ev => {
 					const camVideo = document.getElementById('remoteVideo') as HTMLVideoElement|null;
@@ -156,7 +171,7 @@ export const useStreamConnection = ({
 				if (video) video.srcObject = stream;
 				stream.getTracks().forEach((t: MediaStreamTrack) => pc.addTrack(t, stream));
 				setPeerConnection(pc);
-
+				pc.addTransceiver('audio', { direction:'sendrecv' });
 				pc.createOffer().then((offer) => {
 					pc.setLocalDescription(offer);
 					sock.emit('offer', { streamId, offer });   // ✅ formato nuevo (broadcast)
@@ -171,6 +186,8 @@ export const useStreamConnection = ({
 					const pc = new RTCPeerConnection({ iceServers: [{ urls:'stun:stun.l.google.com:19302' }] });
 					pcMap.current[viewerSocketId] = pc;
 
+					pc.addTransceiver('audio', { direction: 'sendrecv' });
+					stream.getTracks().forEach(t => pc.addTrack(t, stream));
 					/* relaya ICE de esta pc */
 					pc.onicecandidate = e => {
 						if (e.candidate)
@@ -178,7 +195,19 @@ export const useStreamConnection = ({
 					};
 
 					/* añade todas las pistas locales (cammic) */
-					stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+					pc.ontrack = ev => {
+						let el = document.getElementById(`aud-${viewerSocketId}`) as HTMLAudioElement | null;
+						if (!el) {
+							el = document.createElement('audio');
+							el.id = `aud-${viewerSocketId}`;
+							el.autoplay = true;
+							el.controls = true;      // ⬅️  útil para depurar
+							el.muted = false;        // ⬅️  IMPORTANTÍSIMO
+							document.body.appendChild(el);
+						}
+						if (el.srcObject !== ev.streams[0]) el.srcObject = ev.streams[0];
+					};
 
 					/* genera y envía oferta dirigida */
 					const offer = await pc.createOffer();
@@ -216,15 +245,17 @@ export const useStreamConnection = ({
 						}
 					}
 				} else if (ev.track.kind === 'audio') {
-					// el audio lo reproducimos en el mismo elemento de cámara
-					if (camVideo && camVideo.srcObject !== remoteStream) {
-						camVideo.srcObject = remoteStream;
-						camVideo.onloadedmetadata = () => {
-							camVideo.play().catch(console.error);
-						};
-					}
-				}
-
+    /* ⬇️  Reemplaza ESTE bloque ⬇️  */
+    let aud = document.getElementById('aud-remote') as HTMLAudioElement | null;
+    if (!aud) {
+      aud = document.createElement('audio');
+      aud.id = 'aud-remote';
+      aud.autoplay = true;     // arranca solo (no afecta a la política de vídeo)
+      aud.controls = true;     // opcional, útil para depurar
+      document.body.appendChild(aud);
+    }
+    if (aud.srcObject !== remoteStream) aud.srcObject = remoteStream;
+  }
 			};
 
 			setPeerConnection(pc);
@@ -263,13 +294,13 @@ export const useStreamConnection = ({
 
 		socket.on('kicked', () => {
 			kicked.current = true;
-			leaveStream();
+			handleLeaveStream();
 		});
 
 		socket.on('stream-error', ({ message }) => {
 			if (message.toLowerCase().includes('expulsado')) {
 				kicked.current = true;      // bandera que lee StreamPlayer
-				leaveStream();              // cierra media  limpieza
+				handleLeaveStream();
 			}
 		});
 
@@ -449,14 +480,12 @@ export const useStreamConnection = ({
 			};
 		}
 
-
 		// ⬇ listeners GLOBALes: existen desde que se monta el hook
 		sock.on('screen-share-answer', async ({ answer }) => {
 			if (!scrPC) return;
 
-			if (scrPC.signalingState === 'have-local-offer') {     // ✅  sólo 1.ª vez
+			if (scrPC.signalingState === 'have-local-offer') {     //  sólo 1.ª vez
 				await scrPC.setRemoteDescription(new RTCSessionDescription(answer));
-
 				// flush ICE pendientes una única vez
 				for (const c of pendingCandidates.current) {
 					await scrPC.addIceCandidate(new RTCIceCandidate(c));
@@ -466,7 +495,6 @@ export const useStreamConnection = ({
 				console.log('[streamer] answer duplicada – state =', scrPC.signalingState);
 			}
 		});
-
 
 		sock.on('screen-share-ice', async ({ candidate }) => {
 			log('⬅  screen-share-ice', candidate.candidate);
@@ -483,104 +511,6 @@ export const useStreamConnection = ({
 
 	}, [sock, isStreamer, scrPC]);
 
-	/* ───────────────────── acciones helper ──────────────────── */
-	const startScreenShare = async () => {
-		if (scrPC) return;                       // ya está compartiendo
-
-		const scrStream = await (navigator.mediaDevices as any)
-		.getDisplayMedia({ video: true });
-		const screenTrack = scrStream.getVideoTracks()[0];
-
-		const pc2 = new RTCPeerConnection({
-			iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-		});
-
-		/* señalización para pantalla --------------------------------- */
-		pc2.onicecandidate = e => {
-			if (e.candidate) sock.emit('screen-share-ice', {
-				streamId, candidate: e.candidate,
-			});
-		};
-
-		pc2.addTrack(screenTrack, scrStream);
-		setScrPC(pc2);
-		setIsScreenSharing(true);
-
-		const offer = await pc2.createOffer();
-		await pc2.setLocalDescription(offer);
-		sock.emit('screen-share-offer', { streamId, offer });
-
-		/* mostrar localmente la pantalla */
-		const el = document.getElementById('screenVideo') as HTMLVideoElement|null;
-		if (el) el.srcObject = scrStream;
-
-		/* corta pantalla desde el navegador (botón detiene) */
-		screenTrack.onended = stopScreenShare;
-	};
-
-
-	const stopScreenShare = async () => {
-		if (!scrPC) return;
-		scrPC.getSenders().forEach(s => s.track?.stop());
-		scrPC.close();
-		setScrPC(null);
-		setIsScreenSharing(false);
-		sock.emit('stop-screen-share', { streamId });
-		/* limpia el elemento de vídeo */
-		const el = document.getElementById('screenVideo') as HTMLVideoElement|null;
-		if (el) el.srcObject = null;
-	}
-
-	const startRecording = () => {
-		const vid = document.getElementById(isStreamer ? 'localVideo' : 'remoteVideo') as HTMLVideoElement | null;
-		if (vid && vid.srcObject) {
-			const recorder = new MediaRecorder(vid.srcObject as MediaStream);
-			recorder.ondataavailable = (e) => {
-				if (e.data.size > 0) setRecordedChunks((p) => [...p, e.data]);
-			};
-			recorder.start();
-			setMediaRecorder(recorder);
-		}
-	};
-
-	const stopRecording = () => {
-		if (mediaRecorder) {
-			mediaRecorder.stop();
-			mediaRecorder.onstop = () => {
-				const blob = new Blob(recordedChunks, { type: 'video/webm' });
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = `stream_${streamId}.webm`;
-				a.click();
-				URL.revokeObjectURL(url);
-				setRecordedChunks([]);
-			};
-		}
-	};
-
-	const kickViewer = (viewerId: string) =>
-		sock.emit(EVENTS.KICK_VIEWER, { streamId, viewerId });
-
-	const handleLeaveStream = () => {
-		stopLocalMedia();
-		sock.emit(EVENTS.LEAVE_STREAM, { streamId });
-		onStreamEnd?.();
-	};
-	const stopLocalMedia = () => {
-		/* 1. cortar pistas */
-		localStream?.getTracks().forEach(t => t.stop());
-		peerConnection?.getSenders().forEach(s => s.track?.stop());
-		screenPeerConnection?.getSenders().forEach(s => s.track?.stop());
-		/* 2. cerrar peers */
-		peerConnection?.close();
-		screenPeerConnection?.close();
-		/* 3. limpiar vídeo HTML */
-		['localVideo', 'screenVideo', 'remoteVideo'].forEach(id => {
-			const v = document.getElementById(id) as HTMLVideoElement | null;
-			if (v) v.srcObject = null;
-		});
-	};
 
 	return {
 		/* estados */

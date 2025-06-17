@@ -1,180 +1,133 @@
-// EditRole.tsx
-
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
+
 import {
-	Typography,
-	TextField,
-	Button,
-	FormControl,
-	InputLabel,
 	Select,
 	MenuItem,
+	FormControl,
+	InputLabel,
 } from '@mui/material';
+
+import SectionTitle from '../../shared/atoms/titles/SectionTitle';
+import Text from '../../shared/atoms/typography/Text';
+import TextField from '../../shared/atoms/textFields/TextField';
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import FilledButton from '../../shared/atoms/buttons/filledButton/FilledButton';
+
+import { fetchRoleById, updateRole } from '../../../async/services/roleService';
+import { fetchPermissions } from '../../../async/services/permissionService';
 
 interface Permission {
 	_id: string;
 	name: string;
-	module: { name: string };
-	action: { name: string };
+	module?: { name: string };
+	action?: { name: string };
 }
 
-interface Role {
-	_id: string;
-	name: string;
-	description?: string;
-	permissions: Permission[];
-}
-
-interface EditRoleProps {
-	roleId: string;
-}
-
-const EditRole: React.FC<EditRoleProps> = ({ roleId }) => {
-	const [role, setRole] = useState<Role | null>(null);
+const EditRole: React.FC<{ roleId: string }> = ({ roleId }) => {
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 	const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-	const { HOST, SERVICE } = getEnvVariables();
+	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
-
-		const fetchRole = async () => {
+		const loadData = async () => {
 			try {
-				const response = await axios.get(`${HOST}${SERVICE}/roles/${roleId}`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+				const res = await fetchRoleById(roleId);
+				const role = res.role;
 
-				if (response.data && response.data.role) {
-					const roleData = response.data.role;
-					setRole(roleData);
-					setName(roleData.name);
-					setDescription(roleData.description || '');
-					setSelectedPermissions(roleData.permissions.map((perm: Permission) => perm._id));
-				} else {
-					console.error('La respuesta no contiene el rol esperado.');
-				}
+				setName(role.name);
+				setDescription(role.description || '');
+				setSelectedPermissions(role.permissions.map((p: any) => p._id));
 			} catch (error) {
-				console.error('Error al obtener el rol:', error);
-				alert('Error al obtener el rol');
+				console.error('Error al cargar el rol:', error);
+				alert('No se pudo cargar el rol');
+			}
+
+			try {
+				const permissionsList = await fetchPermissions();
+				setPermissions(permissionsList);
+			} catch (error) {
+				console.error('Error al cargar permisos:', error);
+				alert('No se pudo cargar los permisos');
+			} finally {
+				setLoading(false);
 			}
 		};
 
-		const fetchPermissions = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/permissions`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (response.data && response.data.permissions) {
-					setPermissions(response.data.permissions);
-				} else {
-					console.error('La respuesta no contiene los permisos esperados.');
-				}
-			} catch (error) {
-				console.error('Error al obtener permisos:', error);
-			}
-		};
+		loadData();
+	}, [roleId]);
 
-		fetchRole();
-		fetchPermissions();
-	}, [HOST, SERVICE, roleId]);
-
-	const handleEditRole = async () => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
-
+	const handleSubmit = async () => {
 		try {
-			await axios.put(
-				`${HOST}${SERVICE}/roles/${roleId}`,
-				{ name, description, permissions: selectedPermissions },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-
+			await updateRole(roleId, {
+				name,
+				description,
+				permissions: selectedPermissions,
+			});
 			alert('Rol actualizado exitosamente');
-			// Opcional: Redirigir o actualizar la lista de roles
 		} catch (error) {
-			console.error('Error al actualizar rol:', error);
-			alert('Error al actualizar rol');
+			console.error('Error al actualizar el rol:', error);
+			alert('No se pudo actualizar el rol');
 		}
 	};
 
-	if (!role) return <div>Cargando...</div>;
+	if (loading) return <Text>Cargando...</Text>;
 
 	return (
-		<div>
-			<Typography variant="h4">Editar Rol</Typography>
-			<div>
-				<TextField
-					label="Nombre del Rol"
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					fullWidth
-					margin="normal"
-				/>
-			</div>
-			<div>
-				<TextField
-					label="Descripción"
-					value={description}
-					onChange={(e) => setDescription(e.target.value)}
-					fullWidth
-					margin="normal"
-					multiline
-					rows={3}
-				/>
-			</div>
+		<SmartBox column gap="md">
+			<SectionTitle>Editar Rol</SectionTitle>
 
-			<Typography variant="h6">Seleccionar Permisos</Typography>
-			<FormControl variant="outlined" fullWidth margin="normal">
-				<InputLabel id="permissions-label">Permisos</InputLabel>
+			<TextField
+				label="Nombre del Rol"
+				value={name}
+				onChange={(val) => setName(val)}
+				placeholder="Nombre del rol"
+			/>
+
+			<TextField
+				label="Descripción"
+				value={description}
+				onChange={(val) => setDescription(val)}
+				multiline
+				rows={3}
+				placeholder="Descripción del rol"
+			/>
+
+			<Text size="md" weight="bold">Permisos</Text>
+
+			<FormControl fullWidth margin="normal">
+				<InputLabel id="perm-label">Permisos</InputLabel>
 				<Select
-					labelId="permissions-label"
-					label="Permisos"
+					labelId="perm-label"
 					multiple
 					value={selectedPermissions}
 					onChange={(e) => setSelectedPermissions(e.target.value as string[])}
 					renderValue={(selected) =>
 						permissions
-					.filter((perm) => selected.includes(perm._id))
-					.map((perm) => `${perm.module?.name || 'Sin módulo'} - ${perm.action?.name || 'Sin acción'}`)
-					.join(', ')
+							.filter(p => selected.includes(p._id))
+							.map(p => `${p.module?.name || 'Módulo'} - ${p.action?.name || 'Acción'}`)
+							.join(', ')
 					}
-
-					MenuProps={{
-						anchorOrigin: {
-							vertical: 'bottom',
-							horizontal: 'left',
-					},
-					}}
 				>
 					{permissions.map((perm) => (
 						<MenuItem key={perm._id} value={perm._id}>
 							<input
 								type="checkbox"
 								checked={selectedPermissions.includes(perm._id)}
-								onChange={() => {}}
+								readOnly
+								style={{ marginRight: 8 }}
 							/>
-							{(perm.module?.name || 'Sin módulo')} - {(perm.action?.name || 'Sin acción')}
+							{`${perm.module?.name || 'Módulo'} - ${perm.action?.name || 'Acción'}`}
 						</MenuItem>
 					))}
-
 				</Select>
 			</FormControl>
 
-			<Button variant="contained" color="primary" onClick={handleEditRole} fullWidth>
+			<FilledButton colorType="primary" onClick={handleSubmit}>
 				Guardar Cambios
-			</Button>
-		</div>
+			</FilledButton>
+		</SmartBox>
 	);
 };
 

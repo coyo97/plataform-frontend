@@ -84,7 +84,7 @@ export const InboxPeople: React.FC<InboxPeopleProps> = ({
 					isMobile={isMobile}
 					isFloating={isFloating}
 				>
-					<Searchbox />
+					{/*	<Searchbox />*/}
 					<Sidebar
 						users={users}
 						groups={groups}

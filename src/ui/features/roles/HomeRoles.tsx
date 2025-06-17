@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Box, Tabs, Tab, useMediaQuery, useTheme } from '@mui/material';
+import {
+	Tabs,
+	Tab,
+	useTheme,
+	useMediaQuery,
+} from '@mui/material';
+
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import Text from '../../shared/atoms/typography/Text';
+import mq from '../../../config/mq';
+
 import CreateRole from './CreateRole';
 import EditRole from './EditRole';
 import RolesList from './RolesList';
@@ -8,23 +18,41 @@ import UserListWithRoles from './UserListWithRoles';
 import ActionManagement from './ActionManagement';
 import ModuleManagement from './ModuleManagement';
 
-function TabPanel(props: any) {
-	const { children, value, index, ...other } = props;
-
-	return (
-		<div
-			role="tabpanel"
-			hidden={value !== index}
-			id={`tabpanel-${index}`}
-			aria-labelledby={`tab-${index}`}
-			{...other}
-		>
-			{value === index && <Box p={3}>{children}</Box>}
-		</div>
-	);
+function TabPanel({ children, value, index, ...other }: any) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+      style={{
+        flex: '1 1 100%',   // ⬅️ puede crecer y encogerse
+        width: '100%',
+        minWidth: 0,        // ⬅️ PERMITE encogerse
+        boxSizing: 'border-box',
+      }}
+    >
+      {value === index && (
+        <SmartBox
+          column
+          gap={2}
+          sx={{
+            flex: '1 1 auto', // igual de elástico
+            width: '100%',
+            minWidth: 0,
+          }}
+        >
+          {children}
+        </SmartBox>
+      )}
+    </div>
+  );
 }
 
-function a11yProps(index: any) {
+
+
+function a11yProps(index: number) {
 	return {
 		id: `tab-${index}`,
 		'aria-controls': `tabpanel-${index}`,
@@ -35,27 +63,37 @@ const HomeRoles: React.FC = () => {
 	const [value, setValue] = useState(0);
 	const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detecta pantallas móviles
+	const isMobile = useMediaQuery(mq('sm', 'max'));
 
-	const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+	const handleChange = (_: React.SyntheticEvent, newValue: number) => {
 		setValue(newValue);
 	};
 
 	return (
-		<Box
-			sx={{
-				width: '100%',
-				padding: isMobile ? '1rem' : '2rem',
-				backgroundColor: theme.palette.background.default,
-				color: theme.palette.text.primary,
-			}}
+		<SmartBox
+  sx={{
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,        // ⬅️ la clave
+    overflowX: 'hidden',
+    padding: isMobile ? '1rem' : '2rem',
+    backgroundColor: theme.palette.background.default,
+  }}
 		>
+			{/* Tabs siempre scrollables */}
 			<Tabs
 				value={value}
 				onChange={handleChange}
-				variant={isMobile ? 'scrollable' : 'standard'} // Habilita scroll en móvil
-				scrollButtons={isMobile ? 'auto' : undefined} // Botones automáticos para scroll
-				centered={!isMobile} // Centrado solo en pantallas grandes
+				variant="scrollable"
+				scrollButtons="auto"
+				allowScrollButtonsMobile        // MUI v5.11+
+				sx={{
+					width: '100%',
+					overflowX: 'auto',
+					'& .MuiTabs-scrollButtons': { flex: '0 0 32px' },
+				}}
 			>
 				<Tab label="Gestión de Módulos" {...a11yProps(0)} />
 				<Tab label="Gestión de Acciones" {...a11yProps(1)} />
@@ -65,6 +103,8 @@ const HomeRoles: React.FC = () => {
 				<Tab label="Usuarios con Roles" {...a11yProps(5)} />
 				<Tab label="Editar Roles" {...a11yProps(6)} />
 			</Tabs>
+
+			{/* TabPanel contenedor 100 % */}
 			<TabPanel value={value} index={0}>
 				<ModuleManagement />
 			</TabPanel>
@@ -78,7 +118,7 @@ const HomeRoles: React.FC = () => {
 				<RolesList
 					onSelectRole={(roleId: string) => {
 						setSelectedRoleId(roleId);
-						setValue(6); // Cambiar al TabPanel de edición
+						setValue(6);
 					}}
 				/>
 			</TabPanel>
@@ -92,11 +132,12 @@ const HomeRoles: React.FC = () => {
 				{selectedRoleId ? (
 					<EditRole roleId={selectedRoleId} />
 				) : (
-					<div>Seleccione un rol para editar</div>
+					<Text colorKey="text.secondary">Seleccione un rol para editar</Text>
 				)}
 			</TabPanel>
-		</Box>
+		</SmartBox>
 	);
+
 };
 
 export default HomeRoles;

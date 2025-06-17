@@ -5,5 +5,6 @@ export interface AlertProps {
 	children: ReactNode;
 	type?: AlertType;
 	variant?: 'standard' | 'outlined' | 'filled';
+	onClose?: () => void;
 }
 

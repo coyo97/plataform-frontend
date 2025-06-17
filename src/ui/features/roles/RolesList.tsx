@@ -1,136 +1,110 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
+
 import {
-	Container,
-	Title,
 	StyledTableContainer,
 	StyledTableHead,
 	StyledTableRow,
 	StyledTableCell,
 	PermissionList,
-	DeleteButton,
-	ActionButtonsContainer,
 } from './rolesList.styles';
-import { Table, TableBody } from '@mui/material';
+
+import {
+	Table,
+	TableBody,
+} from '@mui/material';
+
+import SectionTitle from '../../shared/atoms/titles/SectionTitle';
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import Text from '../../shared/atoms/typography/Text';
+import GhostButton from '../../shared/atoms/buttons/ghostButton/GhostButton';
+
+import { listRoles, deleteRole } from '../../../async/services/roleService';
 
 interface Role {
 	_id: string;
 	name: string;
 	description?: string;
-	permissions: {
-		_id: string;
-		module: { name: string };
-		action: { name: string };
-	}[];
+	permissions?: { _id: string; module: { name: string }; action: { name: string } }[];
 }
 
-interface RolesListProps {
-	onSelectRole: (roleId: string) => void;
-}
-
-const RolesList: React.FC<RolesListProps> = ({ onSelectRole }) => {
+const RolesList: React.FC<{ onSelectRole: (id: string) => void }> = ({ onSelectRole }) => {
 	const [roles, setRoles] = useState<Role[]>([]);
-	const { HOST, SERVICE } = getEnvVariables();
 
 	useEffect(() => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
-
-		const fetchRoles = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/roles`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				console.log('Datos de roles:', response.data);
-				setRoles(response.data.roles);
-			} catch (error) {
-				console.error('Error al obtener roles:', error);
+		listRoles()
+			.then(setRoles)
+			.catch(err => {
+				console.error('Error al obtener roles:', err);
 				alert('Error al obtener roles');
-			}
-		};
-
-		fetchRoles();
-	}, [HOST, SERVICE]);
-
-	const handleDeleteRole = async (roleId: string) => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
-
-		try {
-			await axios.delete(`${HOST}${SERVICE}/roles/${roleId}`, {
-				headers: { Authorization: `Bearer ${token}` },
 			});
-			alert('Rol eliminado exitosamente');
-			setRoles((prevRoles) => prevRoles.filter((role) => role._id !== roleId));
-		} catch (error) {
-			console.error('Error al eliminar rol:', error);
+	}, []);
+
+	const handleRemove = async (id: string) => {
+		if (!window.confirm('Eliminar rol?')) return;
+		try {
+			await deleteRole(id);
+			setRoles(prev => prev.filter(r => r._id !== id));
+			alert('Rol eliminado');
+		} catch (err) {
+			console.error(err);
 			alert('Error al eliminar rol');
 		}
 	};
 
-	const handleEditClick = (roleId: string) => {
-		onSelectRole(roleId);
-	};
-
 	return (
-		<Container>
-			<Title variant="h4">Lista de Roles</Title>
+		<SmartBox column gap={3} p="px12">
+			<SectionTitle>Lista de Roles</SectionTitle>
+
 			<StyledTableContainer>
 				<Table>
 					<StyledTableHead>
 						<StyledTableRow>
-							<StyledTableCell data-label="Nombre">Nombre</StyledTableCell>
-							<StyledTableCell data-label="Descripción">Descripción</StyledTableCell>
-							<StyledTableCell data-label="Permisos">Permisos</StyledTableCell>
+							<StyledTableCell>Nombre</StyledTableCell>
+							<StyledTableCell>Descripción</StyledTableCell>
+							<StyledTableCell>Permisos</StyledTableCell>
 						</StyledTableRow>
 					</StyledTableHead>
 					<TableBody>
-						{roles && roles.length > 0 ? (
-							roles.map((role) => (
-								<StyledTableRow key={role._id}>
-									<StyledTableCell data-label="Nombre">{role.name}</StyledTableCell>
-									<StyledTableCell data-label="Descripción">
-										{role.description || 'Sin descripción'}
-									</StyledTableCell>
-									<StyledTableCell data-label="Permisos">
-										{role.permissions && role.permissions.length > 0 ? (
-											<PermissionList>
-												{role.permissions.map((perm, index) => (
-													<li key={index}>
-														{perm.module?.name} - {perm.action?.name}
-													</li>
-												))}
-											</PermissionList>
-										) : (
-										'Sin permisos'
-										)}
-										<ActionButtonsContainer>
-											<button onClick={() => handleEditClick(role._id)}>Editar</button>
-											<DeleteButton onClick={() => handleDeleteRole(role._id)}>
-												Eliminar
-											</DeleteButton>
-										</ActionButtonsContainer>
-									</StyledTableCell>
-								</StyledTableRow>
-							))
-						) : (
+						{roles.length ? roles.map(r => (
+							<StyledTableRow key={r._id}>
+								<StyledTableCell>
+									<Text size="md">{r.name}</Text>
+								</StyledTableCell>
+								<StyledTableCell>
+									<Text size="sm" colorKey="gray.600">
+										{r.description || 'Sin descripción'}
+									</Text>
+								</StyledTableCell>
+								<StyledTableCell>
+									{r.permissions?.length ? (
+										<PermissionList>
+											{r.permissions.map(p => (
+												<li key={p._id}>
+													<Text size="sm">{p.module?.name} - {p.action?.name}</Text>
+												</li>
+											))}
+										</PermissionList>
+									) : (
+										<Text size="sm" >Sin permisos</Text>
+									)}
+
+									<SmartBox row gap={1} mt="px4">
+										<GhostButton label="Editar" onClick={() => onSelectRole(r._id)} />
+										<GhostButton label="Eliminar" colorType="secondary" onClick={() => handleRemove(r._id)} />
+									</SmartBox>
+								</StyledTableCell>
+							</StyledTableRow>
+						)) : (
 							<StyledTableRow>
 								<StyledTableCell colSpan={3} align="center">
-									No hay roles disponibles.
+									<Text size="md" weight="medium">No hay roles disponibles.</Text>
 								</StyledTableCell>
 							</StyledTableRow>
 						)}
 					</TableBody>
 				</Table>
 			</StyledTableContainer>
-		</Container>
+		</SmartBox>
 	);
 };
 

@@ -32,18 +32,19 @@ export const useStreamsFeed = (type: 'live' | 'ended' | 'all' = 'live') => {
         ),
       )
     );
-    socket.on(EVENTS.VIEWER_COUNT, ({ streamId, viewerCount }) =>
-      set(p => p.map(x =>
-        x._id === streamId ? { ...x, viewerCount } : x
-      )),
-    );
+
+	  socket.on(EVENTS.UPDATE_VIEWERS, ({ streamId, viewers }) =>
+    set(p => p.map(x =>
+      x._id === streamId ? { ...x, viewerCount: viewers.length } : x
+    ))
+  );
 
     return () =>
       socket
         .off(EVENTS.STREAM_CREATED)
         .off(EVENTS.STREAM_ENDED)
         .off(EVENTS.STREAM_LIKE)
-        .off(EVENTS.VIEWER_COUNT);
+		 .off(EVENTS.UPDATE_VIEWERS);
   };
 
   const [streams] = useRealtimeFeed(() => api.list(query), register);

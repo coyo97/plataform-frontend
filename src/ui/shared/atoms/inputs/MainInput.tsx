@@ -24,6 +24,7 @@ const MainInput: React.FC<MainInputProps> = ({
 	type = 'text',
 	multiline = false,
 	rows = 3,
+	minRows
 }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		onChange(e.target.value);

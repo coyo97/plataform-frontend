@@ -1,163 +1,150 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import getEnvVariables from '../../../config/configEnvs';
 import {
-	ActionManagementContainer,
-	Title,
-	InputContainer,
-	StyledInput,
-	ActionButton,
-	ActionList,
-	ActionItem,
-} from './actionManagement.styles';
-import { Typography } from '@mui/material';
+	fetchActions,
+	createAction,
+	updateAction,
+	deleteAction,
+	Action,
+} from '../../../async/services/actionService';
 
-interface Action {
-	_id: string;
-	name: string;
-}
-
+import MainInput from '../../shared/atoms/inputs/MainInput';
+import FilledButton from '../../shared/atoms/buttons/filledButton/FilledButton';
+import GhostButton from '../../shared/atoms/buttons/ghostButton/GhostButton';
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import Text from '../../shared/atoms/typography/Text';
+import { useTheme, useMediaQuery } from '@mui/material'; 
 
 const ActionManagement: React.FC = () => {
 	const [actions, setActions] = useState<Action[]>([]);
-	const [newActionName, setNewActionName] = useState('');
-	const [editingAction, setEditingAction] = useState<Action | null>(null);
-	const [editingActionName, setEditingActionName] = useState('');
-	const { HOST, SERVICE } = getEnvVariables();
-	const token = localStorage.getItem('token');
+	const [newName, setNewName] = useState('');
+	const [editing, setEditing] = useState<Action | null>(null);
+	const [editName, setEditName] = useState('');
+
+	const theme = useTheme();                          
+	const isDesktop = useMediaQuery(theme.breakpoints.up('sm')); 
 
 	useEffect(() => {
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
+		fetchActions()
+		.then(setActions)
+		.catch(err => console.error('Error al obtener acciones', err));
+	}, []);
 
-		const fetchActions = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/actions`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (response.data && response.data.actions) {
-					setActions(response.data.actions);
-				} else {
-					console.error('La respuesta no contiene las acciones esperadas.');
-				}
-			} catch (error) {
-				console.error('Error al obtener acciones:', error);
-			}
-		};
-
-		fetchActions();
-	}, [HOST, SERVICE, token]);
-
-	const handleCreateAction = async () => {
-		if (!newActionName.trim()) {
-			alert('El nombre de la acción no puede estar vacío.');
-			return;
-		}
-
+	const handleCreate = async () => {
+		if (!newName.trim()) return alert('Nombre vacío');
 		try {
-			const response = await axios.post(
-				`${HOST}${SERVICE}/actions`,
-				{ name: newActionName },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setActions([...actions, response.data.action]);
-			setNewActionName('');
-		} catch (error) {
-			console.error('Error al crear acción:', error);
+			const action = await createAction(newName.trim());
+			setActions(prev => [...prev, action]);
+			setNewName('');
+		} catch {
 			alert('Error al crear acción');
 		}
 	};
 
-	const startEditingAction = (action: Action) => {
-		setEditingAction(action);
-		setEditingActionName(action.name);
+	const startEdit = (a: Action) => {
+		setEditing(a);
+		setEditName(a.name);
 	};
 
-	const cancelEditing = () => {
-		setEditingAction(null);
-		setEditingActionName('');
+	const cancelEdit = () => {
+		setEditing(null);
+		setEditName('');
 	};
 
-	const handleUpdateAction = async () => {
-		if (!editingAction || !editingActionName.trim()) {
-			alert('El nombre de la acción no puede estar vacío.');
-			return;
-		}
-
+	const handleUpdate = async () => {
+		if (!editing || !editName.trim()) return alert('Nombre vacío');
 		try {
-			const response = await axios.put(
-				`${HOST}${SERVICE}/actions/${editingAction._id}`,
-				{ name: editingActionName },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setActions(
-				actions.map(action => (action._id === editingAction._id ? response.data.action : action))
-			);
-			cancelEditing();
-		} catch (error) {
-			console.error('Error al actualizar acción:', error);
+			const action = await updateAction(editing._id, editName.trim());
+			setActions(prev => prev.map(a => (a._id === action._id ? action : a)));
+			cancelEdit();
+		} catch {
 			alert('Error al actualizar acción');
 		}
 	};
 
-	const handleDeleteAction = async (id: string) => {
-		if (!window.confirm('¿Estás seguro de que deseas eliminar esta acción?')) {
-			return;
-		}
-
+	const handleDelete = async (id: string) => {
+		if (!window.confirm('¿Eliminar esta acción?')) return;
 		try {
-			await axios.delete(`${HOST}${SERVICE}/actions/${id}`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			setActions(actions.filter(action => action._id !== id));
-		} catch (error) {
-			console.error('Error al eliminar acción:', error);
+			await deleteAction(id);
+			setActions(prev => prev.filter(a => a._id !== id));
+		} catch {
 			alert('Error al eliminar acción');
 		}
 	};
 
 	return (
-		<ActionManagementContainer>
-			<Title>Gestión de Acciones</Title>
+		<SmartBox column gap={3} p='px2' radius="md" shadow="md" sx={{ maxWidth: '800px', margin: '0 auto' }}>
 
-			<InputContainer>
-				<StyledInput
-					type="text"
-					value={newActionName}
-					onChange={e => setNewActionName(e.target.value)}
-					placeholder="Nombre de la Acción"
-				/>
-				<ActionButton onClick={handleCreateAction}>Crear Acción</ActionButton>
-			</InputContainer>
+			{isDesktop ? (
+				<SmartBox column between gap={2}>
+					<MainInput
+						label='Nombre de la Accion'
+						value={newName}
+						onChange={setNewName}
+						placeholder="Nombre de la Acción"
+					/>
+					<FilledButton onClick={handleCreate}>Crear Acción</FilledButton>
+				</SmartBox>
+			) : (
+				<SmartBox
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 1,
+						alignItems: 'stretch',
+						'& > *:first-of-type': { flex: 1 },
+					'& > button': {
+						width: '100%',
+						py: 1,
+					},
+					}}
+				>
+					<MainInput
+						label='Nombre de la Accion'
+						value={newName}
+						onChange={setNewName}
+						placeholder="Nombre de la Acción"
+					/>
+					<FilledButton onClick={handleCreate}>Crear Acción</FilledButton>
+				</SmartBox>
+			)}
 
-			<ActionList>
-				{actions.map(action => (
-					<ActionItem key={action._id}>
-						{editingAction && editingAction._id === action._id ? (
-							<>
-								<StyledInput
-									type="text"
-									value={editingActionName}
-									onChange={e => setEditingActionName(e.target.value)}
-								/>
-								<ActionButton onClick={handleUpdateAction}>Guardar</ActionButton>
-								<ActionButton onClick={cancelEditing}>Cancelar</ActionButton>
-							</>
-						) : (
-							<>
-								<Typography>{action.name}</Typography>
-								<div>
-									<ActionButton onClick={() => startEditingAction(action)}>Editar</ActionButton>
-									<ActionButton onClick={() => handleDeleteAction(action._id)}>Eliminar</ActionButton>
-								</div>
-							</>
-						)}
-					</ActionItem>
+			<ul style={{ listStyle: 'none', padding: 0, margin: 0, width: '100%' }}>
+				{actions.map(a => (
+					<li key={a._id}>
+						<SmartBox
+							column={{ xs: true, sm: false }}
+							between
+							alignItems="center"
+							p='px2'
+							sx={{ borderBottom: '1px solid #E0E2E7', gap: '1rem' }}
+						>
+							{editing && editing._id === a._id ? (
+								<>
+									<MainInput
+										label='Editar nombre'
+										value={editName}
+										onChange={setEditName}
+										placeholder="Editar nombre"
+									/>
+									<SmartBox row gap={1}>
+										<FilledButton onClick={handleUpdate}>Guardar</FilledButton>
+										<GhostButton label="Cancelar" onClick={cancelEdit} />
+									</SmartBox>
+								</>
+							) : (
+								<>
+									<Text size="md" weight="regular">{a.name}</Text>
+									<SmartBox row gap={1}>
+										<FilledButton onClick={() => startEdit(a)}>Editar</FilledButton>
+										<GhostButton label="Eliminar" onClick={() => handleDelete(a._id)} />
+									</SmartBox>
+								</>
+							)}
+						</SmartBox>
+					</li>
 				))}
-			</ActionList>
-		</ActionManagementContainer>
+			</ul>
+		</SmartBox>
 	);
 };
 
