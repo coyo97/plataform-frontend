@@ -19,6 +19,7 @@ const register: RegisterFn<Comment> = (socket, set) => {
 };
 
 export const useCommentsFeed = (publicationId: string) => {
+	const socket = useSocket();
 	const [comments, setComments] = useRealtimeFeed(
 		() => api.list(publicationId),
 		register
@@ -27,6 +28,11 @@ export const useCommentsFeed = (publicationId: string) => {
 	const create = (content:string)=> api.add(publicationId,content);
 	const edit   = (id:string,c:string)=> api.update(id,c);
 	const del    = (id:string)=> api.remove(id);
+	useEffect(() => {
+		if (!socket) return;
+		socket.emit('join-room', publicationId); // 💡 debes manejar esto en tu servidor
+		return () => { socket.emit('leave-room', publicationId); };
+	}, [socket, publicationId]);
 
 	return { comments, create, edit, del };
 };

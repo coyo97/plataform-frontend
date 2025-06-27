@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FormWrapper, FormTitle, FormInput, SubmitButton, FormLabel } from '../loginForm/formLogin.styles';
-import getEnvVariables from '../../../../config/configEnvs';
+import { fetchCareers } from '../../../../async/services/careerService';
+import { registerUser } from '../../../../async/services/authService';
 
 interface Career {
 	_id: string;
@@ -19,39 +19,28 @@ const UserForm: React.FC = () => {
 	const [error, setError] = useState('');
 	const navigate = useNavigate();
 
-	const { HOST, SERVICE } = getEnvVariables();
-
 	useEffect(() => {
-		const fetchCareers = async () => {
+		const loadCareers = async () => {
 			try {
-				const response = await axios.get(`${HOST}${SERVICE}/careers`, {
-					headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 
-						'ngrok-skip-browser-warning': 'true'  
-					},
-				});
-				console.log("Careers API response:", response.data);
-				setAvailableCareers(response.data.careers);
-			} catch (error) {
-				console.error('Error fetching careers:', error);
-				setError('Error fetching careers. Please try again later.');
+				const data = await fetchCareers();
+				setAvailableCareers(data);
+			} catch (err) {
+				console.error('Error al obtener carreras:', err);
+				setError('Error al obtener carreras. Intenta más tarde.');
 			}
 		};
-		fetchCareers();
+		loadCareers();
 	}, []);
 
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
-		const userData = { username, email, password, careers };
-
 		try {
-			await axios.post(`${HOST}${SERVICE}/users`, userData);
+			await registerUser({ username, email, password, careers });
 			setSuccessMessage('Registro con éxito');
-			setTimeout(() => {
-				navigate('/login'); // Redirigir al usuario a la página de inicio de sesión
-			}, 2000); // Esperar 2 segundos antes de redirigir
-		} catch (error: any) {
-			console.error('Error creating user:', error);
-			setError('Error creando usuario. Por favor, verifica los datos e inténtalo de nuevo.');
+			setTimeout(() => navigate('/login'), 2000);
+		} catch (err) {
+			console.error('Error al registrar usuario:', err);
+			setError('Error al crear usuario. Verifica los datos.');
 		}
 	};
 
@@ -90,7 +79,7 @@ const UserForm: React.FC = () => {
 			<div>
 				<FormLabel>Carreras:</FormLabel>
 				<select
-					value={careers[0]}
+					value={careers[0] || ''}
 					onChange={(e) => setCareers([e.target.value])}
 					required
 					style={{
@@ -100,7 +89,8 @@ const UserForm: React.FC = () => {
 						width: '100%',
 					}}
 				>
-					{availableCareers?.map(career => (
+					<option value="" disabled>Seleccione una carrera</option>
+					{availableCareers.map(career => (
 						<option key={career._id} value={career._id}>
 							{career.name}
 						</option>
@@ -108,7 +98,7 @@ const UserForm: React.FC = () => {
 				</select>
 			</div>
 			<SubmitButton type="submit">Registro</SubmitButton>
-			<SubmitButton onClick={() => navigate('/login')}>Iniciar Sesión</SubmitButton>
+			<SubmitButton type="button" onClick={() => navigate('/login')}>Iniciar Sesión</SubmitButton>
 		</FormWrapper>
 	);
 };

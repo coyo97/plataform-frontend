@@ -71,22 +71,25 @@ function App() {
 						<Routes>
 							<Route path="/" element={<Welcome />} />
 							<Route path="/login" element={<FormLogin />} />
-							<Route path="/register" element={<UserForm/>} />
-							<Route path='/plataform' element={<ProtectedRoute element={<Plataform />} />}></Route>
-							<Route path='/stream-academi' element={<HomeStreamPage/>}></Route>
-							<Route path="/academic-help" element={<HomeAcademicHelp/>} />
-							<Route path="/academic-help/:helpId" element={<AcademicHelpDetailPage />} />
-							<Route path='/publications' element={<HomePublications/>}></Route>
-							<Route path="/publications/:publicationId" element={<PublicationDetail />} />
-							<Route path='/profile' element={<HomeProfilePage/>}></Route>
-							<Route path='/material-user' element={<UserMaterials/>}></Route>
-							<Route path="/profile/:id" element={<AuthorProfile />} />
-							<Route path="/profile" element={<ViewProfile />} />
-							<Route path="/profile/update" element={<UpdateProfile />} />
-							<Route path='/message' element={<HomeChat/>}></Route>
-							<Route path="/forgot-password" element={<ForgotPassword/>} />
-							<Route path="/reset-password/:token" element={<ResetPassword/>} />
-							{/* Rutas del Dashboard con Sidebar */}
+							<Route path="/register" element={<UserForm />} />
+							<Route path="/forgot-password" element={<ForgotPassword />} />
+							<Route path="/reset-password/:token" element={<ResetPassword />} />
+
+							<Route path="/plataform" element={<ProtectedRoute element={<Plataform />} />} />
+							<Route path="/stream-academi" element={<ProtectedRoute element={<HomeStreamPage />} />} />
+							<Route path="/academic-help" element={<ProtectedRoute element={<HomeAcademicHelp />} />} />
+							<Route path="/academic-help/:helpId" element={<ProtectedRoute element={<AcademicHelpDetailPage />} />} />
+
+							<Route path="/publications" element={<ProtectedRoute element={<HomePublications />} />} />
+  <Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />
+
+							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} />} />
+							<Route path="/profile/:id" element={<ProtectedRoute element={<AuthorProfile />} />} />
+							<Route path="/profile/update" element={<ProtectedRoute element={<UpdateProfile />} />} />
+
+							<Route path="/material-user" element={<ProtectedRoute element={<UserMaterials />} />} />
+							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} />} />
+
 							<Route
 								path="/administrator/*"
 								element={
@@ -95,13 +98,7 @@ function App() {
 											<div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
 												<Sidebar isVisible={isSidebarOpen} />
 												<div className="admin-content">
-													{/* Botón de menú para pantallas pequeñas */}
-													<button
-														className="menu-button"
-														onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-													>
-														☰
-													</button>
+													<button className="menu-button" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
 													<Routes>
 														<Route path="/" element={<Dashboard />} />
 														<Route path="users" element={<UserManagement />} />
@@ -118,6 +115,7 @@ function App() {
 								}
 							/>
 						</Routes>
+
 					</Router>
 				</SocketProvider>
 			</QueryClientProvider>

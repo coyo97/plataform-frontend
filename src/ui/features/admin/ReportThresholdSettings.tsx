@@ -1,69 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
-import { Container, Title, Label, Input, Button } from './reportThresholdSettingsStyles';
+
+import SmartBox from '../../shared/atoms/box/SmartBox';
+import Text from '../../shared/atoms/typography/Text';
+import MainInput from '../../shared/atoms/inputs/MainInput';
+import FilledButton from '../../shared/atoms/buttons/filledButton/FilledButton';
+import { fetchThresholdSettings, updateThresholdSettings } from '../../../async/services/settingsService';
 
 const ReportThresholdSettings: React.FC = () => {
 	const [reportThreshold, setReportThreshold] = useState<number>(5);
 	const [notificationThreshold, setNotificationThreshold] = useState<number>(3);
 	const { HOST, SERVICE } = getEnvVariables();
 
-	useEffect(() => {
-		const fetchSettings = async () => {
-			try {
-				const token = localStorage.getItem('token');
-				const response = await axios.get(`${HOST}${SERVICE}/settings`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				setReportThreshold(response.data.settings.reportThreshold);
-				setNotificationThreshold(response.data.settings.notificationThreshold);
-			} catch (error) {
-				console.error('Error al obtener los umbrales de reporte:', error);
-			}
-		};
-
-		fetchSettings();
-	}, [HOST, SERVICE]);
-
-	const updateThresholds = async () => {
+useEffect(() => {
+	const load = async () => {
 		try {
-			const token = localStorage.getItem('token');
-			await axios.put(
-				`${HOST}${SERVICE}/settings`,
-				{ reportThreshold, notificationThreshold },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			alert('Umbrales actualizados correctamente');
-		} catch (error) {
-			console.error('Error al actualizar los umbrales de reporte:', error);
+			const settings = await fetchThresholdSettings();
+			setReportThreshold(settings.reportThreshold);
+			setNotificationThreshold(settings.notificationThreshold);
+		} catch (err) {
+			console.error('Error al obtener configuración:', err);
 		}
 	};
+	load();
+}, []);
+
+const updateThresholds = async () => {
+	try {
+		await updateThresholdSettings({ reportThreshold, notificationThreshold });
+		alert('Umbrales actualizados correctamente');
+	} catch (err) {
+		console.error('Error al actualizar configuración:', err);
+	}
+};
+
 
 	return (
-		<Container>
-			<Title>Configuración de Umbrales de Reporte</Title>
-			<div>
-				<Label>
-					Umbral para bloquear usuarios:
-					<Input
-						type="number"
-						value={reportThreshold}
-						onChange={(e) => setReportThreshold(Number(e.target.value))}
-					/>
-				</Label>
-			</div>
-			<div>
-				<Label>
-					Umbral para notificaciones:
-					<Input
-						type="number"
-						value={notificationThreshold}
-						onChange={(e) => setNotificationThreshold(Number(e.target.value))}
-					/>
-				</Label>
-			</div>
-			<Button onClick={updateThresholds}>Guardar Cambios</Button>
-		</Container>
+		<SmartBox
+			column
+			gap={3}
+			sx={{
+				width: '100%',
+				maxWidth: 500,
+				mx: 'auto',
+				p: { xs: 2, sm: 3 },
+				boxShadow: 2,
+				borderRadius: 2,
+				bgcolor: 'background.paper',
+			}}
+		>
+			<Text size="xl" weight="bold">Configuración de Umbrales de Reporte</Text>
+
+			<SmartBox column gap={2}>
+				<Text size="md" weight="medium">Umbral para bloquear usuarios:</Text>
+				<MainInput
+					label='Number'
+					type="number"
+					value={reportThreshold.toString()}
+					onChange={(val) => setReportThreshold(Number(val))}
+					placeholder="Ej: 5"
+				/>
+			</SmartBox>
+
+			<SmartBox column gap={2}>
+				<Text size="md" weight="medium">Umbral para notificaciones:</Text>
+				<MainInput
+					label='Number'
+					type="number"
+					value={notificationThreshold.toString()}
+					onChange={(val) => setNotificationThreshold(Number(val))}
+					placeholder="Ej: 3"
+				/>
+			</SmartBox>
+
+			<FilledButton onClick={updateThresholds}>
+				Guardar Cambios
+			</FilledButton>
+		</SmartBox>
 	);
 };
 

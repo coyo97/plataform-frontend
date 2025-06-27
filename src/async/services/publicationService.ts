@@ -63,10 +63,15 @@ export const fetchPublicationById = async (id: string): Promise<Publication> => 
 	return publication;
 };
 
-export const createPublication = (fd:FormData) =>
-	post<Publication>(url(R.PUBS), fd, true)
-.finally(clear);
-
+export const createPublication = async (fd: FormData): Promise<Publication> => {
+	const { publication } = await post<{ publication: Publication }>(
+		url(R.PUBS),
+		fd,
+		true
+	);
+	clear();          // vacía caché
+	return publication;
+};
 export const updatePublication = (id:string, fd:FormData) =>
 	put<Publication>(url(R.PUB_BY_ID(id)), fd, true)
 .finally(clear);

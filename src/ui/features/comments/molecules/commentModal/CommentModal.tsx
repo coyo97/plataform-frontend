@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import TextField from '../../../../shared/atoms/textFields/TextField';
 import InfoTooltip from '../../../../shared/atoms/tooltips/infoTooltip/InfoTooltip';
+import { useModerationAlert } from '../../../../shared/hooks/useModerationAlert';
 
 interface Props {
 	open: boolean;
@@ -20,11 +21,20 @@ const CommentModal: React.FC<Props> = ({
 	onClose, onSave,
 }) => {
 	const [text, setText] = useState(initial);
+	const showModerationAlert = useModerationAlert();   // ← aquí
 
 	const handleSave = async () => {
-		await onSave(text.trim());
-		setText('');               // limpia si el padre no lo hace
-		onClose();
+		if (!text.trim()) return;
+
+		try {
+			await onSave(text.trim());
+			setText('');
+			onClose();
+		} catch (err) {
+			if (showModerationAlert(err)) return;           // ← alerta de moderación
+			alert('No se pudo guardar el comentario');      // error genérico
+			console.error(err);
+		}
 	};
 
 	return (

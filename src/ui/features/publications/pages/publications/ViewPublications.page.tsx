@@ -104,112 +104,116 @@ const ViewPublicationsPage: React.FC = () => {
 
 	const handleSearch = (q:string)=> setQuery(q);
 
-	const handleNewPost = (p:Publication)=> setPubs(prev=>[p,...prev]);
+	const handleNewPost = (p: Publication) => {
+		setPubs(prev =>
+				prev.some(pub => pub._id === p._id) ? prev : [p, ...prev]
+			   );
+			   const submitNew = (fd:FormData)=> createPublication(fd);
+			   setCreateOpen(false);
+	}
 
-	const submitNew = (fd:FormData)=> createPublication(fd);
+			   return (
+				   <PublicationsLayout>
+					   {/* ① CREATE – LEFT SIDEBAR */}
+					   {isMobile ? (
+						   <>
+							   <Fab
+								   color="secondary"
+								   sx={{ position:'fixed', bottom:16, right:16, zIndex:1200 }}
+								   onClick={() => setCreateOpen(true)}
+							   >
+								   <AddIcon/>
+							   </Fab>
 
-	return (
-		<PublicationsLayout>
-			{/* ① CREATE – LEFT SIDEBAR */}
-			{isMobile ? (
-				<>
-					<Fab
-						color="secondary"
-						sx={{ position:'fixed', bottom:16, right:16, zIndex:1200 }}
-						onClick={() => setCreateOpen(true)}
-					>
-						<AddIcon/>
-					</Fab>
+							   <Dialog fullScreen open={createOpen} onClose={() => setCreateOpen(false)}>
+								   <CreatePublicationSidebar
+									   open
+									   onClose={() => setCreateOpen(false)}
+									   onNew={handleNewPost}
+								   />
+							   </Dialog>
+						   </>
+					   ) : (
+						   <Box sx={sidebarSX}>
+							   <CreatePublicationSidebar
+								   open={createOpen}
+								   onClose={() => setCreateOpen(false)}
+								   onNew={handleNewPost}
+							   />
+						   </Box>
+					   )}
 
-					<Dialog fullScreen open={createOpen} onClose={() => setCreateOpen(false)}>
-						<CreatePublicationSidebar
-							open
-							onClose={() => setCreateOpen(false)}
-							onNew={handleNewPost}
-						/>
-					</Dialog>
-				</>
-			) : (
-				<Box sx={sidebarSX}>
-					<CreatePublicationSidebar
-						open={createOpen}
-						onClose={() => setCreateOpen(false)}
-						onNew={handleNewPost}
-					/>
-				</Box>
-			)}
+					   {/* ② FEED (siempre) */}
+					   <Box sx={{ flexGrow:1, minWidth:0, overflow:'auto' }}>
+						   <PublicationsFeed
+							   HOST={HOST}
+							   list={pubs}
+							   lastRef={lastRef}
+							   /* ahora usamos la molécula PublicationFile */
+							   renderFile={p=>(
+								   <PublicationFile publication={p} baseUrl={HOST}/>
+							   )}
+							   onLike={onLike}
+							   onUnlike={onUnlike}
+							   onAuthor={handleAuthor}
+							   onReport={id=>setReport({open:true,id})}
+							   onSearch={handleSearch}
+						   />
+					   </Box>
 
-			{/* ② FEED (siempre) */}
-			<Box sx={{ flexGrow:1, minWidth:0, overflow:'auto' }}>
-				<PublicationsFeed
-					HOST={HOST}
-					list={pubs}
-					lastRef={lastRef}
-					/* ahora usamos la molécula PublicationFile */
-					renderFile={p=>(
-						<PublicationFile publication={p} baseUrl={HOST}/>
-					)}
-					onLike={onLike}
-					onUnlike={onUnlike}
-					onAuthor={handleAuthor}
-					onReport={id=>setReport({open:true,id})}
-					onSearch={handleSearch}
-				/>
-			</Box>
+					   {/* ③ FILTER – RIGHT SIDEBAR */}
+					   {isMobile ? (
+						   <>
+							   <Button
+								   variant="outlined"
+								   startIcon={<FilterListIcon/>}
+								   onClick={() => setFilterOpen(true)}
+								   sx={{ position:'fixed', top:72, right:16, zIndex:1100 }}
+							   >
+								   Filtros
+							   </Button>
 
-			{/* ③ FILTER – RIGHT SIDEBAR */}
-			{isMobile ? (
-				<>
-					<Button
-						variant="outlined"
-						startIcon={<FilterListIcon/>}
-						onClick={() => setFilterOpen(true)}
-						sx={{ position:'fixed', top:72, right:16, zIndex:1100 }}
-					>
-						Filtros
-					</Button>
-
-					<SwipeableDrawer
-						anchor="right"
-						open={filterOpen}
-						onClose={() => setFilterOpen(false)}
-						onOpen={() => {}}
-						PaperProps={{ sx:{ width:'80%' } }}
-					>
-						<FilterPublicationSidebar
-							open
-							onClose={() => setFilterOpen(false)}
-							careers={careers}
-							selectedCareer={careerId}
-							selectedFilter={filter}
-							setCareer={setCareer}
-							setFilter={setFilter}
-						/>
-					</SwipeableDrawer>
-				</>
-			) : (
-				<Box sx={sidebarSX}>
-					<FilterPublicationSidebar
-						open={filterOpen}
-						onClose={() => setFilterOpen(false)}
-						careers={careers}
-						selectedCareer={careerId}
-						selectedFilter={filter}
-						setCareer={setCareer}
-						setFilter={setFilter}
-					/>
-				</Box>
-			)}
-			{/* ④ REPORT DIALOG */}
-			{report.open && (
-				<ReportDialog
-					open={report.open}
-					onClose={() => setReport({ open:false, id:'' })}
-					publicationId={report.id}
-				/>
-			)}
-		</PublicationsLayout>
-	);
+							   <SwipeableDrawer
+								   anchor="right"
+								   open={filterOpen}
+								   onClose={() => setFilterOpen(false)}
+								   onOpen={() => {}}
+								   PaperProps={{ sx:{ width:'80%' } }}
+							   >
+								   <FilterPublicationSidebar
+									   open
+									   onClose={() => setFilterOpen(false)}
+									   careers={careers}
+									   selectedCareer={careerId}
+									   selectedFilter={filter}
+									   setCareer={setCareer}
+									   setFilter={setFilter}
+								   />
+							   </SwipeableDrawer>
+						   </>
+					   ) : (
+						   <Box sx={sidebarSX}>
+							   <FilterPublicationSidebar
+								   open={filterOpen}
+								   onClose={() => setFilterOpen(false)}
+								   careers={careers}
+								   selectedCareer={careerId}
+								   selectedFilter={filter}
+								   setCareer={setCareer}
+								   setFilter={setFilter}
+							   />
+						   </Box>
+					   )}
+					   {/* ④ REPORT DIALOG */}
+					   {report.open && (
+						   <ReportDialog
+							   open={report.open}
+							   onClose={() => setReport({ open:false, id:'' })}
+							   publicationId={report.id}
+						   />
+					   )}
+				   </PublicationsLayout>
+			   );
 };
 
 export default ViewPublicationsPage;

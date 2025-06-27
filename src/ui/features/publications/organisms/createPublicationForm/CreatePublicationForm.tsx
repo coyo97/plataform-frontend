@@ -1,8 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainInput from '../../../../shared/atoms/inputs/MainInput'; //
-import FormSelect    from '../../../../shared/atoms/form/FormSelect';
-import FormFileInput from '../../../../shared/atoms/form/FormFileInput';
-import FormButton    from '../../../../shared/atoms/form/FormButton';
 import CareerSelector from '../../../../shared/molecules/selector/CareerSelector';
 import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledButton';
 import FileButton from '../../../../shared/atoms/buttons/fileButton/FileButton';
@@ -10,8 +7,12 @@ import PublicationFormBody from '../../../../shared/atoms/form/PublicationFormBo
 import PublicationFormActions from '../../../../shared/atoms/form/PublicationFormActions';
 import { useModerationAlert } from '../../../../shared/hooks/useModerationAlert';
 
+import {
+	Box, Typography, LinearProgress, Button, Avatar
+} from '@mui/material';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+
 import type { Career, Publication } from '../../../../../types/publication';
-import {Button} from '@mui/material';
 
 interface Props {
 	careers  : Career[];
@@ -27,10 +28,22 @@ const CreatePublicationForm: React.FC<Props> = ({
 	const [tags, setTags]       = useState('');
 	const [file, setFile]       = useState<File | null>(null);
 	const [careerId, setCareer] = useState('');
+
+	const [preview, setPreview]  = useState<string>('');   // mini-preview
+	const [uploading, setUploading] = useState(false);     // spinner/barra
 	const showModerationAlert = useModerationAlert();
+
+	/* genera/limpia la URL de preview */
+	useEffect(() => {
+		if (!file) { setPreview(''); return; }
+		const url = URL.createObjectURL(file);
+		setPreview(url);
+		return () => URL.revokeObjectURL(url);
+	}, [file]);
 
 	const handle = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (uploading) return;
 		const fd = new FormData();
 		fd.append('title', title);
 		fd.append('content', content);
@@ -42,9 +55,9 @@ const CreatePublicationForm: React.FC<Props> = ({
 		if (careerId) fd.append('careerId', careerId);
 
 		try {
-			const pub = await onSubmit(fd);      
-			onCreated(pub);                        // notifica al padre
-
+			setUploading(true);
+			const pub = await onSubmit(fd);
+			onCreated(pub);   
 			// reset
 			setTitle('');
 			setContent('');
@@ -57,6 +70,9 @@ const CreatePublicationForm: React.FC<Props> = ({
 			if (showModerationAlert(err)) return;
 
 			console.error('Error al crear la publicación:', err);
+		}
+		finally {
+			setUploading(false);          // 👈 oculta spinner/barra
 		}
 	};
 
@@ -90,6 +106,32 @@ const CreatePublicationForm: React.FC<Props> = ({
 				/>
 
 				<FileButton onChange={e => e.target.files && setFile(e.target.files[0])} />
+				{/* Preview */}
+				{preview && file && (
+					file.type.startsWith('image/') ? (
+						<Avatar
+							variant="rounded"
+							src={preview}
+							sx={{ width: 80, height: 80, mb: 1 }}
+						/>
+					) : (
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+							<InsertDriveFileIcon color="action" />
+							<Typography>{file.name}</Typography>
+						</Box>
+					)
+				)}
+
+
+				{/* Barra de progreso + mensaje */}
+				{uploading && (
+					<Box sx={{ my:1 }}>
+						<LinearProgress/>
+						<Typography variant="caption">
+							Espera un momento, estamos verificando tu archivo…
+						</Typography>
+					</Box>
+				)}
 
 				<CareerSelector
 					label="Carrera"
@@ -107,8 +149,13 @@ const CreatePublicationForm: React.FC<Props> = ({
 				<Button>
 
 				</Button>
-				<FilledButton variant="solid" colorType="primary" type="submit">
-					Publicar
+				<FilledButton
+					variant="solid"
+					colorType="primary"
+					type="submit"
+					disabled={uploading || !title || !content}
+				>
+					{uploading ? 'Verificando…' : 'Publicar'}
 				</FilledButton>
 			</PublicationFormActions>
 		</form>

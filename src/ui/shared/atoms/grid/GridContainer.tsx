@@ -4,6 +4,7 @@ import { gridSettings } from './grid.helpers';
 
 const GridContainer: React.FC<GridContainerProps> = ({
 	variant = 'mobile',
+	 columns,
 	children,
 	className,
 }) => {

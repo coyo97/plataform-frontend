@@ -46,22 +46,22 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 	return (
 		<>
 			{/* Header superior */}
-<Box sx={styles.headerBox(theme)}>
-  <Box sx={styles.headerInner}>
-    {/* Botón para abrir sidebar */}
-    <Box
-      component="button"
-      onClick={() => setOpenSidebar(true)}
-      sx={styles.menuButton(theme)}
-    >
-      <MenuIcon />
-    </Box>
+			<Box sx={styles.headerBox(theme)}>
+				<Box sx={styles.headerInner}>
+					{/* Botón para abrir sidebar */}
+					<Box
+						component="button"
+						onClick={() => setOpenSidebar(true)}
+						sx={styles.menuButton(theme)}
+					>
+						<MenuIcon />
+					</Box>
 
-    <Box component="h2" sx={styles.headerTitle(theme)}>
-      STREAM ACADÉMICO
-    </Box>
-  </Box>
-</Box>
+					<Box component="h2" sx={styles.headerTitle(theme)}>
+						STREAM ACADÉMICO
+					</Box>
+				</Box>
+			</Box>
 			{/* Contenedor general */}
 			<SmartBox row>
 				{/* 1️⃣ Sidebar */}

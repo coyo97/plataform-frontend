@@ -60,7 +60,10 @@ const request = async <T>(endpoint: string, payload: Payload, method: HttpMethod
 			}
 		} catch {/* body no era JSON; ignoramos */}
 		// Detecta los mensajes de moderación que tu backend envía
-		if (message.toLowerCase().includes('contenido inapropiado')) {
+		if (
+			message.toLowerCase().includes('comentario inapropiado') ||
+			message.toLowerCase().includes('contenido inapropiado')
+		){
 			throw new ModerationError(message);
 		}
 

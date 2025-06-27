@@ -29,6 +29,15 @@ import {
 	FilterButton, // Importa o define FilterButton si no existe
 } from './userManagement.styles';
 import UserCard from './UserCard'; // Importa el componente UserCard
+import {
+	fetchUsers,
+	fetchCareers,
+	deactivateUser,
+	reactivateUser,
+	blacklistUser,
+	deleteUser,
+	bulkAction,
+} from '../../../async/services/adminUserService';
 
 interface Role {
 	_id: string;
@@ -65,191 +74,129 @@ const UserManagement: React.FC = () => {
 	const usersPerPage = 10; // Puedes ajustar este valor según tus necesidades
 	const [totalUsers, setTotalUsers] = useState<number>(0);
 
-
 	useEffect(() => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
-
-		const fetchUsers = async () => {
+		const load = async () => {
 			try {
-				const response = await axios.get(`${HOST}${SERVICE}/users`, {
-					headers: { Authorization: `Bearer ${token}` },
-					params: {
-						page: currentPage,
-						limit: usersPerPage,
-						status: selectedStatus,
-						career: selectedCareer,
-						search: searchQuery,
-					},
+				const { list, totalPages, totalUsers } = await fetchUsers({
+					page  : currentPage,
+					limit : usersPerPage,
+					...(selectedStatus  && { status: selectedStatus }),
+					...(selectedCareer  && { career: selectedCareer }),
+					...(searchQuery     && { search: searchQuery }),
 				});
-				if (response.data && response.data.list) {
-					setList(response.data.list);
-					setFilteredUsers(response.data.list);
-					setTotalPages(response.data.totalPages); // Actualizar el total de páginas
-					setTotalUsers(response.data.totalUsers); // Actualizar el total de usuarios (si lo necesitas)
-				} else {
-					console.error('La respuesta de usuarios no contiene los datos esperados.');
-				}
-			} catch (error) {
-				console.error('Error al obtener usuarios:', error);
+				setList(list);               // ← guardamos la lista cruda
+				setTotalPages(totalPages);
+				setTotalUsers(totalUsers);
+			} catch (err) {
+				console.error('Error al obtener usuarios:', err);
 				alert('Error al obtener usuarios');
 			}
 		};
+		load();
+	}, [currentPage, selectedStatus, selectedCareer, searchQuery]);
 
-		fetchUsers();
-	}, [HOST, SERVICE, currentPage, selectedStatus, selectedCareer, searchQuery]);
-	// Efecto para obtener las carreras
-	useEffect(() => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			console.error('No se encontró el token. Por favor, inicia sesión.');
-			return;
-		}
 
-		const fetchCareers = async () => {
-			try {
-				const response = await axios.get(`${HOST}${SERVICE}/careers`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				setCareers(response.data.careers);
-			} catch (error) {
-				console.error('Error al obtener carreras:', error);
-			}
-		};
-
-		fetchCareers();
-	}, [HOST, SERVICE]);
-
-	// Filtrar usuarios por carrera seleccionada
 	useEffect(() => {
 		let filtered = list;
-		if (selectedCareer) {
-			filtered = filtered.filter(user =>
-									   user.careers && user.careers.some(career => career._id === selectedCareer)
+
+		if (selectedCareer)
+			filtered = filtered.filter(u =>
+									   u.careers?.some(c => c._id === selectedCareer)
 									  );
-		}
-		if (searchQuery) {
-			filtered = filtered.filter(user =>
-									   user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-									   user.email.toLowerCase().includes(searchQuery.toLowerCase())
-									  );
-		}
 
-		if (selectedStatus) {
-			filtered = filtered.filter(user => user.status === selectedStatus);
-		}
+									  if (searchQuery) {
+										  const q = searchQuery.toLowerCase();
+										  filtered = filtered.filter(u =>
+																	 u.username.toLowerCase().includes(q) ||
+																	 u.email.toLowerCase().includes(q)
+																	);
+									  }
 
-		setFilteredUsers(filtered);
-	}, [selectedCareer, searchQuery, selectedStatus, list]);
+									  if (selectedStatus)
+										  filtered = filtered.filter(u => u.status === selectedStatus);
 
+									  setFilteredUsers(filtered);
+	}, [list, selectedCareer, searchQuery, selectedStatus]);
+
+	useEffect(() => {
+		const loadCareers = async () => {
+			try {
+				const data = await fetchCareers();
+				setCareers(data);
+			} catch (err) {
+				console.error('Error al obtener carreras:', err);
+			}
+		};
+		loadCareers();
+	}, []);
+
+	/* ---------- Handlers con servicios ---------- */
 	const handleDeactivate = async (userId: string) => {
-		const confirm = window.confirm('¿Estás seguro de que deseas desactivar este usuario?');
-		if (!confirm) return;
-
-		const token = localStorage.getItem('token');
+		if (!window.confirm('¿Desactivar este usuario?')) return;
 		try {
-			await axios.put(
-				`${HOST}${SERVICE}/users/${userId}/deactivate`,
-				{},
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setList(prevList => prevList.map(user => (user._id === userId ? { ...user, status: 'deactivated' } : user)));
+			await deactivateUser(userId);
+			setList(prev => prev.map(u => u._id === userId ? { ...u, status: 'deactivated' } : u));
 			alert('Usuario desactivado exitosamente.');
-		} catch (error) {
-			console.error('Error al desactivar usuario:', error);
+		} catch (err) {
+			console.error(err);
 			alert('Error al desactivar usuario');
 		}
 	};
 
 	const handleReactivate = async (userId: string) => {
-		const confirm = window.confirm('¿Estás seguro de que deseas reactivar este usuario?');
-		if (!confirm) return;
-
-		const token = localStorage.getItem('token');
+		if (!window.confirm('¿Reactivar este usuario?')) return;
 		try {
-			await axios.put(
-				`${HOST}${SERVICE}/users/${userId}/reactivate`,
-				{},
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setList(prevList => prevList.map(user => (user._id === userId ? { ...user, status: 'active' } : user)));
+			await reactivateUser(userId);
+			setList(prev => prev.map(u => u._id === userId ? { ...u, status: 'active' } : u));
 			alert('Usuario reactivado exitosamente.');
-		} catch (error) {
-			console.error('Error al reactivar usuario:', error);
+		} catch (err) {
+			console.error(err);
 			alert('Error al reactivar usuario');
 		}
 	};
 
 	const handleBlacklist = async (userId: string) => {
-		const confirm = window.confirm('¿Estás seguro de que deseas bloquear este usuario? Esta acción no puede deshacerse.');
-		if (!confirm) return;
-
-		const token = localStorage.getItem('token');
+		if (!window.confirm('¿Bloquear este usuario?')) return;
 		try {
-			await axios.put(
-				`${HOST}${SERVICE}/users/${userId}/blacklist`,
-				{},
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			setList(prevList => prevList.map(user => (user._id === userId ? { ...user, status: 'blacklisted' } : user)));
+			await blacklistUser(userId);
+			setList(prev => prev.map(u => u._id === userId ? { ...u, status: 'blacklisted' } : u));
 			alert('Usuario bloqueado exitosamente.');
-		} catch (error) {
-			console.error('Error al bloquear usuario:', error);
+		} catch (err) {
+			console.error(err);
 			alert('Error al bloquear usuario');
 		}
 	};
 
 	const handleDelete = async (userId: string) => {
-		const confirm = window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.');
-		if (!confirm) return;
-
-		const token = localStorage.getItem('token');
+		if (!window.confirm('¿Eliminar este usuario?')) return;
 		try {
-			await axios.delete(`${HOST}${SERVICE}/users/${userId}`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			setList(prevList => prevList.filter(user => user._id !== userId));
+			await deleteUser(userId);
+			setList(prev => prev.filter(u => u._id !== userId));
 			alert('Usuario eliminado exitosamente.');
-		} catch (error) {
-			console.error('Error al eliminar usuario:', error);
+		} catch (err) {
+			console.error(err);
 			alert('Error al eliminar usuario');
 		}
 	};
 
-	const handleBulkAction = async (action: string) => {
-		const confirm = window.confirm(`¿Estás seguro de que deseas ${action} todos los usuarios de esta carrera?`);
-		if (!confirm) return;
-
-		const token = localStorage.getItem('token');
+	const handleBulkAction = async (action: 'deactivate' | 'reactivate' | 'blacklist') => {
+		if (!window.confirm(`¿${action} todos los usuarios filtrados?`)) return;
 		try {
-			// Obtener los IDs de los usuarios filtrados actualmente
-			const userIds = filteredUsers.map(user => user._id);
-
-			// Realizar la solicitud al backend para actualizar múltiples usuarios
-			await axios.put(
-				`${HOST}${SERVICE}/users/${userIds}/bulk-action`,
-				{ userIds, action },
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-
-			// Actualizar el estado local de los usuarios
-			setList(prevList => prevList.map(user => {
-				if (userIds.includes(user._id)) {
-					return { ...user, status: action === 'reactivate' ? 'active' : action === 'deactivate' ? 'deactivated' : 'blacklisted' };
-				}
-				return user;
-			}));
-
-			alert(`Usuarios ${action === 'reactivate' ? 'reactivados' : action === 'deactivate' ? 'desactivados' : 'bloqueados'} exitosamente.`);
-		} catch (error) {
-			console.error(`Error al ${action} usuarios:`, error);
-			alert(`Error al ${action} usuarios`);
+			const ids = filteredUsers.map(u => u._id);
+			await bulkAction(ids, action);
+			setList(prev =>
+					prev.map(u =>
+							 ids.includes(u._id)
+								 ? { ...u, status: action === 'reactivate' ? 'active' : action }
+								 : u
+							)
+				   );
+				   alert('Acción masiva completada.');
+		} catch (err) {
+			console.error(err);
+			alert('Error en la acción masiva');
 		}
 	};
-
 	const handleStatusChange = (e: SelectChangeEvent) => {
 		setSelectedStatus(e.target.value);
 		setCurrentPage(1); // Resetear a la primera página

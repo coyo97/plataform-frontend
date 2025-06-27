@@ -1,7 +1,7 @@
 // src/ui/features/stream/organisms/StreamActiveLayout.tsx
 import React, { useEffect, useState } from 'react';
 import { Grid, Box, useTheme } from '@mui/material';
-import StreamPlayer   from '../organisms/StreamPlayer';
+import StreamPlayer from '../organisms/streamPlayer/StreamPlayer';
 import StreamList     from '../organisms/StreamList';
 import SectionTitle   from '../../../shared/atoms/titles/SectionTitle';
 import ChatPanel from './ChatPanel';

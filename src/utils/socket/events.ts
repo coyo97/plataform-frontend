@@ -3,7 +3,7 @@ export const EVENTS = {
 	/* Comentarios */
 	COMMENT_NEW:     'comment:new',
 	COMMENT_UPDATE:  'comment:update',
-	COMMENT_REMOVE:  'comment:remove',
+	COMMENT_REMOVE:  'comment:delete',
 
 	/* Streams – feed */
 	STREAM_CREATED:  'stream-created',

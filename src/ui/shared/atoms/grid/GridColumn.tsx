@@ -6,15 +6,16 @@ const GridColumn: React.FC<GridColumnProps> = ({
 	span = 1,
 	children,
 	className,
+	as = 'div',
 }) => {
 	// Se puede mejorar para aceptar breakpoints, por ahora usaremos 'mobile'
 	const variant = 'mobile';
 	const style = getColumnWidth(span, variant);
 
-	return (
-		<div className={className} style={{ ...style, boxSizing: 'border-box' }}>
-			{children}
-		</div>
+	return React.createElement(
+				as,
+		{ className, style: { ...style, boxSizing: 'border-box' } },
+		children
 	);
 };
 

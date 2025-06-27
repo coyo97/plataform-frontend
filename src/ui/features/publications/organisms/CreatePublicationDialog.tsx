@@ -33,7 +33,7 @@ const CreatePublicationDialog: React.FC<Props> = ({
 
 		{!fullScreen && (
 			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
+				<Button onClick={onClose}>Salir</Button>
 			</DialogActions>
 		)}
 	</Dialog>
