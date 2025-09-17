@@ -39,15 +39,15 @@ const CreatePublicationSidebar: React.FC<Props> = ({
 	return (
 		<Sidebar
 			sticky
-			width={220}
-			variant="flat"
 			//header={<Text weight="bold">Crear publicación</Text>}
 			open={open}
+			variant="primary"
 			onClose={onClose}
 		>
 			<SmartBox >
 				<FilledButton
-					colorType="warning"
+					colorType="primary"
+					 btnVariant="default"
 					fullWidth
 					onClick={() => setDialogOpen(true)}
 				>

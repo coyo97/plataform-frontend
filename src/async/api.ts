@@ -83,3 +83,5 @@ export const put = async <T>(endpoint: string, payload: Payload, isFile: boolean
 
 export const del = async <T>(endpoint: string): Promise<T> =>
 	request<T>(endpoint, {}, "DELETE", false);
+
+

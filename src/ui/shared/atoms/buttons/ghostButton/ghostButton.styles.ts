@@ -2,15 +2,22 @@ import { styled } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 import { GhostButtonProps } from './GhostButton.types';
 
-// Define las keys válidas manualmente para garantizar seguridad de tipos
-type PaletteColorKey = 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
+type ButtonPaletteKey = keyof typeof import('../../../../../Theme/Theme').theme.palette.button;
 
-export const StyledGhostButton = styled(Button, {shouldForwardProp: (prop) => prop !== 'colorType',})<{colorType?: PaletteColorKey;}>(({ theme, colorType = 'primary' }) => {
-	const color = theme.palette[colorType];
+export const StyledGhostButton = styled(Button, {
+	shouldForwardProp: (prop) => prop !== 'colorType',
+})<{
+	colorType?: ButtonPaletteKey;
+}>(({ theme, colorType = 'primary' }) => {
+	const buttonPalette = theme.palette.button?.[colorType];
+
+	if (!buttonPalette) {
+		console.warn(`GhostButton: colorType "${colorType}" is not defined in theme.palette.button.`);
+	}
 
 	return {
 		backgroundColor: 'transparent',
-		color: color.main,
+		color: buttonPalette?.background,
 		fontWeight: 500,
 		textTransform: 'none',
 		border: 'none',
@@ -18,11 +25,11 @@ export const StyledGhostButton = styled(Button, {shouldForwardProp: (prop) => pr
 		minWidth: 0,
 
 		'&:hover': {
-			backgroundColor: theme.palette.action.hover,
-			textDecoration: 'underline',
+			backgroundColor: buttonPalette?.hover,
+			color: buttonPalette?.text,
 		},
 		'&:focus': {
-			outline: `2px solid ${color.main}`,
+			outline: `2px solid ${buttonPalette?.background}`,
 			outlineOffset: '2px',
 		},
 	};

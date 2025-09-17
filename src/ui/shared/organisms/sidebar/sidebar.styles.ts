@@ -8,8 +8,9 @@ const variantStyles = (variant: SidebarVariant, theme: any) => {
 	switch (variant) {
 		case 'primary':
 			return {
-			background: theme.palette.primary.dark,
-			color: theme.palette.primary.contrastText,
+			background: theme.customColors.gradients.lavenderBloom,
+			color: theme.palette.common.white,
+			boxShadow: theme.shadows[3],
 		};
 		case 'surface':
 			return {
@@ -32,11 +33,13 @@ const variantStyles = (variant: SidebarVariant, theme: any) => {
 		};
 		default:
 			return {
-			background: theme.palette.sidebar?.background ?? theme.palette.grey[100],
-			color: theme.palette.sidebar?.text ?? theme.palette.text.primary,
+			background: theme.palette.background.paper,
+			color: theme.palette.text.primary,
+			borderRight: `1px solid ${theme.palette.divider}`,
 		};
 	}
 };
+
 
 export const SidebarContainer = styled('nav', {
 	shouldForwardProp: (prop) =>
@@ -57,27 +60,42 @@ export const SidebarContainer = styled('nav', {
 	flexDirection: 'column',
 	borderRadius: radius.sm4x,
 	transition: 'transform 0.3s ease',
-	overflowX   : 'hidden',
+	overflowX: 'hidden',
 	...variantStyles(variant, theme),
 
-	// ▸ Desktop — left fixed o sticky
 	...(sticky
 		? {
-			position: 'sticky', top: `calc( ${theme.spacing(0)})`, maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing( 4,)})`, overflowY: 'auto', } : { position: 'fixed', top: 0, [position]: 0, height: '100vh',
-			}),
+			position: 'sticky',
+			top: `calc(${theme.spacing(0)})`,
+			maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(4)})`,
+			overflowY: 'auto',
+		}
+			: { position: 'fixed', top: 0, [position]: 0, height: '100vh' }),
 
-			// ▸ Mobile: slide-in/out
+			// Mobile: slide-in/out
 			[mq('sm', 'max')]: {
 				position: 'fixed',
 				top: 0,
 				[position]: 0,
 				height: '100vh',
-				transform:
-					open ? 'translateX(0)' : `translateX(${position === 'left' ? '-100%' : '100%'})`,
-				zIndex: 1300,
-				boxShadow: theme.shadows[3],
+				transform: open
+					? 'translateX(0)'
+					: `translateX(${position === 'left' ? '-100%' : '100%'})`,
+					zIndex: 1300,
+					boxShadow: theme.shadows[3],
+			},
+
+			// ✅ Medium screens: shrink sidebar
+			[theme.breakpoints.between('sm', 'md')]: {
+				width: '180px', // instead of 220px
+			},
+
+			// ✅ Large screens: full width
+			[theme.breakpoints.up('md')]: {
+				width: typeof width === 'number' ? `${width}px` : width,
 			},
 }));
+
 
 export const SidebarContent = styled('div')({
 	flexGrow: 1,

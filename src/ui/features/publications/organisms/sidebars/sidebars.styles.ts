@@ -8,13 +8,13 @@ import { padding } from '../../../../../Theme/tokens/padding';
 
 export const SidebarContainer = styled('aside')(({ theme }) => ({
 	boxSizing: 'border-box',
-	padding: padding.px4, // ← token reutilizable
+	padding: padding.px4,
 	background: colors.brand.tertiary[600],
-	borderRadius: radius.md, // reemplazamos `theme.shape.borderRadius * 2`
-	boxShadow: shadows.sm,   // personalizado desde tokens
-	alignSelf: 'flex-start',
+	borderRadius: radius.md,
+	boxShadow: shadows.sm,
+	height: '100%',               // ✅ stretch to fill grid row
 	position: 'sticky',
-	maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(4)})`,
+	top: theme.mixins.toolbar.minHeight,
 	overflowY: 'auto',
 	overflowX: 'hidden',
 
@@ -22,12 +22,14 @@ export const SidebarContainer = styled('aside')(({ theme }) => ({
 		position: 'static',
 		width: '100%',
 		marginBottom: padding.px4,
+		height: 'auto',             // ✅ only collapse naturally on mobile
 	},
 
 	[mq('sm', 'min')]: {
-		width: 220,
+		width: 200,
 	},
 }));
+
 
 export const FilterTitle = styled('h3')(() => ({
 	fontSize: '1.125rem', // ≈ 18px
@@ -55,14 +57,19 @@ export const FilterButton = styled('button')<{ active: boolean }>(({ active }) =
 }));
 
 export const sidebarSX: SxProps<Theme> = {
-	display: { xs: 'none', sm: 'block' },
+	display: { xs: 'none', sm: 'flex' },
+	height: '100%',   // ✅ stretch with grid
+	justifyContent: 'center', // ✅ center horizontally
 	position: 'sticky',
-	top: t => `calc(${t.mixins.toolbar.minHeight}px + ${t.spacing(2)})`,
-	maxHeight: t => `calc(100vh - ${t.mixins.toolbar.minHeight}px - ${t.spacing(4)})`,
+	top: t => t.mixins.toolbar.minHeight,
+	maxHeight: t => `calc(100vh - ${t.mixins.toolbar.minHeight}px)`,
 	overflowY: 'auto',
 	p: 2.5,
 	borderRadius: radius.sm4x,
-	bgcolor: colors.uatf.darkBlue,
+	bgcolor: t => t.palette.common.white,
+	background: t => t.customColors.gradients.lavenderBloom,
 	boxShadow: shadows.sm,
-	overflowX: 'hidden',// bloqueamos la barra
+	overflowX: 'hidden',
 };
+
+

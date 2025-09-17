@@ -23,7 +23,7 @@ const CreateHelpSidebar: React.FC<Props> = ({ open, onClose, onNew }) => {
 	useEffect(()=>{ fetchFaculties().catch(console.error); },[]);
 
 	return (
-		<Sidebar sticky width={220} open={open} onClose={onClose} variant="primary">
+		<Sidebar sticky  open={open} onClose={onClose} variant="primary">
 			<SmartBox>
 				<FilledButton
 					colorType="warning"

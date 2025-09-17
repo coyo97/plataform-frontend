@@ -13,7 +13,7 @@ export interface CareerSelectorProps {
 	helperText? : string;
 	disabled?   : boolean;
 	required?   : boolean;
-	variant?: 'default' | 'transparent';
+	variant?: 'default' | 'transparent' | 'filled';
 	dropdownMode?  : 'overlay' | 'inline';   // ← nuevo (default: overlay)
 }
 

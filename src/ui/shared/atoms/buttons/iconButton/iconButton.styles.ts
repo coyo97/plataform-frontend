@@ -3,7 +3,7 @@ import IconButton from '@mui/material/IconButton';
 import mq from '../../../../../config/mq';
 import { IconButtonProps } from './IconButton.types';
 
-type PaletteKey = 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
+type PaletteKey = 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning' | 'accent';
 
 const shouldForwardProp = (prop: PropertyKey) =>
 	!['colorType', 'sizeType', 'shape'].includes(prop as string);

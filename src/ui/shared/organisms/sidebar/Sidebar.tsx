@@ -9,7 +9,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 	open = true,
 	onClose,
 	sticky = false,
-	width = 250,
+	width = 180,
 	variant = 'default',
 	header,
 	footer,
@@ -23,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 		},
 		[onClose],
 	);
+	console.log("Sidebar variant:", variant);
 
 	useEffect(() => {
 		document.addEventListener('keydown', escListener);

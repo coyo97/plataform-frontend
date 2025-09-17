@@ -61,7 +61,7 @@ const CareerSelector: React.FC<CareerSelectorProps> = ({
 					aria-expanded={open}
 					$variant={variant}
 				>
-					<Text sx={{ color: '#FFD700' }}>
+					<Text>
 						{selected?.name || placeholder}
 					</Text>
 

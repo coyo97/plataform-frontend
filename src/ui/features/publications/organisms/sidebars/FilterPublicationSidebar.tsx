@@ -32,11 +32,10 @@ const FilterPublicationSidebar: React.FC<Props> = ({
 }) => (
 	<Sidebar
 		sticky
-		width={220}
 		//header={<SectionTitle>Filtrar publicaciones</SectionTitle>}
 		open={open}
 		onClose={onClose}
-		variant="flat"
+		variant="primary"
 	>
 		<SmartBox column style={{ gap: '12px' }}>
 			{/* ── Filtrado por carrera ─────────────────────────── */}

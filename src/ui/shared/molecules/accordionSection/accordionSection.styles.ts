@@ -1,24 +1,33 @@
 import { styled } from '@mui/material/styles';
 import MuiAccordion from '@mui/material/Accordion';
 
-export const CleanAccordion = styled(MuiAccordion)(({ theme }) => ({
-	background: 'transparent',
-	boxShadow : 'none',
-	border    : '1px solid #FFD700', // ← borde dorado
-	borderRadius: theme.shape.borderRadius, // opcional
-with: '100%',
-	padding: '0px 0px',
+export const CleanAccordion = styled(MuiAccordion)<{ $variant?: 'default' | 'transparent' }>(
+	({ theme, $variant = 'default' }) => {
+		const palette = theme.palette.accordion[$variant];
 
-	'&:before': { display: 'none' },
+		return {
+			background: palette.background,
+			boxShadow: 'none',
+			border: `1px solid ${palette.border}`,
+			borderRadius: theme.shape.borderRadius,
+			width: '100%',
+			padding: 0,
 
-'& .MuiAccordionSummary-root': {
-	padding: '0px 8px',
-	minHeight  : 40,                    // igual al SelectBox aprox
-	alignItems : 'center',             // centra verticalmente
-},
+			'&:before': { display: 'none' },
 
-	'& .MuiAccordionDetails-root': {
-		padding: theme.spacing(0.5, 1, 1),
-	},
-}));
+			'& .MuiAccordionSummary-root': {
+				padding: '0px 8px',
+				minHeight: 40,
+				alignItems: 'center',
+				color: palette.summaryText,
+				'&:hover': { backgroundColor: palette.hover },
+			},
+
+			'& .MuiAccordionDetails-root': {
+				padding: theme.spacing(0.5, 1, 1),
+				background: palette.detailsBackground,
+			},
+		};
+	}
+);
 

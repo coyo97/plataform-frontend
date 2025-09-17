@@ -14,9 +14,9 @@ import DateTimeInfo from '../../../shared/atoms/dateTime/DateTimeInfo';
 
 import { get }            from '../../../../async/api';            // helper que ya usas
 import getEnvVariables    from '../../../../config/configEnvs';
-const { HOST, SERVICE } = getEnvVariables();
 import DashboardCard from './DashboardCard';
 
+const { HOST, SERVICE } = getEnvVariables();
 
 /* ---------- tipos locales ---------- */
 interface User {

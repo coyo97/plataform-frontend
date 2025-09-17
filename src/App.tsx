@@ -37,6 +37,8 @@ import HomeProfilePage from './ui/features/profile/HomeProfile.page';
 import PublicationDetail from './ui/features/publications/pages/publications/PublicationDetail';
 import AcademicHelpDetailPage from './ui/features/academicHelp/pages/AcademicHelpDetail.page';
 import HomeAcademicHelp from './ui/features/academicHelp/HomeAcademicHelp.page';
+import Test from './ui/features/test/Test';
+import HomeTest from './ui/features/test/HomeTest';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -79,6 +81,7 @@ function App() {
 							<Route path="/stream-academi" element={<ProtectedRoute element={<HomeStreamPage />} />} />
 							<Route path="/academic-help" element={<ProtectedRoute element={<HomeAcademicHelp />} />} />
 							<Route path="/academic-help/:helpId" element={<ProtectedRoute element={<AcademicHelpDetailPage />} />} />
+							<Route path="/test" element={<HomeTest/>}/>
 
 							<Route path="/publications" element={<ProtectedRoute element={<HomePublications />} />} />
   <Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />

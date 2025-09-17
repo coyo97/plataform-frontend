@@ -12,3 +12,4 @@ const GhostButton: React.FC<GhostButtonProps> = ({ label, colorType = 'primary',
 
 export default GhostButton;
 
+

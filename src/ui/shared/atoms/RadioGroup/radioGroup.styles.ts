@@ -36,7 +36,7 @@ export const StyledOption = styled('label')<{ disabled?: boolean; variant: strin
 
 	'&[data-checked=true]': {
 		borderColor: colors.brand.primary[500], 
-		backgroundColor: colors.brand.primary[25], 
+		backgroundColor: colors.brand.primary[50] 
 	},
 
 	...(variant === 'segmented' && {
