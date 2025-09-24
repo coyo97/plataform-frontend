@@ -7,6 +7,7 @@ const GridContainer: React.FC<GridContainerProps> = ({
 	 columns,
 	children,
 	className,
+	style,
 }) => {
 	const settings = gridSettings[variant];
 
@@ -14,14 +15,15 @@ const GridContainer: React.FC<GridContainerProps> = ({
 		<div
 			className={className}
 			style={{
-				maxWidth: settings.containerWidth,
-				margin: `0 auto`,
-				paddingLeft: settings.marginX,
-				paddingRight: settings.marginX,
-				display: 'flex',
-				flexWrap: 'wrap',
-				gap: `${settings.gutter}px`,
-				boxSizing: 'border-box',
+    maxWidth: `${settings.containerWidth}px`,
+    margin: `0 auto`,
+    paddingLeft: settings.marginX,
+    paddingRight: settings.marginX,
+    display: 'grid',
+    gridTemplateColumns: `repeat(${settings.columns}, minmax(0, 1fr))`, // ✅
+    gap: `${settings.gutter}px`,
+    boxSizing: 'border-box',
+    ...style,
 			}}
 		>
 			{children}

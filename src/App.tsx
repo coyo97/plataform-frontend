@@ -39,6 +39,7 @@ import AcademicHelpDetailPage from './ui/features/academicHelp/pages/AcademicHel
 import HomeAcademicHelp from './ui/features/academicHelp/HomeAcademicHelp.page';
 import Test from './ui/features/test/Test';
 import HomeTest from './ui/features/test/HomeTest';
+import HomeOverlay from './ui/shared/organisms/SearchOverlay/HomeOverlay';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -84,7 +85,7 @@ function App() {
 							<Route path="/test" element={<HomeTest/>}/>
 
 							<Route path="/publications" element={<ProtectedRoute element={<HomePublications />} />} />
-  <Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />
+							<Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />
 
 							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} />} />
 							<Route path="/profile/:id" element={<ProtectedRoute element={<AuthorProfile />} />} />
@@ -92,6 +93,7 @@ function App() {
 
 							<Route path="/material-user" element={<ProtectedRoute element={<UserMaterials />} />} />
 							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} />} />
+							<Route path="/plataform/search" element={<HomeOverlay/>} />
 
 							<Route
 								path="/administrator/*"

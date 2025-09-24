@@ -63,6 +63,14 @@ export const fetchPublicationById = async (id: string): Promise<Publication> => 
 	return publication;
 };
 
+export const searchPublications = async (q: string): Promise<Publication[]> => {
+  const { publications } = await get<{ publications: Publication[] }>(
+    url(R.PUB_SEARCH(q)), // define este en publicationRoutes
+    { q }
+  );
+  return publications;
+};
+
 export const createPublication = async (fd: FormData): Promise<Publication> => {
 	const { publication } = await post<{ publication: Publication }>(
 		url(R.PUBS),

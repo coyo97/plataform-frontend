@@ -26,7 +26,7 @@ const PublicationsLayout: React.FC<{ children: React.ReactNode }> = ({ children 
       px: 2,
 
       // Space below toolbar
-      paddingTop: 5,
+	  paddingTop: 11
     }}
   >
     {children}

@@ -42,12 +42,12 @@ declare module '@mui/material/styles' {
 		focus: string;
 	};
 	interface AccordionPalette {
-  border: string;
-  background: string;
-  summaryText: string;
-  detailsBackground: string;
-  hover: string;
-}
+		border: string;
+		background: string;
+		summaryText: string;
+		detailsBackground: string;
+		hover: string;
+	}
 
 
 	interface Palette {
@@ -82,10 +82,22 @@ declare module '@mui/material/styles' {
 			error: SelectorPalette;
 			disabled: SelectorPalette;
 		};
-		  accordion: {
-    default: AccordionPalette;
-    transparent: AccordionPalette;
-  };
+		accordion: {
+			default: AccordionPalette;
+			transparent: AccordionPalette;
+		};
+		header: {
+			surface: {
+				background: string;
+				text: string;
+				accent: string;
+			};
+			dark: {
+				background: string;
+				text: string;
+				accent: string;
+			};
+		};
 	}
 
 	interface PaletteOptions {
@@ -112,10 +124,10 @@ declare module '@mui/material/styles' {
 			error: SelectorPalette;
 			disabled: SelectorPalette;
 		};
-		  accordion?: {
-    default: AccordionPalette;
-    transparent: AccordionPalette;
-  };
+		accordion?: {
+			default: AccordionPalette;
+			transparent: AccordionPalette;
+		};
 		button?: Partial<{
 			primary: ButtonPalette;
 			secondary: ButtonPalette;
@@ -124,6 +136,18 @@ declare module '@mui/material/styles' {
 			warning: ButtonPalette;
 			accent: ButtonPalette;
 		}>;
+		header?: {
+			surface: {
+				background: string;
+				text: string;
+				accent: string;
+			};
+			dark: {
+				background: string;
+				text: string;
+				accent: string;
+			};
+		};
 	}
 
 	interface BreakpointOverrides {
@@ -274,22 +298,33 @@ const theme = createTheme({
 			},
 		},
 		accordion: {
-  default: {
-    border: colors.neutral.graySoft[300],
-    background: colors.neutral.white[900],
-    summaryText: colors.neutral.graySoft[900],
-    detailsBackground: colors.neutral.graySoft[50],
-    hover: colors.neutral.graySoft[100],
-  },
-  transparent: {
-    border: colors.brand.secondary[400],      // teal border
-    background: 'transparent',
-    summaryText: colors.uatf.yellow,          // gold text
-    detailsBackground: 'transparent',
-    hover: 'rgba(255, 255, 255, 0.08)',
-  },
-},
-
+			default: {
+				border: colors.neutral.graySoft[300],
+				background: colors.neutral.white[900],
+				summaryText: colors.neutral.graySoft[900],
+				detailsBackground: colors.neutral.graySoft[50],
+				hover: colors.neutral.graySoft[100],
+			},
+			transparent: {
+				border: colors.brand.secondary[400],      // teal border
+				background: 'transparent',
+				summaryText: colors.uatf.yellow,          // gold text
+				detailsBackground: 'transparent',
+				hover: 'rgba(255, 255, 255, 0.08)',
+			},
+		},
+		header: {
+			surface: {
+				background: colors.neutral.white[900],
+				text: colors.neutral.graySoft[900],
+				accent: colors.brand.secondary[500], // teal moderno
+			},
+			dark: {
+				background: colors.neutral.grayStrongDark[800],
+				text: colors.neutral.white[900],
+				accent: colors.brand.secondary[400], // teal claro
+			},
+		},
 		divider: colors.neutral.graySoft[200],
 		action: {
 			hover: colors.neutral.graySoft[100],

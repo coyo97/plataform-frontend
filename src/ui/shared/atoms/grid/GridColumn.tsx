@@ -1,6 +1,6 @@
 import React from 'react';
 import { GridColumnProps } from './grid.types';
-import { getColumnWidth, gridSettings } from './grid.helpers';
+import { getColumnWidth, gridSettings, getColumnSpan } from './grid.helpers';
 
 const GridColumn: React.FC<GridColumnProps> = ({
 	span = 1,
@@ -10,7 +10,8 @@ const GridColumn: React.FC<GridColumnProps> = ({
 }) => {
 	// Se puede mejorar para aceptar breakpoints, por ahora usaremos 'mobile'
 	const variant = 'mobile';
-	const style = getColumnWidth(span, variant);
+	//const style = getColumnWidth(span, variant);
+	const style = getColumnSpan(span);
 
 	return React.createElement(
 				as,

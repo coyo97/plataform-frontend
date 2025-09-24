@@ -1,6 +1,6 @@
 export type GridVariant = 'mobile' | 'tablet' | 'desktopFixed' | 'desktopFluid' | 'vertical';  
 
-export interface GridContainerProps {
+export interface GridContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 	variant?: GridVariant;
 	children: React.ReactNode;
 	className?: string;

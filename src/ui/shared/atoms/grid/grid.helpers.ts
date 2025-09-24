@@ -45,3 +45,7 @@ export const getColumnWidth = (
 	};
 };
 
+export const getColumnSpan = (span: number): CSSProperties => ({
+  gridColumn: `span ${span}`,
+});
+

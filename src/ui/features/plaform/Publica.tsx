@@ -1,6 +1,5 @@
 // src/ui/components/platform/Publica.tsx
 import React from 'react';
-import Header from './Header';
 import FloatingChat from '../chat/FloatingChat';
 import StreamPreviewPanel from './sections/StreamPreviewPanel';
 import { Box } from '@mui/material';
@@ -9,11 +8,34 @@ import TopPostsPanel from './sections/TopPostsPanel';
 import NewMessagesPanel from './sections/NewMessagesPanel';
 import FriendRequestsPanel from './sections/FriendRequestsPanel';
 import mq from '../../../config/mq'; // media-query personalizado
+//import Header from './Header';
+
+import Header from '../../shared/organisms/header/Header';
+import Logo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
+import { NavLink, navLinks } from '../../../config/navLinks';
+import SearchInput from '../../shared/molecules/searchInput';
+import SearchOverlay from '../../shared/organisms/SearchOverlay/SearchOverlay';
+
 
 const Publica: React.FC = () => {
 	return (
 		<>
-			<Header />
+			<Header
+				logoSrc={Logo}
+				variant='gradient'
+				navLinks={navLinks}
+				userRole="student" // o "admi" dinámico según login
+				onLogout={() => console.log('Logout')}
+				onNotificationsClick={() => console.log('Abrir notificaciones')}
+				onAvatarClick={() => console.log('Abrir menú usuario')}
+				SearchComponent={
+					<SearchOverlay
+						onSearch={(q, cat) =>
+							console.log(`Buscar "${q}" en categoría "${cat}"`)
+						}
+					/>
+				}
+			/>
 			<Box sx={{ ...theme => theme.mixins.toolbar }} />
 			<FloatingChat />
 
