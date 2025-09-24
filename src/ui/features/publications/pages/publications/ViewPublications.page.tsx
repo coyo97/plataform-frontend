@@ -138,7 +138,11 @@ const ViewPublicationsPage: React.FC = () => {
 				}
 			/>
 
-			<GridContainer variant="desktopFluid" style={{ paddingTop: '88px' }}>
+			<GridContainer
+				variant="desktopFluid"
+				style={{ paddingTop: '88px' }}
+				columns={{ xs: 4, sm: 6, md: 12 }} // 👈 responsive grid
+			>
 				{/* ① CREATE – LEFT SIDEBAR */}
 				{isMobile ? (
 					<>
@@ -163,7 +167,7 @@ const ViewPublicationsPage: React.FC = () => {
 						</Dialog>
 					</>
 				) : (
-					<GridColumn span={3}>
+					<GridColumn span={{ sm: 2, md: 3 }}>
 						<CreatePublicationSidebar
 							open={createOpen}
 							onClose={() => setCreateOpen(false)}
@@ -173,7 +177,7 @@ const ViewPublicationsPage: React.FC = () => {
 				)}
 
 				{/* ② FEED (siempre) */}
-				<GridColumn span={6}>
+				<GridColumn span={{ xs: 4, sm: 4, md: 6 }}>
 					<PublicationsFeed
 						HOST={HOST}
 						list={pubs}
@@ -220,7 +224,7 @@ const ViewPublicationsPage: React.FC = () => {
 						</SwipeableDrawer>
 					</>
 				) : (
-					<GridColumn span={3}>
+					<GridColumn span={{ sm: 2, md: 3 }}>
 						<FilterPublicationSidebar
 							open={filterOpen}
 							onClose={() => setFilterOpen(false)}
@@ -244,6 +248,8 @@ const ViewPublicationsPage: React.FC = () => {
 			)}
 		</>
 	);
+
+
 
 };
 

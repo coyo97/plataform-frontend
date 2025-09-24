@@ -1,14 +1,28 @@
-export type GridVariant = 'mobile' | 'tablet' | 'desktopFixed' | 'desktopFluid' | 'vertical';  
+import { breakPoints } from '../../../../config/mq';
 
-export interface GridContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+export type GridVariant =
+	| 'mobile'
+| 'tablet'
+| 'desktopFixed'
+| 'desktopFluid'
+| 'vertical';
+
+// Usa los mismos labels que tienes en breakPoints.values
+export type BreakpointLabel = keyof typeof breakPoints.values;
+
+export interface GridContainerProps
+extends React.HTMLAttributes<HTMLDivElement> {
 	variant?: GridVariant;
 	children: React.ReactNode;
 	className?: string;
-	columns?: Partial<Record<'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl', number>>;
+	// número de columnas por breakpoint (opcional)
+	columns?: Partial<Record<BreakpointLabel, number>>;
 }
 
-export interface GridColumnProps {
-	span?: number; // Cuántas columnas ocupa
+export interface GridColumnProps
+extends React.HTMLAttributes<HTMLDivElement> {
+	// puede ser un número único o un mapa de breakpoints
+	span?: number | Partial<Record<BreakpointLabel, number>>;
 	children: React.ReactNode;
 	className?: string;
 	as?: keyof JSX.IntrinsicElements;
