@@ -1,25 +1,16 @@
-import React, { useState, SyntheticEvent } from 'react';
-import {
-	Box,
-	Tabs,
-	Tab,
-	Paper,
-	Typography,
-	Button,
-} from '@mui/material';
+// src/ui/features/dashboard/organisms/AcademicHelpTabbedPanel.tsx
+import React, { useMemo, useState, SyntheticEvent } from 'react';
+import { Box, Tabs, Tab, Paper, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-import AvatarX from '../../../shared/atoms/avatar/AvatarX';
 import Text from '../../../shared/atoms/typography/Text';
 import DateTimeInfo from '../../../shared/atoms/dateTime/DateTimeInfo';
-import HelpMeta from '../../academicHelp/molecules/HelpMeta';
 import HelpStatusBadge from '../../academicHelp/atoms/HelpStatusBadge';
-
 import { useHelpFeed } from '../../academicHelp/hook/useHelpFeed';
 import { AcademicHelp } from '../../../../types/academicHelp';
 import DashboardCard from './DashboardCard';
 
-type Req = 'concept_question'|'need_notes'|'need_exam'|'need_assignment';
+type Req = 'concept_question' | 'need_notes' | 'need_exam' | 'need_assignment';
 
 const labels: Record<Req, string> = {
 	concept_question: 'Preguntas',
@@ -28,25 +19,20 @@ const labels: Record<Req, string> = {
 	need_assignment: 'Tareas',
 };
 
-const reqOrder: Req[] = [
-	'concept_question',
-	'need_notes',
-	'need_exam',
-	'need_assignment',
-];
+const reqOrder: Req[] = ['concept_question', 'need_notes', 'need_exam', 'need_assignment'];
 
 const AcademicHelpTabbedPanel: React.FC = () => {
-	const navigate     = useNavigate();
+	const navigate = useNavigate();
 	const [tab, setTab] = useState(0);
-	const currentType  = reqOrder[tab];
+	const currentType = reqOrder[tab];
 
-	/* ① Hook SIN argumentos – desestructura `helps` */
 	const { helps = [], loading } = useHelpFeed();
 
-	/* ② Filtra por categoría */
-	const filtered = helps.filter(
-		h => (h as any).requestType === currentType,
+	const filtered = useMemo(
+		() => helps.filter(h => (h as any).requestType === currentType),
+		[helps, currentType],
 	);
+
 	const topRequests = filtered.slice(0, 3);
 
 	const handleTab = (_e: SyntheticEvent, newValue: number) => setTab(newValue);
@@ -55,10 +41,11 @@ const AcademicHelpTabbedPanel: React.FC = () => {
 		<DashboardCard>
 			<Box>
 				{/* Encabezado */}
-				<Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
-					<Typography variant="h6" fontWeight="bold">
+				<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+					<Text as="h3" headingLevel="h3" system="sans" colorKey="text.primary">
 						Ayuda académica
-					</Typography>
+					</Text>
+
 					<Button variant="text" size="small" onClick={() => navigate('/academic-help')}>
 						Ver todas
 					</Button>
@@ -71,62 +58,81 @@ const AcademicHelpTabbedPanel: React.FC = () => {
 					variant="scrollable"
 					scrollButtons
 					allowScrollButtonsMobile
-					sx={{ mb:2 }}
+					sx={{ mb: 2 }}
 				>
-					{reqOrder.map(r => <Tab key={r} label={labels[r]} />)}
+					{reqOrder.map((r, idx) => (
+						<Tab
+							key={r}
+							disableRipple
+							sx={{
+								textTransform: 'none',
+								minHeight: 40,
+								px: 1.5,
+							}}
+							label={
+								<Text
+									as="span"
+									size="sm"
+									weight={tab === idx ? 'bold' : 'medium'}
+									colorKey={tab === idx ? 'primary.main' : 'text.secondary'}
+								>
+									{labels[r]}
+								</Text>
+							}
+						/>
+					))}
 				</Tabs>
 
 				{/* Lista */}
 				{loading ? (
-					<Typography variant="body2">Cargando…</Typography>
+					<Text size="sm" colorKey="neutral.graySoft.600">
+						Cargando…
+					</Text>
 				) : !topRequests.length ? (
-					<Typography variant="body2">No hay solicitudes en esta categoría.</Typography>
+					<Text size="sm" colorKey="neutral.graySoft.600">
+						No hay solicitudes en esta categoría.
+					</Text>
 				) : (
 				topRequests.map((help: AcademicHelp) => {
-					const pic = help.user?.profile?.profilePicture;
-	//				const avatar = pic ? `${import.meta.env.VITE_API_URL}/${pic}` : undefined;
+					const pic = help.user?.profile?.profilePicture; 
+					const desc = help.description ?? '';
 
 					return (
 						<Paper
 							key={help._id}
-							sx={{ p:2, mb:2, cursor:'pointer' }}
+							sx={{ p: 2, mb: 2, cursor: 'pointer', borderRadius: 2 }}
 							elevation={1}
 							onClick={() => navigate(`/academic-help/${help._id}`)}
+							role="button"
 						>
 							{/* usuario + fecha */}
-							<Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
-								{//						<AvatarX src={avatar} size="sm" />
-								}
-								<Text weight="bold">{help.user?.username ?? 'Usuario'}</Text>
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+								<Text as="span" weight="bold" size="sm" colorKey="text.primary" system='sans'>
+									{help.user?.username ?? 'Usuario'}
+								</Text>
 								<DateTimeInfo timestamp={help.created_at} size="small" />
 							</Box>
 
 							{/* título */}
-							<Text size="sm" weight="bold" sx={{ mt:0.5 }}>
+							<Text
+								as="h4"
+								size="md"
+								weight="bold"
+								sx={{ mt: 0.5 }}
+								colorKey="text.primary"
+							>
 								{help.topic || '(Sin título)'}
 							</Text>
 
 							{/* descripción breve */}
-							{help.description && (
-								<Text size="sm" colorKey="neutral.black.600">
-									{help.description.slice(0, 100)}
-									{help.description.length > 100 && '…'}
+							{desc && (
+								<Text size="sm" colorKey="neutral.graySoft.700" sx={{ mt: 0.25, lineHeight: 1.5 }}>
+									{desc.length > 100 ? `${desc.slice(0, 100)}…` : desc}
 								</Text>
 							)}
 
-							{/* facultad / carrera / materia */}
-							<Box sx={{ mt:1 }}>
-								{/*						<HelpMeta
-														faculty={help.faculty?.name ?? ''}
-														career={help.career?.name ?? ''}
-														subject={help.subject?.name ?? ''}
-														semester={help.cycle?.number?.toString() ?? ''}
-														/>
-								  */}
-							</Box>
-
 							{/* estado */}
-							<Box sx={{ mt:1 }}>
+							<Box sx={{ mt: 1 }}>
 								<HelpStatusBadge status={help.status} />
 							</Box>
 						</Paper>

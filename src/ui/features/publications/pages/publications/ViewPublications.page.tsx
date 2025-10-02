@@ -141,7 +141,7 @@ const ViewPublicationsPage: React.FC = () => {
 			<GridContainer
 				variant="desktopFluid"
 				style={{ paddingTop: '88px' }}
-				columns={{ xs: 4, sm: 6, md: 12 }} // 👈 responsive grid
+				columns={{ xs: 4, sm: 8, md: 12 }} 
 			>
 				{/* ① CREATE – LEFT SIDEBAR */}
 				{isMobile ? (

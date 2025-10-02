@@ -2,14 +2,11 @@
 import { get, put }           from '../api';
 import * as R                 from '../routes/profileRoutes';
 import getEnvVariables        from '../../config/configEnvs';
-import type { UserProfile }   from '../../types/profile';   // crea este tipo si no existe
+import type { UserProfile }   from '../../types/profile';   
 
 const { HOST, SERVICE } = getEnvVariables();
 const url = (p: string) => `${HOST}${SERVICE}${p}`;
 
-/* ────────────────────────────────────────────
-   Caché simple (opcional, TTL 5 min)
-   ──────────────────────────────────────────── */
 type CacheEntry = { data: unknown; expiry: number };
 const CACHE  = new Map<string, CacheEntry>();
 const TTL_MS = 5 * 60 * 1_000;
@@ -24,9 +21,6 @@ const write = (k: string, d: unknown) =>
 	CACHE.set(k, { data: d, expiry: Date.now() + TTL_MS });
 const clear = () => CACHE.clear();
 
-/* ────────────────────────────────────────────
-   Queries
-   ──────────────────────────────────────────── */
 export const fetchMyProfile = async (): Promise<UserProfile> => {
 	const k = 'my_profile';
 	const c = read<UserProfile>(k);
@@ -40,9 +34,7 @@ export const fetchMyProfile = async (): Promise<UserProfile> => {
 export const fetchProfileById = async (id: string): Promise<UserProfile> =>
 	get<UserProfile>(url(R.PROFILE_BY_ID(id)), {});
 
-	/* ────────────────────────────────────────────
-	   Mutations (si cambian datos => clear cache)
-	   ──────────────────────────────────────────── */
+	   //Mutations (si cambian datos => clear cache)
 export const updateMyProfile = (fd: FormData) =>
 	put<UserProfile>(url(R.PROFILE), fd, true).finally(clear);
 

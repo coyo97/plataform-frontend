@@ -18,7 +18,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Notifications from '../../../features/centerAlert/Notifications'; // 
-import { logout, getUserRole } from '../../../../utils/auth/getUserId'; // 
+import { logout } from '../../../../utils/auth/getUserId';
 
 import { HeaderProps } from './header.types';
 import { HeaderContainer, NavSection, ActionsSection, Logo, HeaderVariant, HamburgerButton, LeftSlot } from './header.styles';
@@ -40,7 +40,6 @@ const Header: React.FC<HeaderProps> = ({
 	const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
 	const [userAnchor, setUserAnchor] = useState<null | HTMLElement>(null);
 
-	userRole = getUserRole();
 
 	/* Cerrar drawer al ensanchar pantalla ≥ 600 px */
 	useEffect(() => {
@@ -78,7 +77,6 @@ const Header: React.FC<HeaderProps> = ({
 				{/* CENTRO: Links */}
 				<NavSection>
 					{navLinks
-						.filter(link => !link.adminOnly || userRole === 'admi')
 						.map(({ label, to, icon: Icon }) => (
 							<Box key={label} component={RouterLink} to={to}>
 								<Icon />

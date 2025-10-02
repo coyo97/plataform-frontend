@@ -6,6 +6,7 @@
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@fontsource/allerta-stencil": "^5.0.19",
+    "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/inter": "^5.0.19",
     "@fontsource/poppins": "^5.0.14",
     "@fontsource/quicksand": "^5.0.18",

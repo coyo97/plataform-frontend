@@ -15,16 +15,19 @@ import Logo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Fr�
 import { NavLink, navLinks } from '../../../config/navLinks';
 import SearchInput from '../../shared/molecules/searchInput';
 import SearchOverlay from '../../shared/organisms/SearchOverlay/SearchOverlay';
+import { userHasAdminRole } from '../../../utils/auth/getUserId';
 
 
 const Publica: React.FC = () => {
+	const hasAdmin = userHasAdminRole();
+	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
 	return (
 		<>
 			<Header
 				logoSrc={Logo}
 				variant='gradient'
-				navLinks={navLinks}
-				userRole="student" // o "admi" dinámico según login
+				navLinks={visibleLinks}
+				userRole={hasAdmin ? 'admi' : 'student'}
 				onLogout={() => console.log('Logout')}
 				onNotificationsClick={() => console.log('Abrir notificaciones')}
 				onAvatarClick={() => console.log('Abrir menú usuario')}

@@ -16,11 +16,11 @@ const getHeaders = (): Headers => {
 
 const buildOptions = (payload: Payload, method: HttpMethod, isFile: boolean,): RequestInit => {
 	const headers = getHeaders();          // ← siempre calculamos Auth
-	if (isFile) delete headers['Content-Type'];   // ⤴︎ quitamos solo el Content-Type
+	if (isFile) delete headers['Content-Type'];   // quitamos solo el Content-Type
 
 	const options: RequestInit = {
 		method,
-		headers,                             // ← ya incluye Authorization
+		headers,                             // ya incluye Authorization
 	};
 
 	if (method === 'POST' || method === 'PUT') {

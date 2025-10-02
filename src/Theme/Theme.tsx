@@ -2,17 +2,19 @@
 import React, { ReactNode } from 'react';
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
 import { colors } from './tokens/colors';
-import '@fontsource/inter/400.css';
-import '@fontsource/allerta-stencil/400.css';
-import '@fontsource/quicksand';
-import '@fontsource/poppins';
+import poppins400 from '../assets/fonts/Poppins-Regular.ttf';
+import inter400 from '../assets/fonts/Inter-Regular.ttf';
+import allertaStencil400 from '../assets/fonts/AllertaStencil-Regular.ttf';
+import alatsi400 from '../assets/fonts/Alatsi-Regular.ttf';
+
+import dmSans400 from '../assets/fonts/DMSans-Regular.ttf';
+import dmSans500 from '../assets/fonts/DMSans-Medium.ttf';
 import { shadows as customShadows } from './tokens/shadows';
 import { radius } from './tokens/radius';
 import { padding } from './tokens/padding';
 import { values } from './tokens/values';
 import typographyTokens from './tokens/typography';
 
-/* -------------------- Types -------------------- */
 declare module '@mui/material/styles' {
 	interface Theme {
 		customColors: typeof colors;
@@ -155,30 +157,69 @@ declare module '@mui/material/styles' {
 	}
 }
 
-/* -------------------- Theme -------------------- */
+const tt = typographyTokens; 
+
 const theme = createTheme({
 	typography: {
-		fontFamily: ['Inter', 'Poppins', 'Allerta Stencil', 'DM Sans', 'Alatsi'].join(','),
-	},
-	shape: {
-		borderRadius: parseInt(radius.sm4x), // 8px como valor base global
+		fontFamily: ['Inter', 'Poppins', 'Allerta Stencil', 'DM Sans', 'Alatsi', 'sans-serif'].join(','),
+
+		h1: {
+			fontFamily: tt.heading.h1.sans.semiBold.fontFamily,
+			fontWeight: tt.heading.h1.sans.semiBold.fontWeight,
+			fontSize:   tt.heading.h1.sans.semiBold.fontSize,
+			lineHeight: tt.heading.h1.sans.semiBold.lineHeight,
+			letterSpacing: 0,
+		},
+		h2: {
+			fontFamily: tt.heading.h2.sans.semiBold.fontFamily,
+			fontWeight: tt.heading.h2.sans.semiBold.fontWeight,
+			fontSize:   tt.heading.h2.sans.semiBold.fontSize,
+			lineHeight: tt.heading.h2.sans.semiBold.lineHeight,
+			letterSpacing: 0,
+		},
+		h3: {
+			fontFamily: tt.heading.h3.sans.regular.fontFamily,
+			fontWeight: tt.heading.h3.sans.regular.fontWeight,
+			fontSize:   tt.heading.h3.sans.regular.fontSize,
+			lineHeight: tt.heading.h3.sans.regular.lineHeight,
+			letterSpacing: 0,
+		},
+
+		subtitle1: {
+			fontFamily: tt.display.lg.sans.medium.fontFamily,
+			fontWeight: tt.display.lg.sans.medium.fontWeight,
+			fontSize:   tt.display.lg.sans.medium.fontSize,
+			lineHeight: tt.display.lg.sans.medium.lineHeight,
+		},
+		subtitle2: {
+			fontFamily: tt.display.xl.sans.medium.fontFamily,
+			fontWeight: tt.display.xl.sans.medium.fontWeight,
+			fontSize:   tt.display.xl.sans.medium.fontSize,
+			lineHeight: tt.display.xl.sans.medium.lineHeight,
+		},
+
+		body1: { fontSize: tt.sizes.md, fontWeight: tt.weights.regular, lineHeight: 1.6 },
+		body2: { fontSize: tt.sizes.sm, fontWeight: tt.weights.regular, lineHeight: 1.6 },
+		button:{ fontSize: tt.sizes.sm, fontWeight: tt.weights.medium, textTransform: 'none' },
+		caption:{ fontSize: tt.sizes.xs, lineHeight: 1.4 },
+		overline:{ fontSize: tt.sizes.xs, lineHeight: 1.4, textTransform: 'uppercase', letterSpacing: '.06em' },
 	},
 	typographyTokens,
 	palette: {
 		primary: {
-			main: colors.brand.secondary[500],   // ✅ Teal → CTA (contrast with violet sidebar)
+			main: colors.brand.secondary[500],   
 			light: colors.brand.secondary[300],
 			dark: colors.brand.secondary[700],
 			contrastText: colors.neutral.white[900],
 		},
 		secondary: {
-			main: colors.brand.tertiary[500],    // ✅ Amber → secondary actions
+			main: colors.brand.tertiary[500],   
 			light: colors.brand.tertiary[300],
 			dark: colors.brand.tertiary[700],
 			contrastText: colors.neutral.black[900],
 		},
 		accent: {
-			main: colors.brand.primary[500],     // ✅ Violet → highlight / special
+			main: colors.brand.primary[500],   
 			light: colors.brand.primary[300],
 			dark: colors.brand.primary[700],
 			contrastText: colors.neutral.white[900],
@@ -203,8 +244,8 @@ const theme = createTheme({
 		},
 
 		background: {
-			default: colors.neutral.graySoft[50],  // page bg
-			paper: colors.neutral.white[900],      // cards/surfaces
+			default: colors.neutral.graySoft[50],
+			paper: colors.neutral.white[900],   
 		},
 		text: {
 			primary: colors.neutral.graySoft[900],
@@ -216,8 +257,8 @@ const theme = createTheme({
 			main: colors.neutral.graySoft[50],
 		},
 		colorButton: {
-			main: colors.brand.secondary[500],     // sync with new primary
-			second: colors.brand.tertiary[500],    // sync with new secondary
+			main: colors.brand.secondary[500], 
+			second: colors.brand.tertiary[500],
 		},
 		sidebar: {
 			background: colors.neutral.grayStrongDark[900],
@@ -227,7 +268,6 @@ const theme = createTheme({
 			accent: colors.brand.secondary[400],
 		},
 
-		// 🎨 Centralized button tokens
 		button: {
 			primary: {
 				background: colors.brand.secondary[500],
@@ -293,8 +333,8 @@ const theme = createTheme({
 				border: colors.neutral.graySoft[200],
 				background: colors.neutral.graySoft[50],
 				text: colors.neutral.graySoft[400],
-				hover: colors.neutral.graySoft[50],   // stays same on hover
-				focus: colors.neutral.graySoft[200],  // subtle focus
+				hover: colors.neutral.graySoft[50],   
+				focus: colors.neutral.graySoft[200], 
 			},
 		},
 		accordion: {
@@ -306,9 +346,9 @@ const theme = createTheme({
 				hover: colors.neutral.graySoft[100],
 			},
 			transparent: {
-				border: colors.brand.secondary[400],      // teal border
+				border: colors.brand.secondary[400],
 				background: 'transparent',
-				summaryText: colors.uatf.yellow,          // gold text
+				summaryText: colors.uatf.yellow,   
 				detailsBackground: 'transparent',
 				hover: 'rgba(255, 255, 255, 0.08)',
 			},
@@ -317,12 +357,12 @@ const theme = createTheme({
 			surface: {
 				background: colors.neutral.white[900],
 				text: colors.neutral.graySoft[900],
-				accent: colors.brand.secondary[500], // teal moderno
+				accent: colors.brand.secondary[500],
 			},
 			dark: {
 				background: colors.neutral.grayStrongDark[800],
 				text: colors.neutral.white[900],
-				accent: colors.brand.secondary[400], // teal claro
+				accent: colors.brand.secondary[400],
 			},
 		},
 		divider: colors.neutral.graySoft[200],
@@ -342,14 +382,64 @@ const theme = createTheme({
 			xl: 1800,
 		},
 	},
-	components: {
-		MuiCssBaseline: {
-			styleOverrides: {
-				body: { fontFamily: 'Poppins, sans-serif' },
-				'h1, h2, h3, h4, h5, h6': { margin: 0, padding: 0 },
-			},
-		},
-	},
+components: {
+  MuiCssBaseline: {
+    styleOverrides: `
+      @font-face {
+        font-family: 'DM Sans';
+        src: url('${dmSans400}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'DM Sans';
+        src: url('${dmSans500}') format('truetype');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: 'Poppins';
+        src: url('${poppins400}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        src: url('${inter400}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: 'Allerta Stencil';
+        src: url('${allertaStencil400}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: 'Alatsi';
+        src: url('${alatsi400}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+	  }
+
+	  body { font-family: Poppins, 'DM Sans', Inter, 'Allerta Stencil', Alatsi, sans-serif; }
+
+	  h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0; }
+	  `,
+  },
+},
+	
+
 
 	shadows: [
 		'none',

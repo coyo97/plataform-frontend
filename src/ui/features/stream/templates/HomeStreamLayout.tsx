@@ -1,29 +1,37 @@
 import React, { useState } from 'react';
 import {
-	Box,
 	FormControl,
 	InputLabel,
 	MenuItem,
 	Select,
 	SelectChangeEvent,
 	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 
 import MenuIcon from '@mui/icons-material/Menu';
 
-import SmartBox          from '../../../shared/atoms/box/SmartBox';
-import Sidebar           from '../../../shared/organisms/sidebar/Sidebar';
-import SectionTitle      from '../../../shared/atoms/titles/SectionTitle';
-import StreamCreateForm  from '../organisms/StreamCreateForm';
-import StreamList        from '../organisms/StreamList';
-import type { Stream }   from '../../../../types/stream';
+import SectionTitle from '../../../shared/atoms/titles/SectionTitle';
+import StreamCreateForm from '../organisms/StreamCreateForm';
+import StreamList from '../organisms/StreamList';
+import type { Stream } from '../../../../types/stream';
 
-import { styles }        from './homeStreamLayout.styles';
+import { styles } from './homeStreamLayout.styles';
+
+import GridContainer from '../../../shared/atoms/grid/GridContainer';
+import GridColumn from '../../../shared/atoms/grid/GridColumn';
+import IconButton from '../../../shared/atoms/buttons/iconButton/IconButton';
+import Sidebar from '../../../shared/organisms/sidebar/Sidebar';
+import Header from '../../../shared/organisms/header/Header';
+import { NavLink, navLinks } from '../../../../config/navLinks';
+import Logo from '../../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
+import SearchOverlay from '../../../shared/organisms/SearchOverlay/SearchOverlay';
+
 
 interface LayoutProps {
-	children?: React.ReactNode;                 // <StreamActiveLayout/> cuando se está dentro
+	children?: React.ReactNode; // <StreamActiveLayout/> cuando se está dentro
 	onStreamCreated: (id: string, access?: string) => void;
-	onStreamSelected: (s: Stream) => void;      // ① NUEVO
+	onStreamSelected: (s: Stream) => void;
 }
 
 const HomeStreamLayout: React.FC<LayoutProps> = ({
@@ -32,80 +40,113 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 	onStreamSelected,
 }) => {
 	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-	/* ─ Sidebar (mobile) ─ */
+	/* ─ Sidebar ─ */
 	const [openSidebar, setOpenSidebar] = useState(false);
 
-	const hasChild = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
+	const hasChild = Array.isArray(children)
+		? children.some(Boolean)
+		: Boolean(children);
 
-	/* ─ Filtro de lista ─ */
-	const [filter, setFilter] = useState<'live' | 'ended' | 'all'>('live');
-	const handleFilterChange = (e: SelectChangeEvent) =>
-		setFilter(e.target.value as 'live' | 'ended' | 'all');
+		/* ─ Filtro de lista ─ */
+		const [filter, setFilter] = useState<'live' | 'ended' | 'all'>('live');
+		const handleFilterChange = (e: SelectChangeEvent) =>
+			setFilter(e.target.value as 'live' | 'ended' | 'all');
 
-	return (
-		<>
-			{/* Header superior */}
-			<Box sx={styles.headerBox(theme)}>
-				<Box sx={styles.headerInner}>
-					{/* Botón para abrir sidebar */}
-					<Box
-						component="button"
+		return (
+			<>
+							<Header
+				logoSrc={Logo}
+				variant="gradient"
+				navLinks={navLinks}
+				userRole="student" // o "admin" dinámico según login
+				onLogout={() => console.log('Logout')}
+				onNotificationsClick={() => console.log('Abrir notificaciones')}
+				onAvatarClick={() => console.log('Abrir menú usuario')}
+				SearchComponent={
+					<SearchOverlay
+						onSearch={(q, cat) =>
+							console.log(`Buscar "${q}" en categoría "${cat}"`)
+						}
+					/>
+				}
+			/>
+
+
+				{/* Botón hamburguesa (solo mobile) */}
+				{isMobile && (
+					<IconButton
+						ariaLabel="Abrir menú"
 						onClick={() => setOpenSidebar(true)}
 						sx={styles.menuButton(theme)}
 					>
 						<MenuIcon />
-					</Box>
+					</IconButton>
+				)}
 
-					<Box component="h2" sx={styles.headerTitle(theme)}>
-						STREAM ACADÉMICO
-					</Box>
-				</Box>
-			</Box>
-			{/* Contenedor general */}
-			<SmartBox row>
-				{/* 1️⃣ Sidebar */}
-				<Sidebar
-					open={openSidebar}
-					onClose={() => setOpenSidebar(false)}
-					width={320}
-					variant="flat"
-					sticky
-					position="left"
-					header={<SectionTitle>Crear nuevo stream</SectionTitle>}
-				>
-					<StreamCreateForm onStreamCreated={onStreamCreated} />
-				</Sidebar>
-
-				{/* 2️⃣ Zona central */}
-				<Box sx={styles.contentBox(theme)}>
-					{hasChild ? (
-						/* Stream activo (StreamActiveLayout) */
-						children
-					) : (
-					/* Lista + filtro */
-					<>
-						<FormControl size="small" sx={styles.formControl(theme)}>
-							<InputLabel id="stream-filter-label">Mostrar</InputLabel>
-							<Select
-								labelId="stream-filter-label"
-								label="Mostrar"
-								value={filter}
-								onChange={handleFilterChange}
+				<GridContainer variant="desktopFixed" 		style={{ paddingTop: '95px' }}
+				columns={{ xs: 4, sm: 6, md: 12 }}  >
+					{/* 1️⃣ Sidebar */}
+					{isMobile ? (
+						<GridColumn span={12}>
+							<Sidebar
+								open={openSidebar}
+								onClose={() => setOpenSidebar(false)}
+								width={320}
+								variant="flat"
+								position="left"
+								header={<SectionTitle>Crear nuevo stream</SectionTitle>}
 							>
-								<MenuItem value="live">En directo</MenuItem>
-								<MenuItem value="ended">Finalizados</MenuItem>
-								<MenuItem value="all">Todos</MenuItem>
-							</Select>
-						</FormControl>
-
-						<StreamList key={filter} type={filter} onSelect={onStreamSelected} />
-					</>
+								<StreamCreateForm onStreamCreated={onStreamCreated} />
+							</Sidebar>
+						</GridColumn>
+					) : (
+						<GridColumn span={3}>
+							<Sidebar
+								open
+								width={320}
+								variant="flat"
+								sticky
+								position="left"
+								header={<SectionTitle>Crear nuevo stream</SectionTitle>}
+							>
+								<StreamCreateForm onStreamCreated={onStreamCreated} />
+							</Sidebar>
+						</GridColumn>
 					)}
-				</Box>
-			</SmartBox>
-		</>
-	);
+
+					{/* 2️⃣ Zona central */}
+					<GridColumn span={isMobile ? 12 : 9}>
+						{hasChild ? (
+							children
+						) : (
+							<>
+								<FormControl size="small" sx={styles.formControl(theme)}>
+									<InputLabel id="stream-filter-label">Mostrar</InputLabel>
+									<Select
+										labelId="stream-filter-label"
+										label="Mostrar"
+										value={filter}
+										onChange={handleFilterChange}
+									>
+										<MenuItem value="live">En directo</MenuItem>
+										<MenuItem value="ended">Finalizados</MenuItem>
+										<MenuItem value="all">Todos</MenuItem>
+									</Select>
+								</FormControl>
+
+								<StreamList
+									key={filter}
+									type={filter}
+									onSelect={onStreamSelected}
+								/>
+							</>
+						)}
+					</GridColumn>
+				</GridContainer>
+			</>
+		);
 };
 
 export default HomeStreamLayout;

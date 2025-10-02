@@ -1,4 +1,4 @@
-import React, { useState , useRef} from 'react';
+import React, { useState , useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import FilledButton from '../../../shared/atoms/buttons/filledButton/FilledButton';
@@ -12,13 +12,18 @@ const UpdateProfilePage: React.FC = () => {
 	const [bio, setBio] = useState('');
 	const [interests, setInterests] = useState('');
 	const [profilePicture, setProfilePicture] = useState<File | null>(null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const fileInput = useRef<HTMLInputElement>(null);
 
 	const navigate = useNavigate();
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (e.target.files) {
-			setProfilePicture(e.target.files[0]);
+		if (e.target.files && e.target.files[0]) {
+			const file = e.target.files[0];
+			setProfilePicture(file);
+
+			// Generar URL temporal de vista previa
+			setPreviewUrl(URL.createObjectURL(file));
 		}
 	};
 
@@ -38,6 +43,7 @@ const UpdateProfilePage: React.FC = () => {
 			setBio('');
 			setInterests('');
 			setProfilePicture(null);
+			setPreviewUrl(null);
 			if (fileInput.current) {
 				fileInput.current.value = ''; // limpiar el input file
 			}
@@ -45,8 +51,6 @@ const UpdateProfilePage: React.FC = () => {
 			console.error('❌ Error al actualizar el perfil:', error);
 			alert('❌ Ocurrió un error al actualizar el perfil');
 		}
-
-
 	};
 
 	return (
@@ -70,10 +74,10 @@ const UpdateProfilePage: React.FC = () => {
 					onChange={setInterests}
 				/>
 
-
 				<input
 					ref={fileInput}
 					type="file"
+					accept="image/*"
 					style={{ display: 'none' }}
 					onChange={handleFileChange}
 				/>
@@ -84,8 +88,19 @@ const UpdateProfilePage: React.FC = () => {
 					btnVariant="outline"
 					onClick={() => fileInput.current?.click()}
 				>
-					{profilePicture ? 'Archivo seleccionado' : 'Seleccionar Foto de Perfil'}
+					{profilePicture ? 'Cambiar Foto de Perfil' : 'Seleccionar Foto de Perfil'}
 				</FilledButton>
+
+				{/* Vista previa */}
+				{previewUrl && (
+					<div style={{ marginTop: '16px', textAlign: 'center' }}>
+						<img
+							src={previewUrl}
+							alt="Vista previa"
+							style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', objectFit: 'cover' }}
+						/>
+					</div>
+				)}
 
 				<FilledButton type="submit" fullWidth colorType="success">
 					Actualizar Perfil

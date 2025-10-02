@@ -72,20 +72,24 @@ const AssignRolesToUser: React.FC = () => {
 			<SmartBox mb='px4'>
 				<Autocomplete
 					options={users}
-					getOptionLabel={(u) => `${u.username} (${u.email})`}
-					onChange={(e, value) => {
+					// controlado por _id
+					value={users.find(u => u._id === selectedUserId) ?? null}
+					onChange={(_, value) => {
 						if (value) {
 							setSelectedUserId(value._id);
-							setSelectedRoles(value.roles.map(r => r._id));
+							setSelectedRoles((value.roles ?? []).map((r: any) => r._id));
 						} else {
 							setSelectedUserId('');
 							setSelectedRoles([]);
 						}
 					}}
+					isOptionEqualToValue={(opt, val) => opt._id === val._id}
+					getOptionLabel={(u) => (u ? `${u.username} (${u.email})` : '')}
 					renderInput={(params) => (
 						<TextField {...params} label="Seleccionar Usuario" variant="outlined" />
 					)}
 				/>
+
 			</SmartBox>
 
 			<SectionTitle  >Seleccionar Roles</SectionTitle>
@@ -100,8 +104,8 @@ const AssignRolesToUser: React.FC = () => {
 							onChange={(e) => {
 								const id = e.target.value;
 								setSelectedRoles(prev =>
-									prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
-								);
+												 prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
+												);
 							}}
 						/>
 						<ListItemText primary={role.name} />

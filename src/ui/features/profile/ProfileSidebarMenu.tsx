@@ -3,18 +3,12 @@ import React from 'react';
 import Sidebar from '../../shared/organisms/sidebar/Sidebar';
 import Text from '../../shared/atoms/typography/Text';
 import NavButton from '../../shared/atoms/buttons/navButton/NavButton';
-import {
-	Person,
-	Edit,
-	Group,
-	Search,
-	Block,
-	Notifications,
-} from '@mui/icons-material';
+import { Person, Edit, Group, Search, Block, Notifications } from '@mui/icons-material';
+import TextItemRow from '../../shared/molecules/items/TextItemRow';
 
 interface Props {
 	open: boolean;
-	onClose: () => void;
+	onClose?: () => void;
 	onSelect: (section: string) => void;
 	selectedSection: string;
 }
@@ -29,29 +23,22 @@ const menuItems = [
 	{ label: 'Notificaciones', value: 'notifications', icon: <Notifications /> },
 ];
 
-const ProfileSidebarMenu: React.FC<Props> = ({
-	open,
-	onClose,
-	onSelect,
-	selectedSection,
-}) => {
+const ProfileSidebarMenu: React.FC<Props> = ({ open, onClose, onSelect, selectedSection }) => {
 	return (
 		<Sidebar
 			open={open}
 			onClose={onClose}
-			variant="flat"
+			variant="elevated"     
 			width={250}
 			position="left"
+			sticky                
 		>
-			<Text as="h2" size="md" weight="bold" sx={{ mb: 2, color: '#fff' }}>
-				Menú de Perfil
-			</Text>
 			{menuItems.map(({ label, value, icon }) => (
-				<NavButton
+				<TextItemRow
 					key={value}
 					icon={icon}
 					label={label}
-					active={selectedSection === value}
+					selected={selectedSection === value}
 					onClick={() => onSelect(value)}
 				/>
 			))}

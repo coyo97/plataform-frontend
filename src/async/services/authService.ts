@@ -11,6 +11,8 @@ export const registerUser = async (userData: {
 	email: string;
 	password: string;
 	careers: string[];
+	apellidoPaterno: string;
+	apellidoMaterno: string;
 }) => {
 	const res = await post(`${BASE_URL}`, userData);
 	return res;

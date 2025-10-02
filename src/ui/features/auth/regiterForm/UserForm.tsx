@@ -11,6 +11,8 @@ interface Career {
 
 const UserForm: React.FC = () => {
 	const [username, setUsername] = useState('');
+	const [apellidoPaterno, setApellidoPaterno] = useState('');
+	const [apellidoMaterno, setApellidoMaterno] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [careers, setCareers] = useState<string[]>([]);
@@ -35,7 +37,7 @@ const UserForm: React.FC = () => {
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		try {
-			await registerUser({ username, email, password, careers });
+			await registerUser({ username,apellidoPaterno, apellidoMaterno, email, password, careers });
 			setSuccessMessage('Registro con éxito');
 			setTimeout(() => navigate('/login'), 2000);
 		} catch (err) {
@@ -50,7 +52,7 @@ const UserForm: React.FC = () => {
 			{error && <p style={{ color: 'red' }}>{error}</p>}
 			{successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
 			<div>
-				<FormLabel>Username:</FormLabel>
+				<FormLabel>Nombre:</FormLabel>
 				<FormInput
 					type="text"
 					value={username}
@@ -58,6 +60,26 @@ const UserForm: React.FC = () => {
 					required
 				/>
 			</div>
+			<div>
+				<FormLabel>Apellido Paterno:</FormLabel>
+				<FormInput
+					type="text"
+					value={apellidoPaterno}
+					onChange={(e) => setApellidoPaterno(e.target.value)}
+					required
+				/>
+			</div>
+
+			<div>
+				<FormLabel>Apellido Materno:</FormLabel>
+				<FormInput
+					type="text"
+					value={apellidoMaterno}
+					onChange={(e) => setApellidoMaterno(e.target.value)}
+					required
+				/>
+			</div>
+
 			<div>
 				<FormLabel>Email:</FormLabel>
 				<FormInput

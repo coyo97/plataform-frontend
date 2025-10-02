@@ -1,6 +1,40 @@
 /* utils/auth.ts */
 
 /** Devuelve el token actual (o null si no hay) */
+function normalizeRoleNames(input: any): string[] {
+	const lower = (s: unknown) => String(s ?? '').trim().toLowerCase();
+	if (!input) return [];
+
+	// Si ya viene como string JSON: '["admi","user"]'
+	if (typeof input === 'string') {
+		try {
+			const parsed = JSON.parse(input);
+			return normalizeRoleNames(parsed);
+		} catch {
+			// string simple: "admi"
+			return [lower(input)];
+		}
+	}
+
+	// Array mixto: ["admi", {name:"user"}, {role:"moderator"}]
+	if (Array.isArray(input)) {
+		return input
+		.map((r) => {
+			if (typeof r === 'string') return lower(r);
+			if (r && typeof r === 'object') return lower((r as any).name ?? (r as any).role);
+			return '';
+		})
+		.filter(Boolean);
+	}
+
+	// Objeto único: {name:"admi"} o {role:"admi"}
+	if (typeof input === 'object') {
+		return [lower((input as any).name ?? (input as any).role ?? '')].filter(Boolean);
+	}
+
+	return [];
+}
+
 export const getToken = (): string | null =>
 	localStorage.getItem('token');
 
@@ -34,14 +68,19 @@ export const saveSession = ({
 }: {
 	token: string;
 	userId: string;
-	roles?: string;
+	roles?: any;        // <- ahora aceptamos cualquier forma
 	username?: string;
 }) => {
 	localStorage.setItem('token', token);
 	localStorage.setItem('userId', userId);
-	if (roles)    localStorage.setItem('roles', roles);
 	if (username) localStorage.setItem('username', username);
+
+	if (roles !== undefined) {
+		const roleNames = normalizeRoleNames(roles); // <- normaliza
+		localStorage.setItem('roles', JSON.stringify(roleNames)); // <- guarda SIEMPRE JSON
+	}
 };
+
 
 /* ---- Tipado de la respuesta de login ---- */
 export interface LoginResponse {
@@ -51,3 +90,15 @@ export interface LoginResponse {
 	username?: string;
 }
 
+/** Devuelve true si el usuario actual tiene rol admin/admi */
+export function userHasAdminRole(): boolean {
+	const raw = localStorage.getItem('roles');
+	if (!raw) return false;
+	try {
+		const arr = JSON.parse(raw);
+		if (Array.isArray(arr)) {
+			return arr.includes('admi') || arr.includes('admin');
+		}
+	} catch {}
+	return false;
+}
