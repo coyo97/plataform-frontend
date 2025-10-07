@@ -140,7 +140,8 @@ const ViewPublicationsPage: React.FC = () => {
 
 			<GridContainer
 				variant="desktopFluid"
-				style={{ paddingTop: '88px' }}
+				style={{      paddingTop: 'calc(var(--header-h) + 4px)'  
+ }}
 				columns={{ xs: 4, sm: 8, md: 12 }} 
 			>
 				{/* ① CREATE – LEFT SIDEBAR */}

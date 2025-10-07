@@ -1,3 +1,4 @@
+// ui/features/profile/pages/UpdateProfile.page.tsx
 import React, { useState , useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +8,8 @@ import Text from '../../../shared/atoms/typography/Text';
 
 import { updateMyProfile } from '../../../../async/services/userProfileService';
 import { FormWrapper } from './updateProfileForm.styles';
+
+import { Alert, AlertTitle, Box } from '@mui/material';
 
 const UpdateProfilePage: React.FC = () => {
 	const [bio, setBio] = useState('');
@@ -21,8 +24,6 @@ const UpdateProfilePage: React.FC = () => {
 		if (e.target.files && e.target.files[0]) {
 			const file = e.target.files[0];
 			setProfilePicture(file);
-
-			// Generar URL temporal de vista previa
 			setPreviewUrl(URL.createObjectURL(file));
 		}
 	};
@@ -30,26 +31,36 @@ const UpdateProfilePage: React.FC = () => {
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData();
-		formData.append('bio', bio);
-		formData.append('interests', JSON.stringify(interests.split(',').map(i => i.trim())));
+
+		// Solo adjunta lo que el usuario llenó
+		if (bio.trim().length > 0) {
+			formData.append('bio', bio);
+		}
+		if (interests.trim().length > 0) {
+			const arr = interests.split(',').map(i => i.trim()).filter(Boolean);
+			formData.append('interests', JSON.stringify(arr));
+		}
 		if (profilePicture) {
 			formData.append('file', profilePicture);
 		}
 
+		if ([...formData.keys()].length === 0) {
+			alert('No hay cambios para actualizar');
+			return;
+		}
+
 		try {
 			await updateMyProfile(formData);
-			alert('✅ Perfil actualizado con éxito');
-			// Limpiar el formulario
+			alert('Perfil actualizado con éxito');
 			setBio('');
 			setInterests('');
 			setProfilePicture(null);
 			setPreviewUrl(null);
-			if (fileInput.current) {
-				fileInput.current.value = ''; // limpiar el input file
-			}
+			if (fileInput.current) fileInput.current.value = '';
+			// navigate('/mi-perfil');
 		} catch (error) {
-			console.error('❌ Error al actualizar el perfil:', error);
-			alert('❌ Ocurrió un error al actualizar el perfil');
+			console.error('Error al actualizar el perfil:', error);
+			alert('Ocurrió un error al actualizar el perfil');
 		}
 	};
 
@@ -60,18 +71,32 @@ const UpdateProfilePage: React.FC = () => {
 					Actualizar Perfil
 				</Text>
 
+				{/* Instrucciones claras */}
+				<Alert severity="info" sx={{ mt: 1 }}>
+					<AlertTitle>Consejo</AlertTitle>
+					Puedes actualizar <strong>solo</strong> los campos que desees:
+					<ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 18 }}>
+						<li><strong>Solo foto:</strong> pulsa “Seleccionar Foto de Perfil” y envía.</li>
+						<li><strong>Solo biografía:</strong> escribe la bio y envía (sin seleccionar imagen).</li>
+						<li><strong>Solo intereses:</strong> escribe intereses separados por comas y envía.</li>
+						<li>También puedes combinar (por ej. foto + bio).</li>
+					</ul>
+				</Alert>
+
 				<TextField
 					label="Bio"
 					multiline
 					rows={4}
 					value={bio}
 					onChange={(e)=>setBio(e)}
+					helperText="Ej.: Estudiante de Sistemas, me interesan los proyectos open-source."
 				/>
 
 				<TextField
 					label="Intereses (separados por comas)"
 					value={interests}
 					onChange={setInterests}
+					helperText="Ej.: programación, IA, bases de datos"
 				/>
 
 				<input
@@ -91,18 +116,17 @@ const UpdateProfilePage: React.FC = () => {
 					{profilePicture ? 'Cambiar Foto de Perfil' : 'Seleccionar Foto de Perfil'}
 				</FilledButton>
 
-				{/* Vista previa */}
 				{previewUrl && (
-					<div style={{ marginTop: '16px', textAlign: 'center' }}>
+					<Box sx={{ mt: 2, textAlign: 'center' }}>
 						<img
 							src={previewUrl}
 							alt="Vista previa"
 							style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', objectFit: 'cover' }}
 						/>
-					</div>
+					</Box>
 				)}
 
-				<FilledButton type="submit" fullWidth colorType="success">
+				<FilledButton type="submit" fullWidth colorType="success" sx={{ mt: 2 }}>
 					Actualizar Perfil
 				</FilledButton>
 			</FormWrapper>

@@ -1,4 +1,3 @@
-// sidebar.styles.ts
 import { styled } from '@mui/material/styles';
 import mq from '../../../../config/mq';
 import { SidebarVariant, SidebarPosition } from './sidebar.types';
@@ -6,9 +5,15 @@ import { radius } from '../../../../Theme/tokens/radius';
 
 const variantStyles = (variant: SidebarVariant, theme: any) => {
 	switch (variant) {
+		case 'modal':
+			return {
+			background: theme.palette.background.paper,
+			color: theme.palette.text.primary,
+			boxShadow: theme.shadows[6],
+		};
 		case 'primary':
 			return {
-			background: theme.customColors.gradients.lavenderBloom,
+			background: theme.palette.primary.main,
 			color: theme.palette.common.white,
 			boxShadow: theme.shadows[3],
 		};
@@ -25,11 +30,11 @@ const variantStyles = (variant: SidebarVariant, theme: any) => {
 			boxShadow: theme.shadows[4],
 		};
 		case 'flat':
-			return {                 // sin fondo, sin shadow
+			return {
 			background: 'transparent',
-			color     : theme.palette.text.primary,
-			boxShadow  : 'none',
-			padding    : 0,        // opcional: sin padding
+			color: theme.palette.text.primary,
+			boxShadow: 'none',
+			padding: 0,
 		};
 		default:
 			return {
@@ -39,7 +44,6 @@ const variantStyles = (variant: SidebarVariant, theme: any) => {
 		};
 	}
 };
-
 
 export const SidebarContainer = styled('nav', {
 	shouldForwardProp: (prop) =>
@@ -63,50 +67,52 @@ export const SidebarContainer = styled('nav', {
 	overflowX: 'hidden',
 	...variantStyles(variant, theme),
 
-	...(sticky
+	...(variant === 'modal'
 		? {
-			position: 'sticky',
-			top: `calc(${theme.spacing(0)})`,
-			maxHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(4)})`,
-			overflowY: 'auto',
+			position: 'fixed',
+			top: 0,
+			[position]: 0,
+			height: '100dvh',
+			zIndex: theme.zIndex.modal + 1, // encima del overlay
+			transform: open
+				? 'translateX(0)'
+				: `translateX(${position === 'left' ? '-100%' : '100%'})`,
 		}
-			: { position: 'fixed', top: 0, [position]: 0, height: '100vh' }),
+			: sticky
+				? {
+					position: 'sticky',
+					top: 'calc(var(--header-h) + 4px)',
+					maxHeight: 'calc(100vh - var(--header-h) - 4px)',
+					overflowY: 'auto',
+				}
+					: {
+						position: 'fixed',
+						top: 'calc(var(--header-h) + 4px)',
+						[position]: 0,
+						height: 'calc(100vh - var(--header-h) - 4px)',
+						zIndex: theme.zIndex.drawer,
+					}),
 
-			// Mobile: slide-in/out
-			[mq('sm', 'max')]: {
-				position: 'fixed',
-				top: 0,
-				[position]: 0,
-				height: '100vh',
-				transform: open
-					? 'translateX(0)'
-					: `translateX(${position === 'left' ? '-100%' : '100%'})`,
-					zIndex: 1300,
-					boxShadow: theme.shadows[3],
-			},
-
-			// ✅ Medium screens: shrink sidebar
-			[theme.breakpoints.between('sm', 'md')]: {
-				width: '180px', // instead of 220px
-			},
-
-			// ✅ Large screens: full width
-			[theme.breakpoints.up('md')]: {
-				width: typeof width === 'number' ? `${width}px` : width,
-			},
+					[mq('sm', 'max')]: {
+						position: 'fixed',
+						top: variant === 'modal' ? 0 : 'calc(var(--header-h) + 4px)',
+						[position]: 0,
+						height: variant === 'modal' ? '100dvh' : '100vh',
+						zIndex: variant === 'modal' ? theme.zIndex.modal + 1 : theme.zIndex.drawer,
+						boxShadow: theme.shadows[3],
+					},
 }));
-
 
 export const SidebarContent = styled('div')({
 	flexGrow: 1,
 	overflowY: 'auto',
-	overflowX   : 'hidden',
+	overflowX: 'hidden',
 });
 
 export const Overlay = styled('div')(({ theme }) => ({
 	position: 'fixed',
 	inset: 0,
 	background: 'rgba(0,0,0,0.4)',
-	zIndex: 1299,
+	zIndex: theme.zIndex.modal,
 }));
 

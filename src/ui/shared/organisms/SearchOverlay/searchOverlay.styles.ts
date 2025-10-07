@@ -4,10 +4,10 @@ import { Box } from '@mui/material';
 
 export const OverlayContainer = styled(Box)(({ theme }) => ({
 	position: 'fixed',
-	top: 0,
+	  top: 'calc(var(--header-h) + 4px)',
 	left: 0,
 	width: '100%',
-	height: '100%',
+	height: 'calc(100vh - var(--header-h) - 4px)',
 	backgroundColor: '#fff',
 	display: 'flex',
 	flexDirection: 'column',

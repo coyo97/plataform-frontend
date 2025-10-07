@@ -10,24 +10,18 @@ import UserForm from './ui/features/auth/regiterForm/UserForm';
 import Plataform from './ui/features/plaform/Publica';
 import ProtectedRoute from './routes/ProtectedRoute';
 import HomePublications from './ui/features/publications/HomePublications';
-import HomeProfile from './ui/features/profile/HomeProfile';
 import Home from './ui/features/plaform/Home';
 import UserMaterials from './ui/features/publications/user/UserMaterials';
 
-import AuthorProfile from './ui/features/profile/AuthorProfile';
-import ViewProfile from './ui/features/profile/ViewProfile';
-import UpdateProfile from './ui/features/profile/UpdateProfile';
 import Chat from './ui/features/chat/Chat';
 import CareerManager from './ui/features/careers/CareerManager';
 import HomeChat from './ui/features/chat/HomeChat';
 import UserManagement from './ui/features/admin/UserManagement';
 import Dashboard from './ui/features/admin/Dashboard';
 import HomeRoles from './ui/features/roles/HomeRoles';
-import Sidebar from './ui/features/admin/Sidebar';
 import HomeModerator from './ui/features/moderator/HomeModerator';
 import HomeAlert from './ui/features/centerAlert/HomeAlert';
 import HomeSetting from './ui/features/configFile/HomeSetting';
-import './ui/features/admin/adminLayout.css'; // Asegúrate de que la ruta sea correcta
 import ForgotPassword from './ui/features/auth/ForgotPassword';
 import ResetPassword from './ui/features/auth/ResetPassword';
 import AdminRoute from './routes/AdminRoute';
@@ -40,6 +34,8 @@ import HomeAcademicHelp from './ui/features/academicHelp/HomeAcademicHelp.page';
 import Test from './ui/features/test/Test';
 import HomeTest from './ui/features/test/HomeTest';
 import HomeOverlay from './ui/shared/organisms/SearchOverlay/HomeOverlay';
+import AdminSidebarMenu from './ui/features/admin/AdminSidebarMenu';
+import AuthorProfile from './ui/features/profile/AuthorProfile';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -87,9 +83,8 @@ function App() {
 							<Route path="/publications" element={<ProtectedRoute element={<HomePublications />} />} />
 							<Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />
 
-							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} />} />
 							<Route path="/profile/:id" element={<ProtectedRoute element={<AuthorProfile />} />} />
-							<Route path="/profile/update" element={<ProtectedRoute element={<UpdateProfile />} />} />
+							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} />} />
 
 							<Route path="/material-user" element={<ProtectedRoute element={<UserMaterials />} />} />
 							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} />} />
@@ -100,10 +95,19 @@ function App() {
 								element={
 									<AdminRoute
 										element={
-											<div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-												<Sidebar isVisible={isSidebarOpen} />
-												<div className="admin-content">
-													<button className="menu-button" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
+											<div
+												style={{
+													display: 'grid',
+													gridTemplateColumns: '250px 1fr',
+													minHeight: '100vh',
+													paddingTop: 'var(--header-h)',   
+													boxSizing: 'border-box',
+												}}
+											>
+												{/* Sidebar: sticky en desktop, modal en móvil */}
+												<AdminSidebarMenu open onClose={undefined} />
+
+												<div style={{ padding: '1rem' }}>
 													<Routes>
 														<Route path="/" element={<Dashboard />} />
 														<Route path="users" element={<UserManagement />} />
@@ -119,6 +123,7 @@ function App() {
 									/>
 								}
 							/>
+
 						</Routes>
 
 					</Router>

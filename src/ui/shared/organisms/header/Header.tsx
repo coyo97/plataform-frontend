@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
 	Toolbar,
@@ -39,9 +39,8 @@ const Header: React.FC<HeaderProps> = ({
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
 	const [userAnchor, setUserAnchor] = useState<null | HTMLElement>(null);
+	const ref = useRef<HTMLDivElement>(null);
 
-
-	/* Cerrar drawer al ensanchar pantalla ≥ 600 px */
 	useEffect(() => {
 		const onResize = () => {
 			if (window.innerWidth >= 600) setDrawerOpen(false);
@@ -53,9 +52,22 @@ const Header: React.FC<HeaderProps> = ({
 	const toggleDrawer = () => setDrawerOpen(p => !p);
 	const closeDrawer = () => setDrawerOpen(false);
 
+useLayoutEffect(() => {
+  if (!ref.current) return;
+  const updateVar = () => {
+    const h = ref.current?.offsetHeight || 0;
+    document.documentElement.style.setProperty('--header-h', `${h}px`);
+  };
+
+  updateVar();
+  const ro = new ResizeObserver(updateVar);
+  ro.observe(ref.current);
+  return () => ro.disconnect();
+}, []);
+
 	return (
 		<>
-			<HeaderContainer variant={variant}>
+			<HeaderContainer variant={variant} ref={ref}>
 				{/* IZQUIERDA: Hamburguesa + Logo */}
 				<LeftSlot>
 					<HamburgerButton>

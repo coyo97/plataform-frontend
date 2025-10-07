@@ -2,10 +2,11 @@ import React from 'react';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import EventIcon from '@mui/icons-material/Event';
 import { Tooltip } from '@mui/material';
-import { formatDate } from '../../../../utils/dateTime/formatTime';
+//import { formatDate } from '../../../../utils/dateTime/formatTime';
 import { DateTimeInfoProps } from './dateTimeInfo.types';
 import { Wrapper, IconWrapper } from './dateTimeInfo.styles';
 import Text from '../typography/Text';
+import { formatDateEs } from '../../utils/date/formatDateEs';
 
 const DateTimeInfo: React.FC<DateTimeInfoProps> = ({
 	timestamp,
@@ -18,8 +19,8 @@ const DateTimeInfo: React.FC<DateTimeInfoProps> = ({
 	tooltipFormat = 'absolute',
 	showTooltip = true,
 }) => {
-	const timeText = formatDate(timestamp, format);
-	const tooltipText = showTooltip ? formatDate(timestamp, tooltipFormat) : '';
+	const timeText   = formatDateEs(timestamp, format);
+	const tooltipText = showTooltip ? formatDateEs(timestamp, tooltipFormat) : '';
 
 	const icon =
 		format === 'absolute' ? <EventIcon fontSize="inherit" /> : <AccessTimeIcon fontSize="inherit" />;

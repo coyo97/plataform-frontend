@@ -31,8 +31,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
 	const { HOST } = getEnvVariables();
 
-
-
 	const navigate = useNavigate();
 	const location = useLocation();
 	const open = location.pathname === "/plataform/search";
@@ -83,7 +81,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 				);
 			}
 
-			// ⚠️ Videos y materiales todavía no tienen servicio → placeholder
 			if (activeCategory === 'videos') {
 				newResults.push({
 					id: 'demo-video',
@@ -116,7 +113,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
 			return (
 				<>
-					{/* Input en el header */}
 					<SearchInput
 						onSearch={handleSearch}
 						liveSearch
@@ -128,7 +124,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 						sx={{ maxWidth: 200 }}
 					/>
 
-					{/* Overlay estilo */}
 					<Modal open={open} onClose={() => navigate('/plataform')}>
 						<OverlayContainer>
 							{/* Input dentro del overlay */}
@@ -140,7 +135,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 								placeholder={placeholder}
 							/>
 
-							{/* Tabs de categorías */}
 							<TabsContainer>
 								{categories.map((cat) => (
 									<TabItem
@@ -157,7 +151,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 								))}
 							</TabsContainer>
 
-							{/* Resultados */}
 							<ResultsSection>
 								{filteredResults.length === 0 ? (
 									<Typography variant="body2" color="text.secondary">

@@ -1,5 +1,5 @@
 // src/async/services/profileService.ts
-import { get, put }           from '../api';
+import { get, put, del }           from '../api';
 import * as R                 from '../routes/profileRoutes';
 import getEnvVariables        from '../../config/configEnvs';
 import type { UserProfile }   from '../../types/profile';   
@@ -37,4 +37,8 @@ export const fetchProfileById = async (id: string): Promise<UserProfile> =>
 	   //Mutations (si cambian datos => clear cache)
 export const updateMyProfile = (fd: FormData) =>
 	put<UserProfile>(url(R.PROFILE), fd, true).finally(clear);
+
+export const deleteMyProfilePhoto = async () =>
+	del<UserProfile>(url(R.PROFILE + '/photo') );
+
 

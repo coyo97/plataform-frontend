@@ -1,27 +1,18 @@
-// sidebar.types.ts
 import { ReactNode } from 'react';
 
-export type SidebarVariant = 'default' | 'primary' | 'surface' | 'elevated' | 'flat';
+export type SidebarVariant = 'default' | 'primary' | 'surface' | 'elevated' | 'flat' | 'modal';
 export type SidebarPosition = 'left' | 'right';
 
 export interface SidebarProps {
-	/** visible en móviles */
-	open?: boolean;
-	/** callback al cerrar (overlay o Esc) */
-	onClose?: () => void;
-	/** mantiene posición sticky dentro del grid */
-	sticky?: boolean;
-	/** ancho – por defecto 250 px */
-	width?: number | string;
-	/** color / elevación */
-	variant?: SidebarVariant;
-	/** header opcional (título/logo) */
-	header?: ReactNode;
-	/** footer opcional (copyright, logo) */
-	footer?: ReactNode;
-	/** children = navegación, filtros, etc.  */
-	children: ReactNode;
-	/** ‘left’ (default) o ‘right’ */
-	position?: SidebarPosition;
+	open?: boolean;                // visible en móviles
+	onClose?: () => void;          // callback al cerrar (overlay o Esc)
+	sticky?: boolean;              // mantiene posición sticky
+	width?: number | string;       // ancho – por defecto 250 px
+	variant?: SidebarVariant;      // estilo visual (incluye modal)
+	header?: ReactNode;            // contenido opcional en header
+	footer?: ReactNode;            // contenido opcional en footer
+	children: ReactNode;           // navegación, filtros, etc.
+	position?: SidebarPosition;    // lado (left o right)
+	ariaLabel?: string;            // accesibilidad
 }
 

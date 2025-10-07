@@ -8,16 +8,12 @@ import {
 	useTheme,
 	useMediaQuery,
 } from '@mui/material';
-
 import MenuIcon from '@mui/icons-material/Menu';
-
 import SectionTitle from '../../../shared/atoms/titles/SectionTitle';
 import StreamCreateForm from '../organisms/StreamCreateForm';
 import StreamList from '../organisms/StreamList';
 import type { Stream } from '../../../../types/stream';
-
 import { styles } from './homeStreamLayout.styles';
-
 import GridContainer from '../../../shared/atoms/grid/GridContainer';
 import GridColumn from '../../../shared/atoms/grid/GridColumn';
 import IconButton from '../../../shared/atoms/buttons/iconButton/IconButton';
@@ -26,14 +22,11 @@ import Header from '../../../shared/organisms/header/Header';
 import { NavLink, navLinks } from '../../../../config/navLinks';
 import Logo from '../../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
 import SearchOverlay from '../../../shared/organisms/SearchOverlay/SearchOverlay';
-
-
 interface LayoutProps {
-	children?: React.ReactNode; // <StreamActiveLayout/> cuando se está dentro
+	children?: React.ReactNode;
 	onStreamCreated: (id: string, access?: string) => void;
 	onStreamSelected: (s: Stream) => void;
 }
-
 const HomeStreamLayout: React.FC<LayoutProps> = ({
 	children,
 	onStreamCreated,
@@ -41,26 +34,20 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 }) => {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
-	/* ─ Sidebar ─ */
 	const [openSidebar, setOpenSidebar] = useState(false);
-
 	const hasChild = Array.isArray(children)
 		? children.some(Boolean)
 		: Boolean(children);
-
-		/* ─ Filtro de lista ─ */
 		const [filter, setFilter] = useState<'live' | 'ended' | 'all'>('live');
 		const handleFilterChange = (e: SelectChangeEvent) =>
 			setFilter(e.target.value as 'live' | 'ended' | 'all');
-
 		return (
 			<>
 							<Header
 				logoSrc={Logo}
 				variant="gradient"
 				navLinks={navLinks}
-				userRole="student" // o "admin" dinámico según login
+				userRole="student"
 				onLogout={() => console.log('Logout')}
 				onNotificationsClick={() => console.log('Abrir notificaciones')}
 				onAvatarClick={() => console.log('Abrir menú usuario')}
@@ -72,8 +59,6 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 					/>
 				}
 			/>
-
-
 				{/* Botón hamburguesa (solo mobile) */}
 				{isMobile && (
 					<IconButton
@@ -84,10 +69,8 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 						<MenuIcon />
 					</IconButton>
 				)}
-
-				<GridContainer variant="desktopFixed" 		style={{ paddingTop: '95px' }}
+				<GridContainer variant="desktopFixed" 		style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}
 				columns={{ xs: 4, sm: 6, md: 12 }}  >
-					{/* 1️⃣ Sidebar */}
 					{isMobile ? (
 						<GridColumn span={12}>
 							<Sidebar
@@ -115,7 +98,6 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 							</Sidebar>
 						</GridColumn>
 					)}
-
 					{/* 2️⃣ Zona central */}
 					<GridColumn span={isMobile ? 12 : 9}>
 						{hasChild ? (
@@ -135,7 +117,6 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 										<MenuItem value="all">Todos</MenuItem>
 									</Select>
 								</FormControl>
-
 								<StreamList
 									key={filter}
 									type={filter}
@@ -148,6 +129,4 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 			</>
 		);
 };
-
 export default HomeStreamLayout;
-
