@@ -16,7 +16,6 @@ export const StyledGroup = styled('div')<{ variant: string }>(({ variant }) => (
 }));
 
 export const StyledLabel = styled('span')({
-	...typography.heading.h3.sans.regular,
 	fontWeight: 600,
 	color: colors.neutral.black[800],
 	marginBottom: padding.px4,
@@ -51,15 +50,14 @@ export const StyledInput = styled('input')({
 });
 
 export const StyledIcon = styled('span')({
-  display: 'flex',
-  alignItems: 'center',
-  '& svg': {
-    fontSize: '16px',         // ó 18 px si quieres un pelín más grande
-  },
+	display: 'flex',
+	alignItems: 'center',
+	'& svg': {
+		fontSize: '16px',         // ó 18 px si quieres un pelín más grande
+	},
 });
 
 
 export const StyledText = styled('span')({
-	...typography.heading.h3.sans.regular,
 	color: colors.neutral.black[900],
 });

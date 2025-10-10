@@ -12,6 +12,6 @@ export interface RadioGroupProps {
 	value: string;
 	onChange: (val: string) => void;
 	disabled?: boolean;
-	variant?: 'default' | 'segmented'; // permite personalización visual
+	variant?: 'default' | 'segmented';
 }
 

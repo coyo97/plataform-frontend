@@ -1,7 +1,7 @@
 import React from 'react';
 import { TextFieldProps } from './textField.types';
-import { StyledTextFieldWrapper, StyledInput, Label, HelperText, IconWrapper } from './textField.styles';
-import { useEffect } from 'react';
+import { StyledTextFieldWrapper, StyledInput, Label, HelperText, IconWrapper, Counter,EndAdornment } from './textField.styles';
+import { useEffect, useRef } from 'react';
 
 const TextField: React.FC<TextFieldProps> = ({
 	label,
@@ -18,22 +18,23 @@ const TextField: React.FC<TextFieldProps> = ({
 	type = 'text',
 	multiline = false,   //  valor por defecto
 	rows       = 3,      // 
-	autoResize
+	autoResize,
+	endAdornment,
+	counter,
 }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		onChange(e.target.value);
 	};
 
-	const inputRef = React.useRef<HTMLTextAreaElement>(null);
+	const inputRef = useRef<HTMLTextAreaElement>(null);
 
 	useEffect(() => {
 		if (multiline && autoResize && inputRef.current) {
 			const el = inputRef.current;
-			el.style.height = 'auto'; // reset
+			el.style.height = 'auto';
 			el.style.height = `${el.scrollHeight}px`;
 		}
 	}, [value, multiline, autoResize]);
-
 
 	return (
 		<StyledTextFieldWrapper className={className} size={size} error={error} disabled={disabled}>
@@ -51,26 +52,29 @@ const TextField: React.FC<TextFieldProps> = ({
 					error={error}
 					disabled={disabled}
 					hasLeftIcon={!!leftIcon}
-					hasRightIcon={!!rightIcon}
+					hasRightIcon={!!(rightIcon || endAdornment)}
 					aria-invalid={error}
 					aria-label={label}
 					ref={inputRef as React.RefObject<any>}
-					as={multiline ? 'textarea' : 'input'}       
+					as={multiline ? 'textarea' : 'input'}
 					{...(multiline && { rows })}
-					style={autoResize ? {
-						overflow: 'auto',
-						resize: 'none',
-						maxHeight: 'calc(1.5em * 5 + 1.5rem)' // altura aprox. para 5 líneas
-					} : undefined}
+					style={
+						autoResize
+							? { overflow: 'hidden', resize: 'none', maxHeight: 'calc(1.5em * 5 + 1.5rem)' }
+							: undefined
+					}
 				/>
 
 				{rightIcon && <IconWrapper position="right">{rightIcon}</IconWrapper>}
+				{endAdornment && <EndAdornment>{endAdornment}</EndAdornment>}
 			</div>
 
-			{helperText && <HelperText error={error}>{helperText}</HelperText>}
+			<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+				{helperText && <HelperText error={error}>{helperText}</HelperText>}
+				{counter && <Counter>{counter}</Counter>}
+			</div>
 		</StyledTextFieldWrapper>
 	);
 };
 
 export default TextField;
-

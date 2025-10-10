@@ -24,6 +24,7 @@ const Card: React.FC<CardProps> = ({
 	actions,
 	footer,
 	onClickAuthor,
+	onTagClick
 }) => {
 	return (
 		<CardRoot>
@@ -49,22 +50,37 @@ const Card: React.FC<CardProps> = ({
 				{description && <p>{description}</p>}
 				{tags && tags.length > 0 && (
 					<TagsWrapper>
-						{tags.map((tag) => (
-							<TooltipBubble
-								key={tag}
-								content={`Material relacionado con #${tag}`}
-								position="top"
-								variant="dark"
-								size="small"
-								showArrow
-							>
-								<Badge variant="soft" color="primary" size="sm">
-									#{tag}
-								</Badge>
-							</TooltipBubble>
-						))}
+						{tags.map((tag) => {
+							const interactive = Boolean(onTagClick);
+
+							return (
+								<TooltipBubble
+									key={tag}
+									title={`#${tag}`}
+									position="top"
+									variant="dark"
+									size="small"
+									showArrow
+								>
+									<Badge
+										variant="outline"
+										color="primary"
+										size="sm"
+										shape="rounded"
+										interactive={interactive}                          
+										ariaLabel={interactive ? `Filtrar por ${tag}` : undefined}
+										onClick={interactive ? () => onTagClick?.(tag) : undefined}
+									>
+										#{tag}
+									</Badge>
+								</TooltipBubble>
+							);
+						})}
 					</TagsWrapper>
 				)}
+
+
+
 				{media && <MediaWrapper>{media}</MediaWrapper>}
 			</Content>
 

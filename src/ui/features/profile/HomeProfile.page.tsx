@@ -17,6 +17,7 @@ import GridColumn from '../../shared/atoms/grid/GridColumn';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useSearchParams } from 'react-router-dom';
+import { userHasAdminRole } from '../../../utils/auth/getUserId';
 
 const HomeProfilePage: React.FC = () => {
 	const [selectedSection, setSelectedSection] = useState('viewProfile');
@@ -61,21 +62,27 @@ const HomeProfilePage: React.FC = () => {
 				return <ViewProfilePage />;
 		}
 	};
-
+	const hasAdmin = userHasAdminRole();
+	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
 	return (
 		<>
-			<Header
+				<Header
 				logoSrc={Logo}
-				variant="gradient"
-				navLinks={navLinks}
-				userRole="student"
+				variant='gradient'
+				navLinks={visibleLinks}
+				userRole={hasAdmin ? 'admi' : 'student'}
 				onLogout={() => console.log('Logout')}
 				onNotificationsClick={() => console.log('Abrir notificaciones')}
 				onAvatarClick={() => console.log('Abrir menú usuario')}
-				SearchComponent={<SearchOverlay onSearch={(q, cat) => console.log(`Buscar "${q}" en "${cat}"`)} />}
+				SearchComponent={
+					<SearchOverlay
+						onSearch={(q, cat) =>
+							console.log(`Buscar "${q}" en categoría "${cat}"`)
+						}
+					/>
+				}
 			/>
-
-			<GridContainer
+					<GridContainer
 				variant="desktopFluid"
 				columns={{ xs: 4, sm: 8, md: 12 }}
 				style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}

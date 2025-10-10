@@ -39,17 +39,35 @@ export const Content = styled('section')(({ theme }) => ({
 }));
 
 export const TagsWrapper = styled('div')(({ theme }) => ({
-	display: 'flex',
-	flexWrap: 'wrap',
-	gap: theme.spacing(1),
-	marginTop: theme.spacing(1),
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: theme.spacing(0.5), // 4px entre chips
 }));
 
 export const MediaWrapper = styled('div')(({ theme }) => ({
 	marginTop: theme.spacing(1),
 	borderRadius: radius.sm2x,
 	overflow: 'hidden',
+
+	maxHeight: 'min(60vh, 520px)',
+
+	// aseguro que las imágenes/videos no desborden
+	position: 'relative',
+
+	// si dentro hay <img> / <video>, que se adapten al wrapper
+	'& img, & video, & picture': {
+		display: 'block',
+		width: '100%',
+		height: '100%',
+		objectFit: 'cover', // recorte sutil en feed; la versión completa la verás en el lightbox
+	},
+
+	// en pantallas pequeñas, baja el límite un poco
+	[theme.breakpoints.down('sm')]: {
+		maxHeight: '50vh',
+	},
 }));
+
 
 export const Footer = styled('footer')(({ theme }) => ({
 	marginTop: theme.spacing(1),

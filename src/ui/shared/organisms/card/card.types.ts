@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 export interface CardAuthor {
 	name: string;
 	avatarUrl?: string;
-	subtitle?: string; // Ej: rol, carrera, etc.
+	subtitle?: string; 
 }
 
 export interface CardProps {
@@ -12,9 +12,10 @@ export interface CardProps {
 	author?: CardAuthor;
 	date?: string | Date;
 	tags?: string[];
-	media?: ReactNode;   // Imagen, video o lo que se quiera renderizar
-	actions?: ReactNode; // Botones de like, comentar, compartir
-	footer?: ReactNode;  // Opcional: secciones extra (ej. estadísticas)
+	media?: ReactNode;   
+	actions?: ReactNode;
+	footer?: ReactNode;
 	onClickAuthor?: () => void;
+	onTagClick?: (tag: string) => void;
 }
 

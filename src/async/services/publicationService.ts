@@ -1,100 +1,135 @@
 // src/async/services/publicationService.ts
 import { get, post, put, del } from '../api';
-import * as R                   from '../routes/publicationRoutes';
-import getEnvVariables          from '../../config/configEnvs';
+import * as R from '../routes/publicationRoutes';
+import getEnvVariables from '../../config/configEnvs';
 import type { Career, Publication } from '../../types/publication';
 
 type CacheEntry = { data: unknown; expiry: number };
-const CACHE  = new Map<string, CacheEntry>();
-const TTL_MS = 5 * 60 * 1_000;
+const CACHE = new Map<string, CacheEntry>();
+const TTL_MS = 5 * 60 * 1_000; // 5 minutos
 
-const read = <T>(key:string):T|null => {
+const read = <T>(key: string): T | null => {
 	const e = CACHE.get(key);
-	if (!e)                 return null;
-	if (Date.now()>e.expiry){CACHE.delete(key); return null;}
+	if (!e) return null;
+	if (Date.now() > e.expiry) {
+		CACHE.delete(key);
+		return null;
+	}
 	return e.data as T;
 };
-const write = (key:string,data:unknown) =>
-	CACHE.set(key,{data,expiry:Date.now()+TTL_MS});
+const write = (key: string, data: unknown) =>
+	CACHE.set(key, { data, expiry: Date.now() + TTL_MS });
 const clear = () => CACHE.clear();
 
 const { HOST, SERVICE } = getEnvVariables();
-const url = (path:string) => `${HOST}${SERVICE}${path}`;
+const url = (path: string) => `${HOST}${SERVICE}${path}`;
 
-
-// queries con caché 
-export const fetchCareers = async ():Promise<Career[]> => {
+export const fetchCareers = async (): Promise<Career[]> => {
 	const k = 'careers';
 	const c = read<Career[]>(k);
 	if (c) return c;
 
-	const { careers } = await get<{careers:Career[]}>(url(R.CAREERS),{});
+	const { careers } = await get<{ careers: Career[] }>(url(R.CAREERS), {});
 	write(k, careers);
 	return careers;
 };
 
 export const fetchPublications = async (
-	path:string,               // ej. /publications?page=1
-	params:Record<string,unknown> = {},
-):Promise<Publication[]> => {
+	path: string = R.PUBS,
+	params: Record<string, unknown> = {},
+): Promise<{ publications: Publication[]; pagination?: any }> => {
 	const k = `${path}${JSON.stringify(params)}`;
-	const c = read<Publication[]>(k);
+	const c = read<{ publications: Publication[]; pagination?: any }>(k);
 	if (c) return c;
 
-	const { publications } =
-		await get<{publications:Publication[]}>(url(path), params);
-	write(k, publications);
-	return publications;
+	const res = await get<{ publications: Publication[]; pagination?: any }>(
+		url(path),
+		params,
+	);
+	write(k, res);
+	return res;
 };
 
-export const fetchMyPublications = async ():Promise<Publication[]> => {
+
+export const fetchMyPublications = async (): Promise<Publication[]> => {
 	const k = 'my_publications';
 	const c = read<Publication[]>(k);
 	if (c) return c;
 
-	const { publications } =
-		await get<{publications:Publication[]}>(url(R.USER_PUBLICATIONS),{});
+	const { publications } = await get<{ publications: Publication[] }>(
+		url(R.USER_PUBLICATIONS),
+		{},
+	);
 	write(k, publications);
 	return publications;
 };
 
+
 export const fetchPublicationById = async (id: string): Promise<Publication> => {
-	const { publication } = await get<{ publication: Publication }>(url(R.PUB_BY_ID(id)), {});
+	const { publication } = await get<{ publication: Publication }>(
+		url(R.PUB_BY_ID(id)),
+		{},
+	);
 	return publication;
 };
 
-export const searchPublications = async (q: string): Promise<Publication[]> => {
-  const { publications } = await get<{ publications: Publication[] }>(
-    url(R.PUB_SEARCH(q)), // define este en publicationRoutes
-    { q }
-  );
-  return publications;
+
+export const searchPublications = async (
+	options: {
+		query?: string;
+		tag?: string;
+		tags?: string[];
+		careerId?: string;
+		page?: number;
+		limit?: number;
+	} = {},
+): Promise<{ publications: Publication[]; pagination?: any }> => {
+	const params: Record<string, any> = {};
+
+	if (options.query) params.query = options.query;
+	if (options.tag) params.tag = options.tag;
+	if (options.tags && options.tags.length) params.tags = options.tags.join(',');
+	if (options.careerId) params.careerId = options.careerId;
+	if (options.page) params.page = options.page;
+	if (options.limit) params.limit = options.limit;
+
+	const k = `search_${JSON.stringify(params)}`;
+	const c = read<{ publications: Publication[]; pagination?: any }>(k);
+	if (c) return c;
+
+	const res = await get<{ publications: Publication[]; pagination?: any }>(
+		url(R.PUB_SEARCH_BASE), // debe ser algo como `${SERVICE}/publications/search`
+		params,
+	);
+	write(k, res);
+	return res;
 };
 
+/* ---------------------- ✏️ CREAR / EDITAR / ELIMINAR ---------------------- */
 export const createPublication = async (fd: FormData): Promise<Publication> => {
 	const { publication } = await post<{ publication: Publication }>(
 		url(R.PUBS),
 		fd,
-		true
+		true,
 	);
-	clear();          // vacía caché
+	clear();
 	return publication;
 };
-export const updatePublication = (id:string, fd:FormData) =>
-	put<Publication>(url(R.PUB_BY_ID(id)), fd, true)
-.finally(clear);
 
-export const deletePublication = (id:string) =>
-	del<void>(url(R.PUB_BY_ID(id)))
-.finally(clear);
+export const updatePublication = (id: string, fd: FormData) =>
+	put<Publication>(url(R.PUB_BY_ID(id)), fd, true).finally(clear);
 
-export const likePublication   = (id:string) =>
+export const deletePublication = (id: string) =>
+	del<void>(url(R.PUB_BY_ID(id))).finally(clear);
+
+/* ---------------------- ❤️ LIKE / UNLIKE ---------------------- */
+export const likePublication = (id: string) =>
 	post<void>(url(R.PUB_LIKE(id)), {}).finally(clear);
 
-export const unlikePublication = (id:string) =>
+export const unlikePublication = (id: string) =>
 	post<void>(url(R.PUB_UNLIKE(id)), {}).finally(clear);
 
-/* reportes */
-export const reportPublication = (id:string, reason:string) =>
+/* ---------------------- 🚩 REPORTAR ---------------------- */
+export const reportPublication = (id: string, reason: string) =>
 	post<void>(url(R.PUB_REPORT(id)), { reason });
 

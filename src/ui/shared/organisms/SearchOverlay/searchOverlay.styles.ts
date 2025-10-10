@@ -4,7 +4,6 @@ import { Box } from '@mui/material';
 
 export const OverlayContainer = styled(Box)(({ theme }) => ({
 	position: 'fixed',
-	  top: 'calc(var(--header-h) + 4px)',
 	left: 0,
 	width: '100%',
 	height: 'calc(100vh - var(--header-h) - 4px)',

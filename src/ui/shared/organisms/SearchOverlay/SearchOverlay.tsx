@@ -36,43 +36,43 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 	const open = location.pathname === "/plataform/search";
 
 	const handleSearch = async (q: string) => {
-  onSearch(q, activeCategory);
+		onSearch(q, activeCategory);
 
-  // No buscar si la query es demasiado corta
-  if (!q || q.trim().length < 2) {
-    setResults(initialResults);
-    return;
-  }
+		// No buscar si la query es demasiado corta
+		if (!q || q.trim().length < 2) {
+			setResults(initialResults);
+			return;
+		}
 
-  let newResults: SearchResult[] = [];
+		let newResults: SearchResult[] = [];
 
-  try {
-    if (activeCategory === 'people' || activeCategory === 'all') {
-      const users = await searchUsers(q);
+		try {
+			if (activeCategory === 'people' || activeCategory === 'all') {
+				const users = await searchUsers(q);
 
-      //  Filtrar en frontend (por si el backend devuelve demasiado ruido)
-      const filteredUsers = users.filter((u) =>
-        u.username?.toLowerCase().includes(q.toLowerCase()) ||
-        u.email?.toLowerCase().includes(q.toLowerCase())
-      );
+				//  Filtrar en frontend (por si el backend devuelve demasiado ruido)
+				const filteredUsers = users.filter((u) =>
+												   u.username?.toLowerCase().includes(q.toLowerCase()) ||
+												   u.email?.toLowerCase().includes(q.toLowerCase())
+												  );
 
-      newResults.push(
-        ...filteredUsers.map((u) => ({
-          id: u._id,
-          type: 'people' as const,
-          title: `${u.username}`,
-          description: u.career ?? '',
-          thumbnail: u.avatarUrl,
-          author: u,
-        }))
-      );
-    }
-
+												  newResults.push(
+													  ...filteredUsers.map((u) => ({
+														  id: u._id,
+														  type: 'people' as const,
+														  title: `${u.username}`,
+														  description: u.career ?? '',
+														  thumbnail: u.avatarUrl,
+														  author: u,
+													  }))
+												  );
+			}
 
 			if (activeCategory === 'posts' || activeCategory === 'all') {
-				const pubs = await searchPublications(q);
+				// ✅ usa el nuevo servicio con objeto de opciones
+				const { publications } = await searchPublications({ query: q });
 				newResults.push(
-					...pubs.map((p:Publication) => ({
+					...publications.map((p:Publication) => ({
 						id: p._id,
 						type: 'posts' as const,
 						title: p.title ?? 'Publicación',
@@ -113,18 +113,20 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
 			return (
 				<>
-					<SearchInput
-						onSearch={handleSearch}
-						liveSearch
-						debounceMs={300}
-						fireOnBlur={false}
-						placeholder={placeholder}
-						// @ts-ignore
-						onFocus={() => navigate('/plataform/search')} // 🔹 Solo navega
-						sx={{ maxWidth: 200 }}
-					/>
+					{!open && (
+						<SearchInput
+							onSearch={handleSearch}
+							liveSearch
+							debounceMs={300}
+							fireOnBlur={false}
+							placeholder={placeholder}
+							// @ts-ignore
+							onFocus={() => navigate('/plataform/search')} // 🔹 Solo navega
+							sx={{ maxWidth: 200 }}
+						/>
+					)}
 
-					<Modal open={open} onClose={() => navigate('/plataform')}>
+					<Modal open={open} onClose={() => navigate('/plataform')} BackdropProps={{ sx: { backgroundColor: 'transparent' } }}>
 						<OverlayContainer>
 							{/* Input dentro del overlay */}
 							<SearchInput
@@ -164,8 +166,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 												<PersonResultCard
 													key={r.id}
 													result={r}
-													author={r.author} 
-													HOST={HOST}      
+													author={r.author}
+													HOST={HOST}
 													onAuthor={(id, username) =>
 														navigate(`/profile/${username}`, { state: { userProfileId: id } })
 													}
@@ -187,11 +189,11 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 								})
 								)}
 							</ResultsSection>
-
 						</OverlayContainer>
 					</Modal>
 				</>
 			);
+
 };
 
 export default SearchOverlay;

@@ -2,9 +2,9 @@
 import React from 'react';
 import { styled } from '@mui/material/styles';
 import MuiTooltip, { TooltipProps } from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import { TooltipBubbleProps } from './TooltipBubble.types';
 import { getTooltipStyles } from './tooltipBubble.styles';
+import Text from '../../typography/Text';
 
 interface StyledTooltipProps {
 	variant?: 'dark' | 'light' | 'primary';
@@ -22,41 +22,65 @@ const StyledTooltip = styled(
 
 const TooltipBubble: React.FC<TooltipBubbleProps> = ({
 	title,
-	content,
+	content,                 
 	variant = 'dark',
 	position = 'bottom',
+	placement,              
 	size = 'medium',
 	className,
 	showArrow = true,
 	maxWidth = 300,
 	children,
 }) => {
-	return (
-		<StyledTooltip
-			title={
-				<div style={{ maxWidth }}>
-					{title && (
-						<Typography variant="subtitle2" fontWeight={600} gutterBottom>
-							{title}
-						</Typography>
-					)}
-					{typeof content === 'string' ? (
-						<Typography variant="body2">{content}</Typography>
-					) : (
+	const effectivePlacement = placement ?? position;
+
+	// Mapeo de tamaños a tus tokens (usando Text)
+	const S = {
+		small:  { title: 'sm', body: 'xs' },
+		medium: { title: 'md', body: 'sm' },
+		large:  { title: 'lg', body: 'md' },
+	} as const;
+	const map = S[size] ?? S.medium;
+
+	const titleNodeOnly =
+		content === undefined
+			? (title ? <Text size={map.body as any}>{title}</Text> : null)
+			: null;
+
+			const fullNode =
+				content !== undefined ? (
+					<>
+						{title ? (
+							<Text size={map.title as any} weight="bold" sx={{ display: 'block', mb: 0.25 }}>
+
+								{title}
+							</Text>
+						) : null}
+						{typeof content === 'string' ? (
+							<Text size={map.body as any}>{content}</Text>
+						) : (
 						content
-					)}
-				</div>
-			}
-			placement={position}
-			arrow={showArrow}
-			// 👇 solo los pasamos al styled, no a MuiTooltip
-			variant={variant}
-			size={size}
-			className={className}
-		>
-			<span>{children}</span>
-		</StyledTooltip>
-	);
+						)}
+					</>
+			) : null;
+
+			return (
+				<StyledTooltip
+					title={
+						<div style={{ maxWidth }}>
+							{titleNodeOnly ?? fullNode}
+						</div>
+					}
+					placement={effectivePlacement}
+					arrow={showArrow}
+					variant={variant}
+					size={size}
+					className={className}
+				>
+					{/* envolvemos para que siempre haya un elemento */}
+					    <div style={{ display: 'inline-flex' }}>{children}</div>
+				</StyledTooltip>
+			);
 };
 
 export default TooltipBubble;

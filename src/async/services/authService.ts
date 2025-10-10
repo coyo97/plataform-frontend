@@ -6,14 +6,20 @@ const { HOST, SERVICE } = getEnvVariables();
 const BASE_URL = `${HOST}${SERVICE}/users`;
 
 /* ---------- Registro de usuario ---------- */
-export const registerUser = async (userData: {
+type RegisterPayload = {
 	username: string;
 	email: string;
 	password: string;
-	careers: string[];
-	apellidoPaterno: string;
-	apellidoMaterno: string;
-}) => {
+
+	// opcionales para no romper backend
+	careers?: string[];                 
+	apellidoPaterno?: string;
+	apellidoMaterno?: string;
+	accountType?: 'guest' | 'university';
+	schoolName?: string;
+};
+
+export const registerUser = async (userData: RegisterPayload) => {
 	const res = await post(`${BASE_URL}`, userData);
 	return res;
 };
@@ -31,3 +37,4 @@ export const forgotPassword = (email: string) =>
 
 export const resetPassword = (token: string, password: string) =>
 	post(`${BASE_URL}/users/reset-password/${token}`, { password });
+

@@ -16,9 +16,12 @@ interface Props{
 	onAuthor   : (id:string,user:string)=>void;
 	onReport   : (id:string)=>void;
 	onSearch   : (q:string)=>void;
+	onTagClick?: (tag:string)=>void;
 }
 
-const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,onUnlike,onAuthor,onReport,onSearch, })=>(
+const PublicationsFeed:React.FC<Props>=({
+	HOST,list,lastRef,renderFile, onLike,onUnlike,onAuthor,onReport,onSearch, onTagClick,
+})=>(
 	<FeedWrapper>
 		<div style={{
 			position: 'sticky',
@@ -31,7 +34,6 @@ const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,on
 			<div key={p._id}
 				ref={idx===list.length-1?lastRef:null}
 				role='article'
-				//aria-label={`Publicación de ${p.author.username}`}
 			>
 				<PublicationCard
 					HOST={HOST}
@@ -42,6 +44,7 @@ const PublicationsFeed:React.FC<Props>=({HOST,list,lastRef,renderFile, onLike,on
 					onUnlike   ={onUnlike}
 					onAuthor   ={onAuthor}
 					onReport   ={onReport}
+					onTagClick ={onTagClick}
 				/>
 			</div>
 		))}

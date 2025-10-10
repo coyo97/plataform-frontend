@@ -1,8 +1,11 @@
 const BASE = '/academic-help';
 
-export const HELPS            = BASE;              // GET lista | POST crear
-export const HELP_BY_ID       = (id: string) => `${BASE}/${id}`;
-export const HELP_RESOLVE     = (id: string) => `${BASE}/${id}/resolve`;
+export const HELPS             = BASE;                       // GET lista | POST crear
+export const MY_HELPS          = '/my-academic-help';        // GET solo mis ayudas
+export const HELP_BY_ID        = (id: string) => `${BASE}/${id}`;
+export const HELP_UPDATE       = (id: string) => `${BASE}/${id}`;           // PUT (solo autor)
+export const HELP_DELETE       = (id: string) => `${BASE}/${id}`;           // DELETE (solo autor)
+export const HELP_RESOLVE      = (id: string) => `${BASE}/${id}/resolve`;   // PUT (solo autor)
 
 /* ---- Hilo “foro” ---- */
 export const THREAD           = (helpId: string) => `${BASE}/${helpId}/thread`;

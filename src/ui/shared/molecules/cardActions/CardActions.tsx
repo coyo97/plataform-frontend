@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CardActionsProps } from './cardActions.types';
 import { ActionsWrapper } from './cardActions.styles';
 
 import IconButton from '../../atoms/buttons/iconButton/IconButton';
 import Text from '../../atoms/typography/Text';
 import ShareMenu from '../shareMenu/ShareMenu';
+import TooltipBubble from '../../atoms/tooltips/tooltipBubble/TooltipBubble';
 
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
@@ -29,6 +30,12 @@ const CardActions: React.FC<CardActionsProps> = ({
 	const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
 
+	const ariaLiveRef = useRef<HTMLSpanElement>(null);
+	useEffect(() => {
+		if (!ariaLiveRef.current) return;
+		ariaLiveRef.current.textContent = `Me gusta: ${likesCount}. Comentarios: ${commentsCount}.`;
+	}, [likesCount, commentsCount]);
+
 	const handleOpenShare = (e: React.MouseEvent<HTMLElement>) => {
 		setAnchorEl(e.currentTarget);
 	};
@@ -40,44 +47,73 @@ const CardActions: React.FC<CardActionsProps> = ({
 	const shareLink = onShare ? onShare() : window.location.href;
 
 	return (
-		<ActionsWrapper>
+		<ActionsWrapper role="group" aria-label="Acciones de la publicación">
 			{showLike && (
 				<>
-					<IconButton
-						ariaLabel={liked ? 'Quitar me gusta' : 'Dar me gusta'}
-						onClick={liked ? onUnlike : onLike}
-					>
-						{liked ? <ThumbUpIcon /> : <ThumbUpOffAltIcon />}
-					</IconButton>
-					<Text size="sm">{likesCount}</Text>
+					<TooltipBubble title={liked ? 'Quitar Me gusta' : 'Me gusta'} placement="top" size="small" maxWidth={160}>
+						<IconButton
+							ariaLabel={liked ? 'Quitar me gusta' : 'Dar me gusta'}
+							onClick={liked ? onUnlike : onLike}
+							onKeyDown={(e: React.KeyboardEvent) => {
+								if (e.key === 'Enter' || e.key === ' ') (liked ? onUnlike : onLike)?.();
+							}}
+						>
+							{liked ? <ThumbUpIcon /> : <ThumbUpOffAltIcon />}
+						</IconButton>
+					</TooltipBubble>
+
+
+					{/* Re-montamos el nodo para animar el número sin cambiar props */}
+					<Text size="sm" className="counter-anim" key={`likes-${likesCount}`} aria-hidden>
+						{likesCount}
+					</Text>
 				</>
 			)}
 
 			{showComment && (
 				<>
-					<IconButton ariaLabel="Comentar" onClick={onComments}>
-						<ChatBubbleOutlineIcon />
-					</IconButton>
-					<Text size="sm">{commentsCount}</Text>
+					<TooltipBubble title="Comentarios" placement="top" size="small" maxWidth={160}>
+						<IconButton
+							ariaLabel="Comentar"
+							onClick={onComments}
+							onKeyDown={(e: React.KeyboardEvent) => {
+								if (e.key === 'Enter' || e.key === ' ') onComments?.();
+							}}
+						>
+							<ChatBubbleOutlineIcon />
+						</IconButton>
+					</TooltipBubble>
+
+					<Text size="sm" className="counter-anim" key={`comments-${commentsCount}`} aria-hidden>
+						{commentsCount}
+					</Text>
 				</>
 			)}
 
 			{showShare && (
 				<>
-					<IconButton ariaLabel="Compartir" onClick={handleOpenShare}>
-						<ShareIcon />
-					</IconButton>
-					{open && anchorEl && (
-						<ShareMenu link={shareLink} onClose={handleCloseShare} />
-					)}
+
+					<TooltipBubble title="Compartir" placement="top" size="small" maxWidth={160}>
+						<IconButton ariaLabel="Compartir" onClick={handleOpenShare}>
+							<ShareIcon />
+						</IconButton>
+					</TooltipBubble>
+
+					{open && anchorEl && <ShareMenu link={shareLink} onClose={handleCloseShare} />}
 				</>
 			)}
 
 			{showReport && (
-				<IconButton ariaLabel="Reportar" onClick={onReport}>
-					<ReportOutlinedIcon />
-				</IconButton>
+				<TooltipBubble title="Reportar" placement="top" size="small" maxWidth={160}>
+					<IconButton ariaLabel="Reportar" onClick={onReport}>
+						<ReportOutlinedIcon />
+					</IconButton>
+				</TooltipBubble>
+
 			)}
+
+			{/* Sólo lectores de pantalla */}
+			<span ref={ariaLiveRef} aria-live="polite" className="sr-only" />
 		</ActionsWrapper>
 	);
 };

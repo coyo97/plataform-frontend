@@ -1,40 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchHelpRequests } from '../../../../async/services/academicHelpService';
 import { AcademicHelp } from '../../../../types/academicHelp';
 
-type RawFilters   = Parameters<typeof fetchHelpRequests>[0];
+type RawFilters = Parameters<typeof fetchHelpRequests>[0];
 export type HelpFilters = NonNullable<RawFilters> & {
-  status?: 'open' | 'resolved';
+	status?: 'open' | 'resolved';
 };
 
 export const useHelpFeed = () => {
-	const [helps, setHelps] = useState<AcademicHelp[]>([]);   // siempre array
+	const [helps, setHelps] = useState<AcademicHelp[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [filters, setFilt ] = useState<HelpFilters>({});   // ⬅
+	const [filters, setFilters] = useState<HelpFilters>({});
 
-	const load = async () => {
-		setLoading(true);
-		try {
-			const data = await fetchHelpRequests();        // devuelve AcademicHelp[]
-			setHelps(data ?? []);                          // fallback []
-		} catch (e) {
-			console.error(e);
-			setHelps([]);                                  // evita undefined
-		} finally {
-			setLoading(false);
-		}
-	};
+	const debounceTimer = useRef<number | null>(null);
 
-	/* Primera carga */
-	useEffect(() => { load(); }, []);
+	useEffect(() => {
+		let cancelled = false;
 
-	useEffect(()=>{
-		setLoading(true);
-		fetchHelpRequests(filters)
-		.then(setHelps)
-		.finally(()=>setLoading(false));
-	},[filters]);
+		const run = async () => {
+			setLoading(true);
+			try {
+				const data = await fetchHelpRequests(filters);
+				if (!cancelled) setHelps(data ?? []);
+			} catch (e) {
+				console.error(e);
+				if (!cancelled) setHelps([]);
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		};
 
-	return { helps, setHelps, loading, reload: load, setFilters:setFilt, filters  }; // ← exporta setHelps
+		if (debounceTimer.current) window.clearTimeout(debounceTimer.current);
+		debounceTimer.current = window.setTimeout(run, 250);
+
+		return () => {
+			cancelled = true;
+			if (debounceTimer.current) {
+				window.clearTimeout(debounceTimer.current);
+				debounceTimer.current = null;
+			}
+		};
+	}, [filters]);
+
+	const reload = () => setFilters({ ...filters }); 
+
+	return { helps, setHelps, loading, reload, setFilters, filters };
 };
 

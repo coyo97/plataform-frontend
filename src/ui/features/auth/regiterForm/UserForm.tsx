@@ -9,14 +9,21 @@ interface Career {
 	name: string;
 }
 
+type AccountType = 'guest' | 'university';
+
 const UserForm: React.FC = () => {
 	const [username, setUsername] = useState('');
 	const [apellidoPaterno, setApellidoPaterno] = useState('');
 	const [apellidoMaterno, setApellidoMaterno] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+
+	const [accountType, setAccountType] = useState<AccountType>('guest');
+	const [schoolName, setSchoolName] = useState('');
+
 	const [careers, setCareers] = useState<string[]>([]);
 	const [availableCareers, setAvailableCareers] = useState<Career[]>([]);
+
 	const [successMessage, setSuccessMessage] = useState('');
 	const [error, setError] = useState('');
 	const navigate = useNavigate();
@@ -34,12 +41,33 @@ const UserForm: React.FC = () => {
 		loadCareers();
 	}, []);
 
+	const isUniversity = accountType === 'university';
+
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
+		setError('');
+		setSuccessMessage('');
+
+		if (isUniversity && (!careers[0] || careers[0] === '')) {
+			setError('Debes seleccionar una carrera para registrarte como universitario.');
+			return;
+		}
+
 		try {
-			await registerUser({ username,apellidoPaterno, apellidoMaterno, email, password, careers });
+			const payload = {
+				username,
+				apellidoPaterno,
+				apellidoMaterno,
+				email,
+				password,
+				accountType,                   
+				...(schoolName ? { schoolName } : {}),
+				careers: isUniversity ? [careers[0]] : [], // invitados => []
+			};
+
+			await registerUser(payload as any);
 			setSuccessMessage('Registro con éxito');
-			setTimeout(() => navigate('/login'), 2000);
+			setTimeout(() => navigate('/login'), 1200);
 		} catch (err) {
 			console.error('Error al registrar usuario:', err);
 			setError('Error al crear usuario. Verifica los datos.');
@@ -51,6 +79,34 @@ const UserForm: React.FC = () => {
 			<FormTitle>Registro</FormTitle>
 			{error && <p style={{ color: 'red' }}>{error}</p>}
 			{successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+
+			{/* Tipo de cuenta */}
+			<div>
+				<FormLabel>Tipo de cuenta:</FormLabel>
+				<select
+					value={accountType}
+					onChange={(e) => {
+						const value = e.target.value as AccountType;
+						setAccountType(value);
+						if (value === 'guest') setCareers([]); // limpia carrera si cambia a invitado
+					}}
+					style={{
+						padding: '10px',
+						borderRadius: '4px',
+						border: '1px solid #ddd',
+						width: '100%',
+					}}
+				>
+					<option value="guest">Invitado / Colegial</option>
+					<option value="university">Universitario UATF</option>
+				</select>
+				<p style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
+					{isUniversity
+						? 'Selecciona tu carrera universitaria para acceder a módulos académicos.'
+						: 'Puedes registrarte sin carrera. Ideal para invitados, colegiales.'}
+				</p>
+			</div>
+
 			<div>
 				<FormLabel>Nombre:</FormLabel>
 				<FormInput
@@ -60,6 +116,7 @@ const UserForm: React.FC = () => {
 					required
 				/>
 			</div>
+
 			<div>
 				<FormLabel>Apellido Paterno:</FormLabel>
 				<FormInput
@@ -89,6 +146,7 @@ const UserForm: React.FC = () => {
 					required
 				/>
 			</div>
+
 			<div>
 				<FormLabel>Password:</FormLabel>
 				<FormInput
@@ -98,27 +156,45 @@ const UserForm: React.FC = () => {
 					required
 				/>
 			</div>
-			<div>
-				<FormLabel>Carreras:</FormLabel>
-				<select
-					value={careers[0] || ''}
-					onChange={(e) => setCareers([e.target.value])}
-					required
-					style={{
-						padding: '10px',
-						borderRadius: '4px',
-						border: '1px solid #ddd',
-						width: '100%',
-					}}
-				>
-					<option value="" disabled>Seleccione una carrera</option>
-					{availableCareers.map(career => (
-						<option key={career._id} value={career._id}>
-							{career.name}
-						</option>
-					))}
-				</select>
-			</div>
+
+			{/* Campo opcional para invitados */}
+			{accountType === 'guest' && (
+				<div>
+					<FormLabel>Colegio / Institución (opcional):</FormLabel>
+					<FormInput
+						type="text"
+						value={schoolName}
+						onChange={(e) => setSchoolName(e.target.value)}
+						placeholder="Ej. Colegio Nacional Potosí"
+					/>
+				</div>
+			)}
+
+			{/* Carrera: visible y requerido solo si Universitario */}
+			{isUniversity && (
+				<div>
+					<FormLabel>Carreras:</FormLabel>
+					<select
+						value={careers[0] || ''}
+						onChange={(e) => setCareers([e.target.value])}
+						required={isUniversity}
+						style={{
+							padding: '10px',
+							borderRadius: '4px',
+							border: '1px solid #ddd',
+							width: '100%',
+						}}
+					>
+						<option value="" disabled>Seleccione una carrera</option>
+						{availableCareers.map((career) => (
+							<option key={career._id} value={career._id}>
+								{career.name}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
+
 			<SubmitButton type="submit">Registro</SubmitButton>
 			<SubmitButton type="button" onClick={() => navigate('/login')}>Iniciar Sesión</SubmitButton>
 		</FormWrapper>

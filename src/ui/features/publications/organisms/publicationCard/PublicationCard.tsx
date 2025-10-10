@@ -15,6 +15,8 @@ interface Props {
 	onUnlike: (id: string) => void;
 	onAuthor: (id: string, user: string) => void;
 	onReport: (id: string) => void;
+	onTagClick?: (tag:string)=>void;
+
 }
 
 const PublicationCard: React.FC<Props> = ({
@@ -25,6 +27,7 @@ const PublicationCard: React.FC<Props> = ({
 	onUnlike,
 	onAuthor,
 	onReport,
+	onTagClick
 }) => {
 	const uid = getUserId();
 	const liked = (publication.likes ?? []).includes(uid);
@@ -48,6 +51,7 @@ const PublicationCard: React.FC<Props> = ({
 				}
 				date={publication.created_at}
 				tags={publication.tags ?? []}
+				onTagClick={onTagClick}
 				media={renderFile(publication)}
 				actions={
 					<CardActions

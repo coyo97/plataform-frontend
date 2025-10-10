@@ -83,7 +83,21 @@ export const IconWrapper = styled('div')<{ position: 'left' | 'right' }>(({ them
 	pointerEvents: 'none',
 	color: theme.palette.text.secondary,
 }));
-
+export const EndAdornment = styled('div')(({ theme }) => ({
+	position: 'absolute',
+	top: '50%',
+	right: theme.spacing(1),
+	transform: 'translateY(-50%)',
+	pointerEvents: 'auto',
+	display: 'flex',
+	alignItems: 'center',
+	gap: theme.spacing(0.5),
+}));
+export const Counter = styled('span')(({ theme }) => ({
+	marginLeft: 'auto',
+	fontSize: '0.75rem',
+	color: theme.palette.text.disabled,
+}));
 // Helper para posición
 const potionToStyle = (position: 'left' | 'right') =>
 	position === 'left' ? 'left' : 'right';

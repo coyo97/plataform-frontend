@@ -9,5 +9,9 @@ export interface BadgeProps extends HTMLAttributes<HTMLDivElement> {
 	icon?: ReactNode;
 	image?: string;
 	children: ReactNode;
+
+	interactive?: boolean;
+
+	ariaLabel?: string;
 }
 

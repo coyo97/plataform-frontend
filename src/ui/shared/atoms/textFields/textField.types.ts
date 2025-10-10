@@ -13,8 +13,11 @@ export interface TextFieldProps {
 	size?: 'small' | 'medium' | 'large';
 	className?: string;
 	type?: 'text' | 'email' | 'password' | 'number';
+	endAdornment?: ReactNode;
 	multiline?: boolean;
 	rows?: number;
 	autoResize?: boolean;
+	counter?: string;
+	onBlur?: () => void;
 }
 

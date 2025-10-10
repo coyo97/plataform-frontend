@@ -11,7 +11,8 @@ export const PUB_LIKE           = (id: string) => `${BASE}/${id}/like`;
 export const PUB_UNLIKE         = (id: string) => `${BASE}/${id}/unlike`;
 
 export const PUB_REPORT         = (id: string) => `${BASE}/${id}/report`;
-/* ───── otros recursos vinculados ───────────────────── */
+export const PUB_SEARCH_BASE = '/publications/search';
+
 export const CAREERS            = '/careers';
 export const USER_PUBLICATIONS  = '/user-publications';
 

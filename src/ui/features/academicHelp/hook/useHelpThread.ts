@@ -11,12 +11,11 @@ export const useHelpThread = (helpId: string) => {
 	const [thread, setThread] = useState<HelpThread  | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	/* ---------------- cargar datos ---------------- */
 	const load = async () => {
 		setLoading(true);
 		const [h, { thread: t }] = await Promise.all([
-			fetchHelpById(helpId),     // AcademicHelp
-			fetchThread(helpId)        // { thread: HelpThread }
+			fetchHelpById(helpId),     
+			fetchThread(helpId)       
 		]);
 		setHelp(h);
 		setThread(t);
@@ -25,7 +24,6 @@ export const useHelpThread = (helpId: string) => {
 
 	useEffect(() => { load(); }, [helpId]);
 
-	/* ---------------- acciones ------------------- */
 	const vote  = async (tid: string, mid: string) => {
 		await voteMessage(tid, mid);
 		load();
