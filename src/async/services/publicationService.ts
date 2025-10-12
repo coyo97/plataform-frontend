@@ -105,7 +105,6 @@ export const searchPublications = async (
 	return res;
 };
 
-/* ---------------------- ✏️ CREAR / EDITAR / ELIMINAR ---------------------- */
 export const createPublication = async (fd: FormData): Promise<Publication> => {
 	const { publication } = await post<{ publication: Publication }>(
 		url(R.PUBS),
@@ -116,20 +115,25 @@ export const createPublication = async (fd: FormData): Promise<Publication> => {
 	return publication;
 };
 
-export const updatePublication = (id: string, fd: FormData) =>
-	put<Publication>(url(R.PUB_BY_ID(id)), fd, true).finally(clear);
+export const updatePublication = async (id: string, fd: FormData): Promise<Publication> => {
+	const { publication } = await put<{ publication: Publication }>(
+		url(R.USER_PUBLICATION_BY_ID(id)), 
+		fd,
+		true                              
+	);
+	clear();
+	return publication;
+};
 
 export const deletePublication = (id: string) =>
 	del<void>(url(R.PUB_BY_ID(id))).finally(clear);
 
-/* ---------------------- ❤️ LIKE / UNLIKE ---------------------- */
 export const likePublication = (id: string) =>
 	post<void>(url(R.PUB_LIKE(id)), {}).finally(clear);
 
 export const unlikePublication = (id: string) =>
 	post<void>(url(R.PUB_UNLIKE(id)), {}).finally(clear);
 
-/* ---------------------- 🚩 REPORTAR ---------------------- */
 export const reportPublication = (id: string, reason: string) =>
 	post<void>(url(R.PUB_REPORT(id)), { reason });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
 	Dialog,
 	DialogTitle,
@@ -8,8 +8,13 @@ import {
 	Button,
 } from '@mui/material';
 
+import IconButton from '@mui/material/IconButton';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+
 import Card from '../../../shared/organisms/card/Card';
 import CardActions from '../../../shared/molecules/cardActions/CardActions';
+import ActionMenu from '../../../shared/molecules/actionMenu/ActionMenu';
+
 import HelpStatusBadge from '../atoms/HelpStatusBadge';
 import Loader from '../../../shared/atoms/feedback/loader/Loader';
 import HelpMessageCard from './HelpMessageCard';
@@ -24,34 +29,51 @@ import {
 	markSolution,
 } from '../../../../async/services/academicHelpService';
 
+import { deleteMyHelp } from '../../../../async/services/academicHelpService';
+
 import type { AcademicHelp } from '../../../../types/academicHelp';
 import type { HelpThread } from '../../../../types/helpThread';
 
 import getEnvVariables from '../../../../config/configEnvs';
+import { getUserId } from '../../../../utils/auth/getUserId';
 const { HOST } = getEnvVariables();
 
-const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
+type Props = {
+	help: AcademicHelp;
+	/** opcional: para que el padre remueva del feed sin recargar */
+	onDeleted?: (id: string) => void;
+	/** opcional: si prefieres manejar la edición arriba */
+	onEditRequested?: (help: AcademicHelp) => void;
+};
+
+const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 	const [open, setOpen] = React.useState(false);
 	const [busy, setBusy] = React.useState(false);
 	const [thread, setThread] = React.useState<HelpThread | null>(null);
+
+	const uid = getUserId();
+	const isOwner = (help as any)?.user?._id === uid;
+
+	const navigate = useNavigate();
+	const location = useLocation();
 
 	const avatarSrc = help.user?.profile?.profilePicture
 		? `${HOST}/${help.user.profile.profilePicture}`
 		: undefined;
 
-		// Construye tags contextuales con lo que haya (IDs poblados o campos legacy)
+		// -------- tags/contexto ----------
 		const tags: string[] = [];
-		const facName    = (help as any)?.facultyId?.name || (help as any)?.faculty;
-		const careerName = (help as any)?.careerId?.name;
-		const subjectName= (help as any)?.subjectId?.name || (help as any)?.subject;
-		const unitName   = (help as any)?.unitId?.name;
-		const cycleName  = (help as any)?.cycleId?.name || (help as any)?.semester;
+		const facName     = (help as any)?.facultyId?.name || (help as any)?.faculty;
+		const careerName  = (help as any)?.careerId?.name;
+		const subjectName = (help as any)?.subjectId?.name || (help as any)?.subject;
+		const unitName    = (help as any)?.unitId?.name;
+		const cycleName   = (help as any)?.cycleId?.name || (help as any)?.semester;
 
-		if (facName)    tags.push(`Facultad: ${facName}`);
-		if (careerName) tags.push(`Carrera: ${careerName}`);
-		if (subjectName)tags.push(`Asignatura: ${subjectName}`);
-		if (unitName)   tags.push(`Unidad: ${unitName}`);
-		if (cycleName)  tags.push(`Ciclo: ${cycleName}`);
+		if (facName)     tags.push(`Facultad: ${facName}`);
+		if (careerName)  tags.push(`Carrera: ${careerName}`);
+		if (subjectName) tags.push(`Asignatura: ${subjectName}`);
+		if (unitName)    tags.push(`Unidad: ${unitName}`);
+		if (cycleName)   tags.push(`Ciclo: ${cycleName}`);
 
 		const guessMime = (path: string): string => {
 			const clean = path.split('?')[0].toLowerCase();
@@ -99,13 +121,12 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 
 		const idOr = (maybe: any): string | undefined => {
 			if (!maybe) return undefined;
-			if (typeof maybe === 'string') return maybe;       // ObjectId como string
+			if (typeof maybe === 'string') return maybe;
 			if (typeof maybe === 'object' && maybe._id) return String(maybe._id);
 			return undefined;
 		};
 
 		const handleTagClick = (txt: string) => {
-			// "Asignatura: Cálculo I", "Carrera: Sistemas", etc.
 			const [label, ...rest] = txt.split(':');
 			const value = rest.join(':').trim();
 
@@ -116,23 +137,19 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 				const id = idOr((help as any).facultyId);
 				if (id) next.set('facultyId', id);
 			}
-
 			if (label === 'Carrera') {
 				const id = idOr((help as any).careerId);
 				if (id) next.set('careerId', id);
 			}
-
 			if (label === 'Asignatura') {
 				const id = idOr((help as any).subjectId);
 				if (id) next.set('subjectId', id);
-				else    next.set('subject', value); // legacy fallback
+				else    next.set('subject', value); // legacy
 			}
-
 			if (label === 'Unidad') {
 				const id = idOr((help as any).unitId);
 				if (id) next.set('unitId', id);
 			}
-
 			if (label === 'Ciclo') {
 				const id = idOr((help as any).cycleId);
 				if (id) next.set('cycleId', id);
@@ -141,15 +158,50 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 			setSearchParams(next);
 		};
 
+		// ===== Menú ⋮ (More Actions) =====
+		const [menuOpen, setMenuOpen] = React.useState(false);
+		const openMenu  = () => setMenuOpen(true);
+		const closeMenu = () => setMenuOpen(false);
+
+		// ⬇️ NUEVO: confirmación para eliminar
+		const [confirmOpen, setConfirmOpen] = React.useState(false);
+		const askDelete = () => {
+			closeMenu();
+			setConfirmOpen(true);
+		};
+		const cancelDelete = () => setConfirmOpen(false);
+
+		const doDelete = async () => {
+			try {
+				await deleteMyHelp(help._id);
+				setConfirmOpen(false);
+				onDeleted?.(help._id);           // notifica al padre para remover del feed
+			} catch (e) {
+				console.error(e);
+				setConfirmOpen(false);
+				// aquí podrías disparar un snackbar de error global si tienes
+			}
+		};
+
+		const handleEdit = () => {
+			closeMenu();
+
+			// 🔹 Avisamos al componente padre (HomeAcademicHelp)
+			// para que abra el diálogo con los datos de esta ayuda
+			onEditRequested?.(help);
+		};
+
+		const handleSave = () => {
+			console.info('Guardar ayuda (TODO)');
+		};
+
 		return (
 			<>
 				<Card
 					title={help.topic || '(Sin título)'}
 					description={
 						help.description
-							? `${help.description.slice(0, 140)}${
-								help.description.length > 140 ? '…' : ''
-							}`
+							? `${help.description.slice(0, 140)}${help.description.length > 140 ? '…' : ''}`
 							: undefined
 					}
 					author={
@@ -161,7 +213,7 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 							: undefined
 					}
 					date={help.created_at}
-					tags={tags}                          
+					tags={tags}
 					onTagClick={handleTagClick}
 					media={
 						help.fileUrl ? (
@@ -175,10 +227,7 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 								elevation={1}
 								maxFeedHeight="min(60vh, 520px)"
 								previewVariant="cover"
-								buttonLabels={{
-									viewPdf: 'Ver PDF',
-									download: 'Descargar archivo',
-								}}
+								buttonLabels={{ viewPdf: 'Ver PDF', download: 'Descargar archivo' }}
 							/>
 					) : null
 					}
@@ -192,13 +241,36 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 							onComments={handleOpen}
 						/>
 					}
+					headerActions={
+						<>
+							<IconButton
+								aria-label="Más opciones de solicitud"
+								onClick={openMenu}
+								size="small"
+							>
+								<MoreVertIcon />
+							</IconButton>
+
+							{menuOpen && (
+								<ActionMenu
+									isOwner={isOwner}
+									link={`${window.location.origin}/help/${help._id}`}
+									onEdit={handleEdit}
+									onDelete={askDelete}
+									onReport={() => console.info('Reportar ayuda (TODO)')}
+									onSave={handleSave}
+									onClose={closeMenu}
+								/>
+							)}
+						</>
+					}
 				/>
 
+				{/* Hilo de respuestas */}
 				<Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
 					<DialogTitle>Respuestas de la solicitud</DialogTitle>
 					<DialogContent dividers>
 						{busy && <Loader size="small" />}
-
 						{!busy &&
 							(thread && thread.messages.length ? (
 								thread.messages.map((m) => (
@@ -213,11 +285,22 @@ const HelpCard: React.FC<{ help: AcademicHelp }> = ({ help }) => {
 						) : (
 							<p style={{ color: '#666' }}>Sin respuestas aún</p>
 						))}
-
 						{help.status === 'open' && <HelpResponseForm onSend={post} />}
 					</DialogContent>
 					<DialogActions>
 						<Button onClick={handleClose}>Cerrar</Button>
+					</DialogActions>
+				</Dialog>
+
+				{/* Confirmación eliminar */}
+				<Dialog open={confirmOpen} onClose={cancelDelete} maxWidth="xs" fullWidth>
+					<DialogTitle>Eliminar ayuda</DialogTitle>
+					<DialogContent dividers>
+						¿Seguro que quieres eliminar esta ayuda? Esta acción no se puede deshacer.
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={cancelDelete}>Cancelar</Button>
+						<Button color="error" onClick={doDelete}>Eliminar</Button>
 					</DialogActions>
 				</Dialog>
 			</>

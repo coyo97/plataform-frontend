@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchHelpRequests } from '../../../../async/services/academicHelpService';
+import {
+	fetchHelpRequests,
+	fetchMyHelpRequests,
+} from '../../../../async/services/academicHelpService';
 import { AcademicHelp } from '../../../../types/academicHelp';
 
 type RawFilters = Parameters<typeof fetchHelpRequests>[0];
 export type HelpFilters = NonNullable<RawFilters> & {
 	status?: 'open' | 'resolved';
+	/** 'me' para “Mis ayudas”, 'all' (o undefined) para todo */
+	owner?: 'me' | 'all';
 };
 
 export const useHelpFeed = () => {
@@ -20,8 +25,12 @@ export const useHelpFeed = () => {
 		const run = async () => {
 			setLoading(true);
 			try {
-				const data = await fetchHelpRequests(filters);
-				if (!cancelled) setHelps(data ?? []);
+				const isMine = filters.owner === 'me';
+				const data = isMine
+					? await fetchMyHelpRequests()
+					: await fetchHelpRequests(filters);
+
+					if (!cancelled) setHelps(data ?? []);
 			} catch (e) {
 				console.error(e);
 				if (!cancelled) setHelps([]);
@@ -42,7 +51,8 @@ export const useHelpFeed = () => {
 		};
 	}, [filters]);
 
-	const reload = () => setFilters({ ...filters }); 
+	/** Forzar recarga con los mismos filtros */
+	const reload = () => setFilters({ ...filters });
 
 	return { helps, setHelps, loading, reload, setFilters, filters };
 };

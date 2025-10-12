@@ -24,12 +24,13 @@ const Card: React.FC<CardProps> = ({
 	actions,
 	footer,
 	onClickAuthor,
-	onTagClick
+	onTagClick,
+	headerActions,
 }) => {
 	return (
 		<CardRoot>
 			{/* Header */}
-			{(author || date) && (
+			{(author || date || headerActions) && (
 				<Header>
 					{author && (
 						<AuthorInfo onClick={onClickAuthor} role="button" tabIndex={0}>
@@ -40,7 +41,12 @@ const Card: React.FC<CardProps> = ({
 							</div>
 						</AuthorInfo>
 					)}
-					{date && <DateTimeInfo timestamp={date} />}
+
+					{/* Derecha del header: fecha + menú ⋮ */}
+					<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+						{date && <DateTimeInfo timestamp={date} />}
+						{headerActions /* ⬅ AQUÍ VA EL MENÚ “⋮” */}
+					</div>
 				</Header>
 			)}
 

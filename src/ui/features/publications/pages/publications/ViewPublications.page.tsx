@@ -6,7 +6,7 @@ import {
 	fetchCareers,
 	createPublication,
 	likePublication,
-	unlikePublication,
+	unlikePublication, deletePublication, fetchMyPublications
 } from '../../../../../async/services/publicationService';
 import type { Career, Publication } from '../../../../../types/publication';
 import getEnvVariables from '../../../../../config/configEnvs';
@@ -36,7 +36,7 @@ import Logo from '../../../../../assets/images/Escudo_Universidad_Autónoma_Tom�
 import SearchOverlay from '../../../../shared/organisms/SearchOverlay/SearchOverlay';
 import GridColumn from '../../../../shared/atoms/grid/GridColumn';
 import GridContainer from '../../../../shared/atoms/grid/GridContainer';
-
+import { Dialog as MuiDialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 type Filter = 'mostRecent' | 'mostLiked' | 'mostCommented' | 'career';
 
 // util simple para normalizar (opcional)
@@ -62,8 +62,11 @@ const normalizeTag = (s: string) =>
 		const navigate = useNavigate();
 		const { HOST } = getEnvVariables();
 		const uid = getUserId();
-
+		const [editing, setEditing] = useState<Publication | null>(null);
+		const [confirmDel, setConfirmDel] = useState<Publication | null>(null);
 		const [searchParams, setSearchParams] = useSearchParams();
+		const [onlyMine, setOnlyMine] = useState(false);
+
 		const activeTag = (() => {
 			const t = searchParams.get('tag') || '';
 			return t ? normalizeTag(t) : '';
@@ -76,6 +79,7 @@ const normalizeTag = (s: string) =>
 		/* ---------- infinite scroll hook ---------- */
 		const { lastRef } = useInfiniteScroll(
 			() => {
+				if (onlyMine) return;
 				const next = page + 1;
 				load(next);
 				setPage(next);
@@ -83,17 +87,33 @@ const normalizeTag = (s: string) =>
 			more && !busy
 		);
 
+		// Mostrar solo mis publicaciones
+		const showMyPosts = async () => {
+			const mine = await fetchMyPublications();
+			setOnlyMine(true);
+			setPubs(mine);           // reemplaza el feed por las tuyas
+			setPage(1);
+		};
+
+		// Volver al feed general
+		const showAllPosts = async () => {
+			setOnlyMine(false);
+			setPubs([]);
+			setPage(1);
+			await load(1);
+		};
+
 		useEffect(() => {
 			fetchCareers().then(setCareers).catch(console.error);
 		}, []);
 
-		// 🔁 refresca cuando cambie filtro/carrera/query/tag
 		useEffect(() => {
+			if (onlyMine) return;
 			setPubs([]);
 			setPage(1);
 			load(1);
 			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [filter, careerId, query, activeTag]);
+		}, [filter, careerId, query, activeTag, onlyMine]);
 
 		const onLike = async (id: string) => {
 			try {
@@ -145,28 +165,49 @@ const normalizeTag = (s: string) =>
 			next.delete('page');
 			setSearchParams(next);
 		};
-const hasAdmin = userHasAdminRole();
-	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
+		const hasAdmin = userHasAdminRole();
+		const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
 
+		const onEditRequested = (p: Publication) => setEditing(p);
 
+		// al actualizar, reemplaza en el feed
+		const onUpdated = (p: Publication) => {
+			console.log('[onUpdated] received:', p);
+			setPubs(prev => prev.map(x => x._id === p._id ? p : x));
+			setEditing(null);
+		};
+
+		// eliminar con confirmación
+		const onDeleted = (p: Publication) => setConfirmDel(p);
+		const doDelete = async () => {
+			if (!confirmDel) return;
+			try {
+				await deletePublication(confirmDel._id);
+				setPubs(prev => prev.filter(x => x._id !== confirmDel._id));
+			} catch (e) {
+				console.error(e);
+			} finally {
+				setConfirmDel(null);
+			}
+		};
 		return (
 			<>
-					<Header
-				logoSrc={Logo}
-				variant='gradient'
-				navLinks={visibleLinks}
-				userRole={hasAdmin ? 'admi' : 'student'}
-				onLogout={() => console.log('Logout')}
-				onNotificationsClick={() => console.log('Abrir notificaciones')}
-				onAvatarClick={() => console.log('Abrir menú usuario')}
-				SearchComponent={
-					<SearchOverlay
-						onSearch={(q, cat) =>
-							console.log(`Buscar "${q}" en categoría "${cat}"`)
-						}
-					/>
-				}
-			/>
+				<Header
+					logoSrc={Logo}
+					variant='gradient'
+					navLinks={visibleLinks}
+					userRole={hasAdmin ? 'admi' : 'student'}
+					onLogout={() => console.log('Logout')}
+					onNotificationsClick={() => console.log('Abrir notificaciones')}
+					onAvatarClick={() => console.log('Abrir menú usuario')}
+					SearchComponent={
+						<SearchOverlay
+							onSearch={(q, cat) =>
+								console.log(`Buscar "${q}" en categoría "${cat}"`)
+							}
+						/>
+					}
+				/>
 
 
 				<GridContainer
@@ -191,9 +232,16 @@ const hasAdmin = userHasAdminRole();
 								onClose={() => setCreateOpen(false)}
 							>
 								<CreatePublicationSidebar
-									open
+									open={true}
 									onClose={() => setCreateOpen(false)}
 									onNew={handleNewPost}
+									editPublication={editing}
+									editingOpen={!!editing}
+									onEditingClose={() => setEditing(null)}
+									onUpdated={onUpdated}
+									onShowMyPosts={showMyPosts}
+									onShowAll={showAllPosts}
+									onlyMine={onlyMine}
 								/>
 							</Dialog>
 						</>
@@ -203,6 +251,13 @@ const hasAdmin = userHasAdminRole();
 								open={createOpen}
 								onClose={() => setCreateOpen(false)}
 								onNew={handleNewPost}
+								editPublication={editing}
+								editingOpen={!!editing}
+								onEditingClose={() => setEditing(null)}
+								onUpdated={onUpdated}
+								onShowMyPosts={showMyPosts}
+								onShowAll={showAllPosts}
+								onlyMine={onlyMine}
 							/>
 						</GridColumn>
 					)}
@@ -234,6 +289,8 @@ const hasAdmin = userHasAdminRole();
 							onSearch={handleSearch}
 							/* 🔗 ahora sí: los tags disparan este handler */
 							onTagClick={handleTagClick}
+							onEditRequested={onEditRequested}
+							onDeleted={onDeleted}
 						/>
 					</GridColumn>
 
@@ -290,6 +347,32 @@ const hasAdmin = userHasAdminRole();
 						publicationId={report.id}
 					/>
 				)}
+				{/* ④ REPORT DIALOG */}
+				{report.open && (
+					<ReportDialog
+						open={report.open}
+						onClose={() => setReport({ open: false, id: '' })}
+						publicationId={report.id}
+					/>
+				)}
+
+				{/* ⑤ CONFIRMAR ELIMINAR */}
+				<MuiDialog
+					open={!!confirmDel}
+					onClose={() => setConfirmDel(null)}
+					maxWidth="xs"
+					fullWidth
+				>
+					<DialogTitle>Eliminar publicación</DialogTitle>
+					<DialogContent dividers>
+						{`¿Seguro que quieres eliminar “${confirmDel?.title ?? ''}”? Esta acción no se puede deshacer.`}
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={() => setConfirmDel(null)}>Cancelar</Button>
+						<Button color="error" onClick={doDelete}>Eliminar</Button>
+					</DialogActions>
+				</MuiDialog>
+
 			</>
 		);
 	};

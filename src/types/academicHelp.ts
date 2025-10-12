@@ -1,16 +1,28 @@
 export interface AcademicHelp {
 	_id: string;
-	faculty?: string;
-	careerId: string;
+
+	// Catálogos (pueden llegar como string o poblados según populate)
+	facultyId?: string | { _id: string; name?: string };
+	careerId : string | { _id: string; name?: string };
+	cycleId? : string | { _id: string; name?: string };
+	subjectId?: string | { _id: string; name?: string; code?: string };
+	unitId?  : string | { _id: string; name?: string };
+
+	// Legacy (compatibilidad)
+	faculty? : string;
 	semester?: string;
-	subject?: string;        // ← opcional
+	subject? : string;
+
 	topic?: string;
-	description?: string;    // ← opcional
-	fileUrl?: string;        // ← necesario para preview
+	description?: string;
+	fileUrl?: string;
+
 	type: 'need_help' | 'offer_help';
 	status: 'open' | 'resolved';
+
 	created_at: string;
 	updated_at: string;
+
 	user?: {
 		_id: string;
 		username: string;
@@ -18,6 +30,5 @@ export interface AcademicHelp {
 			profilePicture?: string;
 		};
 	};
-
 }
 

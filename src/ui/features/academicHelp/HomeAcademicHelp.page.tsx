@@ -21,7 +21,7 @@ import GridColumn from '../../shared/atoms/grid/GridColumn';
 import Header from '../../shared/organisms/header/Header';
 import SearchOverlay from '../../shared/organisms/SearchOverlay/SearchOverlay';
 import Logo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
-import { NavLink, navLinks } from '../../../config/navLinks';
+import { navLinks } from '../../../config/navLinks';
 import { userHasAdminRole } from '../../../utils/auth/getUserId';
 
 const HomeAcademicHelp = () => {
@@ -39,25 +39,28 @@ const HomeAcademicHelp = () => {
 	const overlayOpen = location.pathname === '/plataform/search';
 
 	const [sp] = useSearchParams();
-
-	React.useEffect(() => {
-		const careerId    = sp.get('careerId')    || '';
-		const subjectId   = sp.get('subjectId')   || '';
-		const unitId      = sp.get('unitId')      || '';
-		const cycleId     = sp.get('cycleId')     || '';
-		const subject     = sp.get('subject')     || ''; // legacy
+	const [editing, setEditing] = useState<AcademicHelp | null>(null);
+const onlyMine = (filters as any)?.owner === 'me';
+	useEffect(() => {
+		const careerId  = sp.get('careerId')  || '';
+		const subjectId = sp.get('subjectId') || '';
+		const unitId    = sp.get('unitId')    || '';
+		const cycleId   = sp.get('cycleId')   || '';
+		const subject   = sp.get('subject')   || ''; // legacy
+		const owner     = sp.get('owner') as 'me' | null;
 
 		setFilters({
 			...(careerId  ? { careerId }  : {}),
 			...(subjectId ? { subjectId } : {}),
 			...(unitId    ? { unitId }    : {}),
 			...(cycleId   ? { cycleId }   : {}),
-			...(subject   ? { subject }   : {}),  
+			...(subject   ? { subject }   : {}),
+			...(owner === 'me' ? { owner: 'me' } : {}),
 		});
-	}, [sp, setFilters]);	
+	}, [sp, setFilters]);
 
 	const handleNew = (h: AcademicHelp) => {
-		setHelps((prev) => [...prev, h]);
+		setHelps((prev) => [h, ...prev]); 
 		setSnack(true);
 	};
 
@@ -72,18 +75,38 @@ const HomeAcademicHelp = () => {
 
 	const writeFiltersToUrl = (f: Record<string, string | undefined>) => {
 		const next = new URLSearchParams(searchParams);
-		['careerId','subjectId','cycleId','requestType','status','subject'].forEach(k => next.delete(k));
+		['careerId','subjectId','cycleId','requestType','status','subject','owner']
+		.forEach(k => next.delete(k));
 		Object.entries(f).forEach(([k,v]) => {
 			if (v && String(v).trim()) next.set(k, String(v));
 		});
 		setSearchParams(next);
 	};
+
+	const showMyHelps = () => {
+		setFilters(prev => ({ ...prev, owner: 'me' }));
+		writeFiltersToUrl({ ...Object.fromEntries(searchParams), owner: 'me' } as any);
+	};
+	const showAllHelps = () => {
+		setFilters(prev => {
+			const { owner, ...rest } = prev;
+			return rest;
+		});
+		const next = new URLSearchParams(searchParams);
+		next.delete('owner');
+		setSearchParams(next);
+	};
+
 	const hasAdmin = userHasAdminRole();
 	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
+	const onEditRequested = (h: AcademicHelp) => setEditing(h);
+	const onUpdated = (h: AcademicHelp) => { setHelps(prev => prev.map(x => x._id === h._id ? h : x)); setEditing(null); };
+	const onDeleted = (id: string) => setHelps(prev => prev.filter(x => x._id !== id));
+
 
 	return (
 		<>
-				<Header
+			<Header
 				logoSrc={Logo}
 				variant='gradient'
 				navLinks={visibleLinks}
@@ -92,11 +115,7 @@ const HomeAcademicHelp = () => {
 				onNotificationsClick={() => console.log('Abrir notificaciones')}
 				onAvatarClick={() => console.log('Abrir menú usuario')}
 				SearchComponent={
-					<SearchOverlay
-						onSearch={(q, cat) =>
-							console.log(`Buscar "${q}" en categoría "${cat}"`)
-						}
-					/>
+					<SearchOverlay onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)} />
 				}
 			/>
 
@@ -119,13 +138,20 @@ const HomeAcademicHelp = () => {
 					</GridColumn>
 				)}
 
-				{/* Col 1 ─ Crear ayuda */}
+				{/* Col 1 ─ Crear ayuda + botones “Mis ayudas/Todo” (+ edición en el mismo dialog) */}
 				{isMobile ? (
 					<GridColumn span={12}>
 						<CreateHelpSidebar
 							open={createOpen}
 							onClose={() => setCreateOpen(false)}
 							onNew={handleNew}
+							onShowMyHelps={showMyHelps}
+							onShowAll={showAllHelps}
+							editHelp={editing}
+							editingOpen={!!editing}
+							onEditingClose={() => setEditing(null)}
+							onUpdated={onUpdated}
+							onlyMine={onlyMine}
 						/>
 					</GridColumn>
 				) : (
@@ -134,13 +160,28 @@ const HomeAcademicHelp = () => {
 							open={createOpen}
 							onClose={() => setCreateOpen(false)}
 							onNew={handleNew}
+							onShowMyHelps={showMyHelps}
+							onShowAll={showAllHelps}
+							editHelp={editing}
+							editingOpen={!!editing}
+							onEditingClose={() => setEditing(null)}
+							onUpdated={onUpdated}
+							onlyMine={onlyMine}
 						/>
 					</GridColumn>
 				)}
 
 				{/* Col 2 ─ Feed */}
 				<GridColumn span={isMobile ? 12 : 6}>
-					{loading ? <Loader /> : <HelpFeed list={helps} />}
+					{loading ? (
+						<Loader />
+					) : (
+						<HelpFeed
+							list={helps}
+							onDeleted={onDeleted}
+							onEditRequested={onEditRequested}
+						/>
+					)}
 				</GridColumn>
 
 				{/* Col 3 ─ Filtros */}
@@ -151,7 +192,7 @@ const HomeAcademicHelp = () => {
 							current={filters ?? {}}
 							onApply={(f) => {
 								setFilters(f);
-								writeFiltersToUrl(f as any);   
+								writeFiltersToUrl(f as any);
 								setFilterOpen(false);
 							}}
 							onClear={() => {
@@ -168,7 +209,7 @@ const HomeAcademicHelp = () => {
 							current={filters ?? {}}
 							onApply={(f) => {
 								setFilters(f);
-								writeFiltersToUrl(f as any);  
+								writeFiltersToUrl(f as any);
 								setFilterOpen(false);
 							}}
 							onClear={() => {
@@ -194,6 +235,7 @@ const HomeAcademicHelp = () => {
 			</Snackbar>
 		</>
 	);
+
 };
 
 export default HomeAcademicHelp;

@@ -10,14 +10,14 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 export interface NavLink {
 	label: string;
 	to: string;
-	icon: React.ElementType; // 👈 referencia al componente, no JSX
+	icon: React.ElementType; 
 	adminOnly?: boolean;
 }
 
 export const navLinks: NavLink[] = [
 	{ label: 'Administrador', to: '/administrator', icon: AdminPanelSettingsIcon, adminOnly: true },
 	{ label: 'Estudiante', to: '/profile', icon: SchoolIcon },
-	{ label: 'Material', to: '/material-user', icon: ArticleIcon },
+	//{ label: 'Material', to: '/material-user', icon: ArticleIcon },
 	{ label: 'Mensajería', to: '/message', icon: ChatIcon },
 	{ label: 'Stream', to: '/stream-academi', icon: LiveTvIcon },
 	{ label: 'Publicaciones', to: '/publications', icon: ArticleIcon },

@@ -122,7 +122,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 							placeholder={placeholder}
 							// @ts-ignore
 							onFocus={() => navigate('/plataform/search')} // 🔹 Solo navega
-							sx={{ maxWidth: 200 }}
+							sx={{ maxWidth: 150 }}
 						/>
 					)}
 

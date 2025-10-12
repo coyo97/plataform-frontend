@@ -17,5 +17,6 @@ export interface CardProps {
 	footer?: ReactNode;
 	onClickAuthor?: () => void;
 	onTagClick?: (tag: string) => void;
+	headerActions?: React.ReactNode;
 }
 

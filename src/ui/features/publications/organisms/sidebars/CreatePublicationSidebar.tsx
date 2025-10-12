@@ -1,66 +1,82 @@
-//features/publications/organisms/sidebars/CreatePublicationSidebar.tsx
+// src/ui/features/publications/organisms/sidebars/CreatePublicationSidebar.tsx
 import React, { useEffect, useState } from 'react';
-
 import Sidebar from '../../../../shared/organisms/sidebar/Sidebar';
 import SmartBox from '../../../../shared/atoms/box/SmartBox';
-import Text from '../../../../shared/atoms/typography/Text';
 import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledButton';
-
 import CreatePublicationDialog from '../CreatePublicationDialog';
-
-import {
-	fetchCareers,
-	createPublication,
-} from '../../../../../async/services/publicationService';
+import { fetchCareers, createPublication, updatePublication } from '../../../../../async/services/publicationService';
 import type { Career, Publication } from '../../../../../types/publication';
 
 interface Props {
 	onNew   : (pub: Publication) => void;
-	open    : boolean;       // controla Drawer móvil
+	open    : boolean;
 	onClose : () => void;
+
+	// OPCIONALES para edición (compatibles)
+	editPublication?: Publication | null;
+	editingOpen?: boolean;
+	onEditingClose?: () => void;
+	onUpdated?: (p: Publication) => void;
+	onShowMyPosts: () => void;
+	onShowAll?: () => void;
+	onlyMine?: boolean;
 }
 
 const CreatePublicationSidebar: React.FC<Props> = ({
 	onNew, open, onClose,
+	editPublication = null, editingOpen = false, onEditingClose, onUpdated,onShowMyPosts, onShowAll, onlyMine = false,
 }) => {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [careers, setCareers] = useState<Career[]>([]);
+	useEffect(() => { fetchCareers().then(setCareers).catch(console.error); }, []);
 
-	useEffect(() => {
-		fetchCareers().then(setCareers).catch(console.error);
-	}, []);
-
-	const handleSubmit = async (fd: FormData) => {
+	const handleCreate = async (fd: FormData) => {
 		const pub = await createPublication(fd);
 		onNew(pub);
 		return pub;
 	};
 
+	const handleUpdate = async (fd: FormData) => {
+		if (!editPublication) throw new Error('No publication to edit');
+		const updated = await updatePublication(editPublication._id, fd);
+		onUpdated?.(updated);
+		return updated;
+	};
+
+	const isEditing = !!editingOpen && !!editPublication;
+
 	return (
-		<Sidebar
-			sticky
-			//header={<Text weight="bold">Crear publicación</Text>}
-			open={open}
-			variant="primary"
-			onClose={onClose}
-		>
-			<SmartBox >
+		<Sidebar sticky open={open} variant="primary" onClose={onClose}>
+			<SmartBox>
 				<FilledButton
 					colorType="primary"
-					 btnVariant="default"
+					btnVariant="default"
 					fullWidth
 					onClick={() => setDialogOpen(true)}
 				>
 					Publicar
 				</FilledButton>
+				<FilledButton
+					colorType="secondary"
+					btnVariant="light"
+					fullWidth
+					style={{ marginTop: 8 }}
+					onClick={onlyMine ? (onShowAll ?? (()=>{})) : onShowMyPosts}
+				>
+					{onlyMine ? 'Ver todas' : 'Mis publicaciones'}
+				</FilledButton>
 			</SmartBox>
 
 			<CreatePublicationDialog
-				open={dialogOpen}
-				onClose={() => setDialogOpen(false)}
+				open={isEditing ? true : dialogOpen}
+				onClose={() => (isEditing ? onEditingClose?.() : setDialogOpen(false))}
 				careers={careers}
 				onNew={onNew}
-				onSubmit={handleSubmit}
+				onSubmit={isEditing ? handleUpdate : handleCreate}
+				/* edición */
+				mode={isEditing ? 'edit' : 'create'}
+				publication={editPublication ?? undefined}
+				onUpdated={onUpdated}
 			/>
 		</Sidebar>
 	);
