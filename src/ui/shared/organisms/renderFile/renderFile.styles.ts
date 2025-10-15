@@ -88,15 +88,55 @@ export const DialogImageBox = styled(Box)(({ theme }) => ({
 	maxWidth: '90vw',
 	maxHeight: '90vh',
 	borderRadius: theme.shape?.borderRadius ?? 8,
-	overflow: 'hidden',
+	// Antes: overflow: 'hidden'
+	overflow: 'auto',             // ⬅ permite scroll si la imagen es más grande
 	boxShadow: theme.shadows[6],
+	display: 'flex',
+	alignItems: 'center',
+	justifyContent: 'center',
 
 	'& img': {
 		display: 'block',
-		width: '100%',
-		height: '100%',
-		objectFit: 'contain', 
+		// Antes: width: '100%', height: '100%'
+		width: 'auto',               // ⬅ deja que la imagen use su tamaño natural
+		height: 'auto',              // ⬅ (sin forzar alto)
+		maxWidth: '100%',            // ⬅ limita a viewport cuando es enorme
+		maxHeight: '100%',           // ⬅ limita a viewport cuando es enorme
+		objectFit: 'contain',
 		backgroundColor: theme.palette.background.default,
 	},
 }));
 
+export const ZoomStage = styled(Box)(({ theme }) => ({
+	position: 'relative',
+	maxWidth: '90vw',
+	maxHeight: '90vh',
+	borderRadius: theme.shape?.borderRadius ?? 8,
+	overflow: 'hidden',                 
+	boxShadow: theme.shadows[6],
+	backgroundColor: theme.palette.background.default,
+	display: 'flex',
+	alignItems: 'center',
+	justifyContent: 'center',
+	touchAction: 'none',               
+}));
+
+export const ZoomImage = styled('img', {
+	shouldForwardProp: (prop) => !['$scale', '$tx', '$ty'].includes(String(prop)),
+})<{
+	$scale: number;
+	$tx: number;
+	$ty: number;
+}>(({ $scale, $tx, $ty }) => ({
+	display: 'block',
+	width: 'auto',
+	height: 'auto',
+	maxWidth: '90vw',
+	maxHeight: '90vh',
+	objectFit: 'contain',
+	userSelect: 'none',
+	pointerEvents: 'auto',
+	transform: `translate3d(${$tx}px, ${$ty}px, 0) scale(${$scale})`,
+	transformOrigin: 'center center',
+	cursor: $scale > 1 ? 'grab' : 'default',
+}));

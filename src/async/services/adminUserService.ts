@@ -51,8 +51,5 @@ export const deleteUser     = (id: string) =>
 	del<void>(`${base}/users/${id}`);
 
 export const bulkAction = (ids: string[], action: 'deactivate' | 'reactivate' | 'blacklist') =>
-	put<void>(
-		`${base}/users/${ids}/bulk-action`,
-		{ userIds: ids, action },
-);
+	put<void>(`${base}/users/bulk-action`, { userIds: ids, action });
 

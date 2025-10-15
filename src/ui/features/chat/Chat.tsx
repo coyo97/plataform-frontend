@@ -10,6 +10,16 @@ import { sendMessage, sendFileMessage, deleteMessage as delMsg } from '../../../
 import { get } from '../../../async/api';
 import getEnvVariables from '../../../config/configEnvs';
 import type { User, Group, Message } from '../../../types/types';
+import { Box } from '@mui/material';
+
+import Header from '../../shared/organisms/header/Header';
+import Logo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
+import { NavLink, navLinks } from '../../../config/navLinks';
+import SearchInput from '../../shared/molecules/searchInput';
+import SearchOverlay from '../../shared/organisms/SearchOverlay/SearchOverlay';
+import { userHasAdminRole } from '../../../utils/auth/getUserId';
+
+
 
 interface ChatProps {
 	userId: string;
@@ -96,34 +106,55 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 	const selectUser  = (id: string) => { setCurrentChatId(id); setIsGroupMessage(false); };
 	const selectGroup = (id: string) => { setCurrentChatId(id); setIsGroupMessage(true); };
 
-	return (
-		<MessagingContainer>
-			<InboxMsg>
-				<InboxPeople
-					users={users}
-					groups={groups}
-					currentChatId={currentChatId}
-					onSelectUser={selectUser}
-					onSelectGroup={selectGroup}
-					isFloating={isFloating}
-					showUserList={showUserList}
-					toggleUserList={toggleUserList}
-				/>
+	const hasAdmin = userHasAdminRole();
+	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
 
-				{(!isFloating || !showUserList) && (
-					currentChatId ? (
-						<Messages
-							messages={messages}
-							currentUserId={userId}
-							handleSendMessage={handleSend}
-							handleDeleteMessage={handleDelete}
-							loadMoreMessages={loadMore}
-							hasMoreMessages={hasMore}
-						/>
-					) : <ChatSelect />
-				)}
-			</InboxMsg>
-		</MessagingContainer>
+	return (
+		<>
+			<Header
+				logoSrc={Logo}
+				variant='gradient'
+				navLinks={visibleLinks}
+				userRole={hasAdmin ? 'admi' : 'student'}
+				onLogout={() => console.log('Logout')}
+				onNotificationsClick={() => console.log('Abrir notificaciones')}
+				onAvatarClick={() => console.log('Abrir menú usuario')}
+				SearchComponent={
+					<SearchOverlay
+						onSearch={(q, cat) =>
+							console.log(`Buscar "${q}" en categoría "${cat}"`)
+						}
+					/>
+				}
+			/>
+			<MessagingContainer>
+				<InboxMsg>
+					<InboxPeople
+						users={users}
+						groups={groups}
+						currentChatId={currentChatId}
+						onSelectUser={selectUser}
+						onSelectGroup={selectGroup}
+						isFloating={isFloating}
+						showUserList={showUserList}
+						toggleUserList={toggleUserList}
+					/>
+
+					{(!isFloating || !showUserList) && (
+						currentChatId ? (
+							<Messages
+								messages={messages}
+								currentUserId={userId}
+								handleSendMessage={handleSend}
+								handleDeleteMessage={handleDelete}
+								loadMoreMessages={loadMore}
+								hasMoreMessages={hasMore}
+							/>
+						) : <ChatSelect />
+					)}
+				</InboxMsg>
+			</MessagingContainer>
+		</>
 	);
 };
 

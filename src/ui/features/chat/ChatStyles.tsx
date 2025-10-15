@@ -8,6 +8,7 @@ export const MessagingContainer = styled(Box)({
 	flex: 1,
 	height: '100vh',
 	overflow: 'hidden',
+	paddingTop: 'calc(var(--header-h) + 4px)',
 });
 
 // Contenedor del Panel de Mensajes

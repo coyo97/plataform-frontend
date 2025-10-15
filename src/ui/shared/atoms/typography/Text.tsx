@@ -6,7 +6,7 @@ import { Theme, useTheme } from '@mui/material/styles';
 type SizeKeys   = keyof typeof import('../../../../Theme/tokens/typography').sizes;
 type WeightKeys = keyof typeof import('../../../../Theme/tokens/typography').weights;
 
-type HeadingLevel = 'h1' | 'h2' | 'h3';
+type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 type DisplayLevel = 'xl' | 'lg';
 type ToneSystem   = 'sans' | 'serif' | 'monospace' | 'italic';
 
