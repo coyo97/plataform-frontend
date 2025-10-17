@@ -1,165 +1,106 @@
-import React, { Fragment, useMemo } from 'react';
-import { Pagination, TableRow as MuiTableRow } from '@mui/material';
-
-
-import Text from '../../atoms/typography/Text';
-import Badge from '../../atoms/badges/Badge';
-import SmartBox from '../../atoms/box/SmartBox';
+import React from 'react';
+import { useMediaQuery, useTheme, CircularProgress, IconButton } from '@mui/material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import FilledButton from '../../atoms/buttons/filledButton/FilledButton';
 import GhostButton from '../../atoms/buttons/ghostButton/GhostButton';
-import IconButton from '../../atoms/buttons/iconButton/IconButton';
-import Alert from '../../atoms/feedback/alert/Alert';
-import Loader from '../../atoms/feedback/loader/Loader';
-import InfoTooltip from '../../atoms/tooltips/infoTooltip/InfoTooltip';
+import Text from '../../atoms/typography/Text';
+import SmartBox from '../../atoms/box/SmartBox';
+
+import {
+	TableViewProps,
+	ColumnDef,
+	RowAction,
+	ResponsiveMode,
+	BreakpointKey,
+} from './tableView.types';
 
 import {
 	TableContainerBase,
+	ToolbarBox,
 	TableBase,
 	TableHeadBase,
-	TableRowBase,
 	TableCellBase,
-	ToolbarBox,
-	FooterBox,
-	CardOnlyHead,
-	CardCell,
+	TableRowBase,
+	CardsWrapper,
+	CardRow,
+	CardLine,
+	CardActions,
 } from './tableView.styles';
 
-import { ColumnDef, RowAction, TableViewProps } from './tableView.types';
-
-/* --- utils --- */
-const getByPath = (obj: any, path?: string) => {
-	if (!path) return undefined;
-	// admite 'a.b.c'
-	return path.split('.').reduce((acc, key) => (acc ? acc[key] : undefined), obj);
-};
-
-function useDisplayColumns<T>(columns: ColumnDef<T>[]) {
-	return useMemo(() => columns, [columns]);
+function shouldHideAt(hiddenAt: BreakpointKey[] | undefined, bp: BreakpointKey): boolean {
+	if (!hiddenAt || hiddenAt.length === 0) return false;
+	return hiddenAt.includes(bp);
 }
 
-/* --- row actions renderer --- */
-function RowActions<T>({
-	row,
-	actions = [],
-	compact = false,
+function useResponsiveMode(mode?: ResponsiveMode): 'scroll' | 'card' {
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+	if (mode === 'card') return 'card';
+	if (mode === 'scroll') return 'scroll';
+	// auto
+	return isMobile ? 'card' : 'scroll';
+}
+
+function HeaderRightClose({
+	onClose,
 }: {
-	row: T;
-	actions?: RowAction<T>[];
-	compact?: boolean;
+	onClose?: () => void;
 }) {
-	if (!actions?.length) return null;
-
+	if (!onClose) return null;
 	return (
-		<SmartBox row gap="px4">
-			{actions.map((a, idx) => {
-				const visible = a.visible ? a.visible(row) : true;
-				if (!visible) return <Fragment key={idx} />;
-
-				const disabled = a.disabled ? a.disabled(row) : false;
-
-				// Si hay icon y estamos en modo compacto, usamos IconButton
-				if (compact && a.icon) {
-					return (
-						<IconButton
-							key={idx}
-							ariaLabel={typeof a.label === 'string' ? a.label : `action-${idx}`}
-							colorType={a.color ?? 'primary'}
-							sizeType="sm"
-							disabled={disabled}
-							onClick={(e) => {
-								e.stopPropagation();
-								a.onClick(row);
-							}}
-						>
-							{a.icon}
-						</IconButton>
-					);
-				}
-
-				// Si es primaria → FilledButton, si no → GhostButton
-				const isPrimary = (a.variant ?? 'default') === 'default' || a.variant === 'soft';
-				return isPrimary ? (
-					<FilledButton
-						key={idx}
-						colorType={a.color ?? 'primary'}
-						btnVariant={a.variant ?? 'default'}
-						size="small"
-						disabled={disabled}
-					    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      a.onClick(row);
-    }}
-					>
-						{a.label}
-					</FilledButton>
-				) : (
-					<GhostButton
-						key={idx}
-						label={typeof a.label === 'string' ? a.label : `action-${idx}`}
-						colorType={(a.color as any) ?? 'primary'}
-						onClick={(e) => {
-							e.stopPropagation();
-							a.onClick(row);
-						}}
-					/>
-				);
-			})}
-		</SmartBox>
+		<IconButton size="small" onClick={onClose} aria-label="cerrar">
+			<CloseRoundedIcon fontSize="small" />
+		</IconButton>
 	);
 }
 
-/* --- main --- */
-function TableView<T>({
+export default function TableView<T>({
 	data,
 	rowKey,
 	columns,
-	rowActions,
-	toolbar,
-	footer,
+	rowActions = [],
 	loading,
-	error,
-	emptyMessage = 'Sin datos para mostrar.',
-	stickyHeader = false,
-	dense = false,
-	zebra = true,
-	hoverable = false,
+	emptyMessage = 'Sin datos',
+	zebra,
+	stickyHeader,
+	hoverable = true,
+	dense,
 	skin = 'default',
-	responsiveMode = 'scroll',
-	rowHoverTone = 'default',
+	responsiveMode = 'auto',
+	toolbar,
 	pagination,
-	onRowClick,
 }: TableViewProps<T>) {
-	const cols = useDisplayColumns(columns);
+	const theme = useTheme();
+	const currentMode = useResponsiveMode(responsiveMode);
+	// --- reemplaza tu bloque actual ---
+const isXsOnly = useMediaQuery(theme.breakpoints.only('xs'));
+const isSmOnly = useMediaQuery(theme.breakpoints.only('sm'));
+const isMdUp  = useMediaQuery(theme.breakpoints.up('md'));
+const isLgUp  = useMediaQuery(theme.breakpoints.up('lg'));
+const isXlUp  = useMediaQuery(theme.breakpoints.up('xl'));
 
-	const getRowKey = (row: T, index: number) =>
-		typeof rowKey === 'function' ? rowKey(row, index) : (row as any)[rowKey];
-
-	/* Estados superiores */
+const currentBp: BreakpointKey =
+  isXlUp ? 'xl' :
+  isLgUp ? 'lg' :
+  isMdUp ? 'md' :
+  isSmOnly ? 'sm' : 'xs';
+	// ===== estados vacíos / loading
 	if (loading) {
 		return (
 			<TableContainerBase dense={dense}>
 				{toolbar ? <ToolbarBox>{toolbar}</ToolbarBox> : null}
-				<SmartBox center p="px12">
-					<Loader />
+				<SmartBox center p="px8">
+					<CircularProgress size={20} />
 				</SmartBox>
 			</TableContainerBase>
 		);
 	}
 
-	if (error) {
+	if (!loading && (!data || data.length === 0)) {
 		return (
 			<TableContainerBase dense={dense}>
 				{toolbar ? <ToolbarBox>{toolbar}</ToolbarBox> : null}
-				<Alert type="error">{typeof error === 'string' ? error : error}</Alert>
-			</TableContainerBase>
-		);
-	}
-
-	if (!data?.length) {
-		return (
-			<TableContainerBase dense={dense}>
-				{toolbar ? <ToolbarBox>{toolbar}</ToolbarBox> : null}
-				<SmartBox center p="px12">
+				<SmartBox center p="px8">
 					<Text as="div" size="md" weight="medium">
 						{emptyMessage}
 					</Text>
@@ -168,162 +109,227 @@ function TableView<T>({
 		);
 	}
 
-	/* Responsive B: “card” */
-	if (responsiveMode === 'card') {
+	// ====== MODO CARD (móvil)
+	if (currentMode === 'card') {
 		return (
 			<TableContainerBase dense={dense}>
 				{toolbar ? <ToolbarBox>{toolbar}</ToolbarBox> : null}
-				<CardOnlyHead />
-				{data.map((row, i) => (
-					<SmartBox
-						key={getRowKey(row, i)}
-						radius="md"
-						shadow="xs"
-						sx={{ border: (theme) => `1px solid ${theme.palette.divider}`, mb: 1 }}
-						onClick={onRowClick ? () => onRowClick(row) : undefined}
-					>
-						{cols.map((c) => {
-							const content =
-								c.renderCell ? c.renderCell(row, i) : getByPath(row, c.accessor as string);
-							return (
-								<CardCell key={c.id} data-label={typeof c.header === 'string' ? c.header : ''}>
-									<div />
-									<div>
-										{typeof content === 'string' || typeof content === 'number' ? (
-											<Text as="span" size="sm">
-												{String(content)}
-											</Text>
-										) : (
-										content
-										)}
-									</div>
-								</CardCell>
-							);
-						})}
-						{rowActions ? (
-							<SmartBox row gap="px8" p="px8" sx={{ justifyContent: 'flex-end' }}>
-								<RowActions row={row} actions={rowActions} compact />
-							</SmartBox>
-						) : null}
-					</SmartBox>
-				))}
 
-				{(pagination || footer) && (
-					<FooterBox>
-						{footer}
-						{pagination && (
-							<Pagination
-								count={pagination.totalPages}
-								page={pagination.page}
-								onChange={(_, val) => pagination.onChangePage(val)}
-								color="primary"
-							/>
-						)}
-					</FooterBox>
-				)}
+				<CardsWrapper>
+					{data.map((row) => {
+						const key = String((row as any)[rowKey]);
+						const visibleCols = columns.filter((c) => !shouldHideAt(c.hiddenAt, currentBp));
+						return (
+							<CardRow key={key} role="group" aria-label="fila">
+								{visibleCols.map((c) => {
+									const val = c.renderCell
+										? c.renderCell(row)
+										: c.accessor
+											? (row as any)[c.accessor]
+											: null;
+											return (
+												<CardLine key={c.id} align={c.align}>
+													<div className="_label">{c.header}</div>
+													<div className="_value">{val}</div>
+												</CardLine>
+											);
+								})}
+
+								{rowActions && rowActions.length > 0 ? (
+									<CardActions>
+										{rowActions
+											.filter((a) => (a.visible ? a.visible(row) : true))
+											.map((a, idx) =>
+												 a.variant === 'outline' ? (
+													 <GhostButton
+														 key={idx}
+														 label={a.label}
+														 colorType={(a.color as any) ?? 'primary'}
+														 onClick={(e) => {
+															 e.stopPropagation();
+															 a.onClick(row);
+														 }}
+														 size="small"
+													 />
+											) : (
+<FilledButton
+  key={idx}
+  colorType={(a.color as any) ?? 'primary'}
+  btnVariant={a.variant ?? 'default'}
+  size="small"
+  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    a.onClick(row);
+  }}
+>
+													{a.label}
+												</FilledButton>
+											)
+												)}
+									</CardActions>
+								) : null}
+							</CardRow>
+						);
+					})}
+				</CardsWrapper>
+
+				{/* Paginación */}
+				{pagination ? (
+					<SmartBox center p="px8">
+						<FilledButton
+							colorType="primary"
+							btnVariant="ghost"
+							disabled={pagination.page <= 1}
+							onClick={() => pagination.onChangePage(pagination.page - 1)}
+						>
+							Anterior
+						</FilledButton>
+						<Text as="span" size="sm" sx={{ mx: 2 }}>
+							Página {pagination.page} de {pagination.totalPages}
+						</Text>
+						<FilledButton
+							colorType="primary"
+							btnVariant="ghost"
+							disabled={pagination.page >= pagination.totalPages}
+							onClick={() => pagination.onChangePage(pagination.page + 1)}
+						>
+							Siguiente
+						</FilledButton>
+					</SmartBox>
+				) : null}
 			</TableContainerBase>
 		);
 	}
 
-	/* Responsive A: tabla real + overflow-x */
+	// ====== MODO SCROLL (desktop / tablet)
 	return (
 		<TableContainerBase dense={dense}>
 			{toolbar ? <ToolbarBox>{toolbar}</ToolbarBox> : null}
 
-			<TableBase>
-				<TableHeadBase skin={skin} sticky={stickyHeader}>
-					<MuiTableRow>
-						{cols.map((c) => (
-							<TableCellBase key={c.id} isHead align={c.align}>
-								<SmartBox row center between>
-									<Text as="span" size="sm" weight="medium" sx={{ mr: 0.5 }}>
-										{c.header}
-									</Text>
-									{c.headerTooltip ? <InfoTooltip content={c.headerTooltip} /> : null}
-								</SmartBox>
-							</TableCellBase>
-						))}
-						{rowActions ? (
-							<TableCellBase isHead align="right">
-								<Text as="span" size="sm" weight="medium">
-									Acciones
-								</Text>
-							</TableCellBase>
-						) : null}
-					</MuiTableRow>
-				</TableHeadBase>
+	  <TableBase>
+		  <TableHeadBase skin={skin} sticky={stickyHeader}>
+			  <TableRowBase>
+				  {columns.map((c) =>
+							   shouldHideAt(c.hiddenAt, currentBp) ? null : (
+								   <TableCellBase key={c.id} isHead align={c.align} style={{ minWidth: c.minWidth }}>
+									   <SmartBox row between center>
+										   <Text
+											   as="span"
+											   size="sm"
+											   weight="medium"
+											   colorKey="text.secondary"
+											   sx={{ textTransform: 'uppercase', letterSpacing: 0.3 }}
+										   >
+											   {c.header}
+										   </Text>
+									   </SmartBox>
+								   </TableCellBase>
+				  )
+							  )}
+				  {rowActions && rowActions.length > 0 ? (
+					  <TableCellBase isHead align="right" style={{ width: 240 }}>
+						  <Text
+							  as="span"
+							  size="sm"
+							  weight="medium"
+							  colorKey="text.secondary"
+							  sx={{ textTransform: 'uppercase', letterSpacing: 0.3 }}
+						  >
+							  Acciones
+						  </Text>
+					  </TableCellBase>
+				  ) : null}
+			  </TableRowBase>
+		  </TableHeadBase>
 
-				<tbody>
-					{data.map((row, i) => {
-						const key = getRowKey(row, i);
-						return (
-							<TableRowBase
-								key={key}
-								zebra={zebra}
-								hoverable={!!onRowClick || hoverable}
-								hoverTone={rowHoverTone}
-								onClick={onRowClick ? () => onRowClick(row) : undefined}
-							>
-								{cols.map((c) => {
-									const content =
-										c.renderCell ? c.renderCell(row, i) : getByPath(row, c.accessor as string);
+		  <tbody>
+			  {data.map((row) => {
+				  const key = String((row as any)[rowKey]);
+				  return (
+					  <TableRowBase key={key} zebra={zebra} hoverable={hoverable}>
+						  {columns.map((c) =>
+									   shouldHideAt(c.hiddenAt, currentBp) ? null : (
+										   <TableCellBase
+											   key={c.id}
+											   align={c.align}
+											   truncate={c.truncate}
+											   style={{ minWidth: c.minWidth }}
+										   >
+											   {c.renderCell
+												   ? c.renderCell(row)
+												   : c.accessor
+													   ? (row as any)[c.accessor]
+													   : null}
+										   </TableCellBase>
+						  )
+									  )}
 
-									const style: React.CSSProperties = {};
-									if (c.minWidth) style.minWidth = c.minWidth;
-									if (c.maxWidth) style.maxWidth = c.maxWidth;
+						  {rowActions && rowActions.length > 0 ? (
+							  <TableCellBase align="right">
+								  {rowActions
+									  .filter((a) => (a.visible ? a.visible(row) : true))
+									  .map((a, idx) =>
+										   a.variant === 'outline' ? (
+											   <GhostButton
+												   key={idx}
+												   label={a.label}
+												   colorType={(a.color as any) ?? 'primary'}
+												   onClick={(e) => {
+													   e.stopPropagation();
+													   a.onClick(row);
+												   }}
+												   size="small"
+												   sx={{ ml: 1 }}
+											   />
+									  ) : (
+<FilledButton
+  key={idx}
+  colorType={(a.color as any) ?? 'primary'}
+  btnVariant={a.variant ?? 'default'}
+  size="small"
+  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    a.onClick(row);
+  }}
+  sx={{ ml: 1 }}
+>
+											  {a.label}
+										  </FilledButton>
+									  )
+										  )}
+							  </TableCellBase>
+						  ) : null}
+					  </TableRowBase>
+				  );
+			  })}
+		  </tbody>
+	  </TableBase>
 
-									return (
-										<TableCellBase
-											key={`${key}-${c.id}`}
-											align={c.align}
-											truncate={c.truncate}
-											style={style}
-											sx={{
-												display: {
-													xxs: c.hiddenAt?.includes('xxs') ? 'none' : undefined,
-													xs: c.hiddenAt?.includes('xs') ? 'none' : undefined,
-													sm: c.hiddenAt?.includes('sm') ? 'none' : undefined,
-											} as any,
-											}}
-										>
-											{typeof content === 'string' || typeof content === 'number' ? (
-												<Text as="span" size="sm">
-													{String(content)}
-												</Text>
-											) : (
-											content
-											)}
-										</TableCellBase>
-									);
-								})}
-
-								{rowActions ? (
-									<TableCellBase align="right">
-										<RowActions row={row} actions={rowActions} />
-									</TableCellBase>
-								) : null}
-							</TableRowBase>
-						);
-					})}
-				</tbody>
-			</TableBase>
-
-			{(pagination || footer) && (
-				<FooterBox>
-					{footer}
-					{pagination && (
-						<Pagination
-							count={pagination.totalPages}
-							page={pagination.page}
-							onChange={(_, val) => pagination.onChangePage(val)}
-							color="primary"
-						/>
-					)}
-				</FooterBox>
-			)}
+			{/* Paginación */}
+			{pagination ? (
+				<SmartBox center p="px8">
+					<FilledButton
+						colorType="primary"
+						btnVariant="ghost"
+						disabled={pagination.page <= 1}
+						onClick={() => pagination.onChangePage(pagination.page - 1)}
+					>
+						Anterior
+					</FilledButton>
+					<Text as="span" size="sm" sx={{ mx: 2 }}>
+						Página {pagination.page} de {pagination.totalPages}
+					</Text>
+					<FilledButton
+						colorType="primary"
+						btnVariant="ghost"
+						disabled={pagination.page >= pagination.totalPages}
+						onClick={() => pagination.onChangePage(pagination.page + 1)}
+					>
+						Siguiente
+					</FilledButton>
+				</SmartBox>
+			) : null}
 		</TableContainerBase>
 	);
 }
-
-export default TableView;
 

@@ -1,87 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import {
-	Container,
-	StyledTableContainer,
-	StyledTableRow,
-	StyledTableCell,
-} from './userListWithRoles.styles';
-
+// src/ui/components/users/UserListWithRoles.tsx
+import React, { useEffect, useState, useMemo } from 'react';
 import SectionTitle from '../../shared/atoms/titles/SectionTitle';
-import SmartBox from '../../shared/atoms/box/SmartBox';
 import Text from '../../shared/atoms/typography/Text';
 
-import { Table, TableBody, TableHead, Pagination } from '@mui/material';
+import TableView from '../../shared/organisms/table/TableView';
+import type { ColumnDef } from '../../shared/organisms/table/tableView.types';
+
+import { Container } from './userListWithRoles.styles';
 import { fetchUsersPaginated } from '../../../async/services/userService';
 
-interface Role { _id: string; name: string; }
+interface Role { _id: string; name: string }
 interface User { _id: string; username: string; email: string; roles: Role[] }
 
-const UserListWithRoles: React.FC = () => {
-	const [users, setUsers]       = useState<User[]>([]);
-	const [currentPage, setPage]  = useState(1);
-	const [totalPages, setTotal]  = useState(1);
-	const usersPerPage            = 10;
+const usersPerPage = 10;
 
-	const load = (page: number) => {
-		fetchUsersPaginated(page, usersPerPage)
-			.then(({ list, totalPages }) => {
-				setUsers(list);
-				setTotal(totalPages);
-			})
-			.catch(err => {
-				console.error(err);
-				alert('Error al obtener usuarios');
-			});
+const UserListWithRoles: React.FC = () => {
+	const [users, setUsers] = useState<User[]>([]);
+	const [currentPage, setPage] = useState(1);
+	const [totalPages, setTotal] = useState(1);
+	const [loading, setLoading] = useState(true);
+
+	const load = async (page: number) => {
+		try {
+			setLoading(true);
+			const { list, totalPages } = await fetchUsersPaginated(page, usersPerPage);
+			setUsers(list || []);
+			setTotal(totalPages || 1);
+		} catch (err) {
+			console.error('Error al obtener usuarios:', err);
+			setUsers([]); // fallback
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	useEffect(() => {
 		load(currentPage);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentPage]);
 
+	// 🔹 Columnas — el Email SIEMPRE visible
+	const columns: ColumnDef<User>[] = useMemo(() => [
+		{
+			id: 'username',
+			header: 'Usuario',
+			accessor: 'username',
+			minWidth: 160,
+			truncate: true,
+		},
+		{
+			id: 'email',
+			header: 'Email',
+			accessor: 'email',
+			minWidth: 220,
+			truncate: true,
+			// ⚠️ no usar hiddenAt aquí → el email debe verse en móvil y desktop
+		},
+		{
+			id: 'roles',
+			header: 'Roles',
+			minWidth: 220,
+			truncate: true,
+			hiddenAt: ['xs'], // opcional: oculta en móvil si falta espacio
+			renderCell: (u) => (
+				<Text as="span" size="sm" colorKey="text.secondary">
+					{u.roles?.length ? u.roles.map(r => r.name).join(', ') : 'Sin roles asignados'}
+				</Text>
+			),
+		},
+	], []);
+
 	return (
-		<Container>
+		<Container sx={{ overflowX: 'clip' }}>
 			<SectionTitle variant="h5">Lista de Usuarios con sus Roles</SectionTitle>
 
-			<StyledTableContainer>
-				<Table>
-					<TableHead>
-						<StyledTableRow>
-							<StyledTableCell>Usuario</StyledTableCell>
-							<StyledTableCell>Email</StyledTableCell>
-							<StyledTableCell>Roles</StyledTableCell>
-						</StyledTableRow>
-					</TableHead>
-					<TableBody>
-						{users.map(user => (
-							<StyledTableRow key={user._id}>
-								<StyledTableCell>
-									<Text>{user.username}</Text>
-								</StyledTableCell>
-								<StyledTableCell>
-									<Text size="sm" colorKey="text.secondary">{user.email}</Text>
-								</StyledTableCell>
-								<StyledTableCell>
-									<Text>
-										{user.roles?.length
-											? user.roles.map(role => role.name).join(', ')
-											: 'Sin roles asignados'}
-									</Text>
-								</StyledTableCell>
-							</StyledTableRow>
-						))}
-					</TableBody>
-				</Table>
-			</StyledTableContainer>
-
-			<SmartBox center mt='px4'>
-				<Pagination
-					count={totalPages}
-					page={currentPage}
-					onChange={(_, val) => setPage(val)}
-					color="primary"
+			<TableView<User>
+				data={users}
+				rowKey="_id"
+				columns={columns}
+				loading={loading}
+				emptyMessage="No hay usuarios."
+				stickyHeader
+				zebra
+				hoverable
+				skin="default"
+				responsiveMode="auto"   // deja que TableView elija: card (móvil) / scroll (desktop)
+				pagination={{
+					page: currentPage,
+					totalPages,
+					onChangePage: (p) => setPage(p),
+				}}
 				/>
-			</SmartBox>
-		</Container>
+			</Container>
 	);
 };
 

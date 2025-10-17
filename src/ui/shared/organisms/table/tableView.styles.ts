@@ -1,134 +1,115 @@
 import { styled } from '@mui/material/styles';
-import {
-	TableContainer as MuiTableContainer,
-	Table as MuiTable,
-	TableHead as MuiTableHead,
-	TableRow as MuiTableRow,
-	TableCell as MuiTableCell,
-	Box,
-} from '@mui/material';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
+import TableContainer from '@mui/material/TableContainer';
+import Box from '@mui/material/Box';
 
-export const TableContainerBase = styled(MuiTableContainer, {
-	shouldForwardProp: (prop) => prop !== 'dense'
+export const TableContainerBase = styled(TableContainer, {
+	shouldForwardProp: (prop) => prop !== 'dense',
 })<{ dense?: boolean }>(({ theme, dense }) => ({
 	boxShadow: theme.shadows[3],
-	borderRadius: theme.radius?.md ?? 12,
+	borderRadius: theme.shape.borderRadius,
 	backgroundColor: theme.palette.background.paper,
 	overflowX: 'auto',
-	padding: dense ? theme.spacing(1) : theme.spacing(2),
+	display: 'flex',
+	flexDirection: 'column',
+	paddingBlock: dense ? theme.spacing(0.5) : theme.spacing(1),
 }));
 
-export const TableBase = styled(MuiTable)({
+export const ToolbarBox = styled('div')(({ theme }) => ({
+	padding: theme.spacing(1),
+	borderBottom: `1px solid ${theme.palette.divider}`,
+}));
+
+export const TableBase = styled(Table)(({ theme }) => ({
 	width: '100%',
-	borderCollapse: 'separate', // mejor para sticky header con border-radius
+	borderCollapse: 'separate',
 	borderSpacing: 0,
-	minWidth: 640,
-});
+	tableLayout: 'auto',
+}));
 
-export const TableHeadBase = styled(MuiTableHead, {
-	shouldForwardProp: (prop) => prop !== 'skin' && prop !== 'sticky'
-})<{
-	skin: 'default' | 'uatf' | 'accented';
-	sticky?: boolean;
-}>(({ theme, skin, sticky }) => {
-	const palette = {
-		default: {
-			bg: theme.palette.primary.light,
-			text: theme.palette.primary.contrastText,
-		},
-		uatf: {
-			bg: theme.customColors.uatf.blue,
-			text: theme.customColors.uatf.white,
-		},
-		accented: {
-			bg: theme.palette.accent.light,
-			text: theme.palette.accent.contrastText,
-		},
-	}[skin];
+export const TableHeadBase = styled(TableHead, {
+	shouldForwardProp: (prop) => prop !== 'skin' && prop !== 'sticky',
+})<{ skin?: 'default' | 'surface'; sticky?: boolean }>(({ theme, skin = 'default', sticky }) => ({
+	background:
+		skin === 'surface'
+			? theme.palette.background.paper
+			: theme.palette.action.hover,
+			position: sticky ? 'sticky' as any : undefined,
+			top: sticky ? 0 : undefined,
+			zIndex: sticky ? 1 : undefined,
+}));
 
-	return {
-		backgroundColor: palette.bg,
-		color: palette.text,
-		position: sticky ? 'sticky' as const : undefined,
-		top: sticky ? 0 : undefined,
-		zIndex: sticky ? 1 : undefined,
-		'& th': {
-			backgroundColor: palette.bg,
-			color: palette.text,
-		},
-	};
-});
-
-export const TableRowBase = styled(MuiTableRow, {
-	shouldForwardProp: (prop) => !['zebra', 'hoverable', 'hoverTone'].includes(prop as string),
-})<{
-	zebra?: boolean;
-	hoverable?: boolean;
-	hoverTone?: 'default' | 'warning' | 'success' | 'error' | 'accent';
-}>(({ theme, zebra, hoverable, hoverTone = 'default' }) => {
-	const hoverColors: Record<string, string> = {
-		default: theme.palette.action.hover,
-		warning: theme.palette.warning.light,
-		success: theme.palette.success.light,
-		error: theme.palette.error.light,
-		accent: theme.palette.accent.light,
-	};
-
-	return {
-		'&:nth-of-type(even)': zebra ? { backgroundColor: theme.palette.action.hover } : {},
-		'&:hover': hoverable ? { backgroundColor: hoverColors[hoverTone] } : {},
-		transition: 'background-color 120ms ease',
-		cursor: hoverable ? 'pointer' : 'default',
-	};
-});
-
-export const TableCellBase = styled(MuiTableCell, {
-	shouldForwardProp: (prop) => !['isHead', 'truncate'].includes(prop as string),
-})<{
-	isHead?: boolean;
-	truncate?: boolean;
-}>(({ theme, isHead, truncate }) => ({
-	borderBottom: `1px solid ${theme.palette.divider}`,
-	padding: theme.spacing(1),
+export const TableCellBase = styled(TableCell, {
+	shouldForwardProp: (prop) => !['isHead','truncate','sticky'].includes(prop as string),
+})<{ isHead?: boolean; truncate?: boolean; sticky?: 'left'|'right' }>(({ theme, isHead, truncate, sticky }) => ({
 	fontWeight: isHead ? 600 : 400,
-	fontSize: isHead ? theme.typography.pxToRem(14) : theme.typography.pxToRem(13),
 	whiteSpace: truncate ? 'nowrap' : undefined,
-	overflow: truncate ? 'hidden' : undefined,
 	textOverflow: truncate ? 'ellipsis' : undefined,
-}));
-
-export const ToolbarBox = styled(Box)(({ theme }) => ({
-	display: 'flex',
-	alignItems: 'center',
-	gap: theme.spacing(1),
-	marginBottom: theme.spacing(1),
-}));
-
-export const FooterBox = styled(Box)(({ theme }) => ({
-	display: 'flex',
-	alignItems: 'center',
-	justifyContent: 'space-between',
-	gap: theme.spacing(1),
-	marginTop: theme.spacing(1.5),
-}));
-
-/** Variante “card” para móvil: ocultar thead y usar data-label en celdas */
-export const CardOnlyHead = styled('div')(({ theme }) => ({
-	display: 'none',
-}));
-
-export const CardCell = styled('div', {
-	shouldForwardProp: (prop) => !['dataLabel'].includes(prop as string),
-})<{ dataLabel?: string }>(({ theme }) => ({
-	display: 'grid',
-	gridTemplateColumns: '160px 1fr',
-	gap: theme.spacing(1),
-	padding: theme.spacing(1),
+	overflow: truncate ? 'hidden' : undefined,
 	borderBottom: `1px solid ${theme.palette.divider}`,
-	'&::before': {
-		content: 'attr(data-label)',
-		color: theme.palette.text.secondary,
-		fontWeight: 600,
+	padding: theme.spacing(1),
+	position: sticky ? 'sticky' : undefined,
+	left: sticky === 'left' ? 0 : undefined,
+	right: sticky === 'right' ? 0 : undefined,
+	zIndex: sticky ? 2 : undefined,
+	background: sticky ? theme.palette.background.paper : undefined,
+}));
+
+export const TableRowBase = styled(TableRow, {
+	shouldForwardProp: (prop) => prop !== 'zebra' && prop !== 'hoverable',
+})<{ zebra?: boolean; hoverable?: boolean }>(({ theme, zebra, hoverable }) => ({
+	'&:nth-of-type(even)': {
+		backgroundColor: zebra ? theme.palette.action.hover : undefined,
 	},
+	'&:hover': {
+		backgroundColor: hoverable ? theme.palette.action.hover : undefined,
+	},
+}));
+
+/* ===== Modo Card (móvil) ===== */
+export const CardsWrapper = styled(Box)(({ theme }) => ({
+	display: 'grid',
+	gridTemplateColumns: '1fr',
+	gap: theme.spacing(1.5),
+}));
+
+export const CardRow = styled('div')(({ theme }) => ({
+	borderRadius: theme.shape.borderRadius,
+	background: theme.palette.background.paper,
+	boxShadow: theme.shadows[1],
+	border: `1px solid ${theme.palette.divider}`,
+	padding: theme.spacing(1),
+	display: 'grid',
+	gridTemplateColumns: '1fr',
+	rowGap: theme.spacing(0.5),
+}));
+
+export const CardLine = styled('div')<{ align?: 'left' | 'center' | 'right' }>(
+	({ theme, align }) => ({
+		display: 'grid',
+		gridTemplateColumns: '120px 1fr',
+		columnGap: theme.spacing(1),
+		alignItems: 'center',
+		'& ._label': {
+			color: theme.palette.text.secondary,
+			fontWeight: 600,
+			fontSize: theme.typography.pxToRem(12),
+			textTransform: 'uppercase',
+			letterSpacing: '.02em',
+		},
+		'& ._value': {
+			textAlign: align ?? 'left',
+		},
+	})
+);
+
+export const CardActions = styled('div')(({ theme }) => ({
+	display: 'flex',
+	gap: theme.spacing(1),
+	marginTop: theme.spacing(0.5),
+	flexWrap: 'wrap',
 }));
 

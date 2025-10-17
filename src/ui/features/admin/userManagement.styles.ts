@@ -6,8 +6,8 @@ export const UserManagementContainer = styled(Box)(({ theme }) => ({
 	padding: theme.spacing(3),
 	backgroundColor: theme.palette.background.default,
 	color: theme.palette.text.primary,
-	height: '100vh', // Altura completa para que el contenedor ocupe el espacio restante
-	overflowY: 'auto', // Permite desplazamiento solo en el contenedor principal, no en el sidebar
+	//height: '100vh', // Altura completa para que el contenedor ocupe el espacio restante
+	//overflowY: 'auto', // Permite desplazamiento solo en el contenedor principal, no en el sidebar
 	[mq('sm', 'max')]: {
 		padding: theme.spacing(2),
 		marginLeft: '0', // Sin margen en pantallas pequeñas para permitir que el sidebar sea colapsable

@@ -1,72 +1,62 @@
 import { ReactNode } from 'react';
 
-export type BreakKey = 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-
-export type TableSkin = 'default' | 'uatf' | 'accented';
-export type ResponsiveMode = 'scroll' | 'card';
 export type Align = 'left' | 'center' | 'right';
+export type ButtonColor =
+	| 'primary'
+| 'secondary'
+| 'success'
+| 'error'
+| 'warning'
+| 'info'
+| 'accent';
 
-export type RowKey<T> = keyof T & string | ((row: T, index: number) => string);
+export type ButtonVariant = 'default' | 'outline' | 'ghost' | 'soft';
 
-export type Accessor<T> = keyof T & string | string;
+export type BreakpointKey = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+export type ResponsiveMode = 'auto' | 'scroll' | 'card';
 
 export interface ColumnDef<T> {
 	id: string;
 	header: ReactNode;
-	accessor?: Accessor<T>;              // p.ej. 'email' o 'publication.title'
-	renderCell?: (row: T, index: number) => ReactNode;
-	align?: Align;
+	accessor?: keyof T;
 	minWidth?: number;
-	maxWidth?: number;
+	align?: Align;
 	truncate?: boolean;
-	hiddenAt?: BreakKey[];               // ocultar por breakpoint
-	headerTooltip?: ReactNode;           // para InfoTooltip opcional
+	hiddenAt?: BreakpointKey[]; // ej. ['xs', 'sm']
+	renderCell?: (row: T) => ReactNode;
+	sticky?: 'left' | 'right';
 }
 
 export interface RowAction<T> {
 	label: string;
-	onClick: (row: T) => void | Promise<void>;
+	color?: ButtonColor;
+	variant?: ButtonVariant;
 	visible?: (row: T) => boolean;
-	disabled?: (row: T) => boolean;
-	variant?: 'default' | 'outline' | 'ghost' | 'soft';
-	color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'accent';
-	icon?: ReactNode;                    // si lo pasas, podemos renderizar IconButton en modo compacto
-	confirm?: { title: string; message: string }; // hook para tu Dialog (opcional)
+	onClick: (row: T) => void;
 }
 
-export interface PaginationDef {
+export interface PaginationConfig {
 	page: number;
 	totalPages: number;
-	pageSize?: number;
 	onChangePage: (page: number) => void;
 }
 
 export interface TableViewProps<T> {
 	data: T[];
-	rowKey: RowKey<T>;
+	rowKey: keyof T;
 	columns: ColumnDef<T>[];
 	rowActions?: RowAction<T>[];
-
-	toolbar?: ReactNode;
-	footer?: ReactNode;
-
 	loading?: boolean;
-	error?: ReactNode | string;
-	emptyMessage?: ReactNode | string;
-
-	stickyHeader?: boolean;
-	dense?: boolean;
+	emptyMessage?: string;
 	zebra?: boolean;
+	stickyHeader?: boolean;
 	hoverable?: boolean;
-	skin?: TableSkin;
-	responsiveMode?: ResponsiveMode;     // 'scroll' (default) | 'card'
-
-	// comportamiento de hover especial para filas (e.g. reportes)
-	rowHoverTone?: 'default' | 'warning' | 'success' | 'error' | 'accent';
-
-	pagination?: PaginationDef;
-
-	// evento opcional
-	onRowClick?: (row: T) => void;
+	dense?: boolean;
+	skin?: 'default' | 'surface';
+	responsiveMode?: ResponsiveMode; // 'auto' por defecto
+	toolbar?: ReactNode | null;
+	pagination?: PaginationConfig;
+	actionsAsMenu?: boolean;
 }
 

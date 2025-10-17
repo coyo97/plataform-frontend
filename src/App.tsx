@@ -36,6 +36,7 @@ import HomeTest from './ui/features/test/HomeTest';
 import HomeOverlay from './ui/shared/organisms/SearchOverlay/HomeOverlay';
 import AdminSidebarMenu from './ui/features/admin/AdminSidebarMenu';
 import AuthorProfile from './ui/features/profile/AuthorProfile';
+import { useMediaQuery, useTheme } from '@mui/material';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -61,6 +62,8 @@ function App() {
 		};
 	}, []);
 
+	  const theme = useTheme();
+const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 
 	return (
 		<Theme>
@@ -98,16 +101,17 @@ function App() {
 											<div
 												style={{
 													display: 'grid',
-													gridTemplateColumns: '250px 1fr',
+													 gridTemplateColumns: isDesktop ? '230px 1fr' : '1fr',
 													minHeight: '100vh',
 													paddingTop: 'var(--header-h)',   
 													boxSizing: 'border-box',
+													  overflowX: 'clip',
 												}}
 											>
 												{/* Sidebar: sticky en desktop, modal en móvil */}
 												<AdminSidebarMenu open onClose={undefined} />
 
-												<div style={{ padding: '1rem' }}>
+												<div >
 													<Routes>
 														<Route path="/" element={<Dashboard />} />
 														<Route path="users" element={<UserManagement />} />

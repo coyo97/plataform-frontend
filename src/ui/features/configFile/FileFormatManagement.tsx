@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+// src/ui/components/config/FileFormatManagement.tsx
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import getEnvVariables from '../../../config/configEnvs';
+
 import {
 	Container,
 	Title,
 	SubTitle,
 	Input,
 	Button,
-	Table,
-	TableHeader,
-	TableRow,
-	TableCell,
-	ActionButton,
 } from './fileFormatManagementStyles';
+
+import Text from '../../shared/atoms/typography/Text';
+import TableView from '../../shared/organisms/table/TableView';
+import type { ColumnDef, RowAction } from '../../shared/organisms/table/tableView.types';
 
 interface FileFormat {
 	_id: string;
@@ -23,6 +24,8 @@ interface FileFormat {
 
 const FileFormatManagement: React.FC = () => {
 	const [formats, setFormats] = useState<FileFormat[]>([]);
+	const [loading, setLoading] = useState<boolean>(false);
+
 	const { HOST, SERVICE } = getEnvVariables();
 
 	const [newFormat, setNewFormat] = useState<{ mimeType: string; description: string }>({
@@ -30,21 +33,26 @@ const FileFormatManagement: React.FC = () => {
 		description: '',
 	});
 
-	useEffect(() => {
-		fetchFormats();
-	}, []);
-
 	const fetchFormats = async () => {
 		try {
+			setLoading(true);
 			const token = localStorage.getItem('token');
-			const response = await axios.get(`${HOST}${SERVICE}/file-formats`, {
+			const resp = await axios.get(`${HOST}${SERVICE}/file-formats`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			setFormats(response.data.formats);
+			setFormats(resp.data.formats ?? []);
 		} catch (error) {
 			console.error('Error al obtener los formatos de archivo:', error);
+			setFormats([]);
+		} finally {
+			setLoading(false);
 		}
 	};
+
+	useEffect(() => {
+		fetchFormats();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleCreateFormat = async () => {
 		try {
@@ -86,9 +94,66 @@ const FileFormatManagement: React.FC = () => {
 		}
 	};
 
+	// columnas para TableView
+	const columns: ColumnDef<FileFormat>[] = useMemo(() => ([
+		{
+			id: 'mimeType',
+			header: 'Tipo MIME',
+			accessor: 'mimeType',
+			minWidth: 200,
+			truncate: true,
+		},
+		{
+			id: 'description',
+			header: 'Descripción',
+			minWidth: 280,
+			truncate: true,
+			hiddenAt: ['xs'], // opcional: ahorra espacio en móvil
+			renderCell: (f) => (
+				<Text as="span" size="sm" colorKey="text.secondary">
+					{f.description || 'Sin descripción'}
+				</Text>
+			),
+		},
+		{
+			id: 'enabled',
+			header: 'Estado',
+			minWidth: 140,
+			renderCell: (f) =>
+				f.enabled ? (
+					<Text as="span" size="sm" colorKey="success.main">Habilitado</Text>
+			) : (
+				<Text as="span" size="sm" colorKey="text.disabled">Deshabilitado</Text>
+			),
+		},
+	]), []);
+
+	// acciones por fila
+	const rowActions: RowAction<FileFormat>[] = useMemo(() => ([
+		{
+			label: 'Habilitar',
+			color: 'success',
+			visible: (f) => !f.enabled,
+			onClick: (f) => handleToggleEnabled(f._id, f.enabled),
+		},
+		{
+			label: 'Deshabilitar',
+			color: 'warning',
+			visible: (f) => f.enabled,
+			onClick: (f) => handleToggleEnabled(f._id, f.enabled),
+		},
+		{
+			label: 'Eliminar',
+			color: 'secondary',
+			variant: 'outline',
+			onClick: (f) => handleDeleteFormat(f._id),
+		},
+	]), []);
+
 	return (
 		<Container>
 			<Title>Gestión de Formatos de Archivo</Title>
+
 			<div>
 				<SubTitle>Agregar Nuevo Formato</SubTitle>
 				<Input
@@ -105,32 +170,21 @@ const FileFormatManagement: React.FC = () => {
 				/>
 				<Button onClick={handleCreateFormat}>Agregar</Button>
 			</div>
-			<Table>
-				<thead>
-					<tr>
-						<TableHeader>Tipo MIME</TableHeader>
-						<TableHeader>Descripción</TableHeader>
-						<TableHeader>Estado</TableHeader>
-						<TableHeader>Acciones</TableHeader>
-					</tr>
-				</thead>
-				<tbody>
-					{formats.map((format) => (
-						<TableRow key={format._id}>
-							<TableCell>{format.mimeType}</TableCell>
-							<TableCell>{format.description || 'Sin descripción'}</TableCell>
-							<TableCell>{format.enabled ? 'Habilitado' : 'Deshabilitado'}</TableCell>
-							<TableCell>
-								<ActionButton onClick={() => handleToggleEnabled(format._id, format.enabled)}>
-									{format.enabled ? 'Deshabilitar' : 'Habilitar'}
-								</ActionButton>
-								<ActionButton onClick={() => handleDeleteFormat(format._id)}>Eliminar</ActionButton>
-							</TableCell>
-						</TableRow>
-					))}
-				</tbody>
-			</Table>
-		</Container>
+
+			<TableView<FileFormat>
+				data={formats}
+				rowKey="_id"
+				columns={columns}
+				rowActions={rowActions}
+				loading={loading}
+				emptyMessage="No hay formatos configurados."
+				stickyHeader
+				zebra
+				hoverable
+				responsiveMode="auto"  // móvil: cards; desktop: tabla
+				// sin pagination → TableView no muestra footer; si quieres, puedes añadirlo más adelante
+				/>
+			</Container>
 	);
 };
 

@@ -48,7 +48,7 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 
 	// --- Responsive: móvil = hamburguesa inferior izquierda
 	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 	const [mobileOpen, setMobileOpen] = useState(false);
 
 	const toggleMobile = () => setMobileOpen((v) => !v);
@@ -84,7 +84,7 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 					aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
 					sx={{
 						position: 'fixed',
-						left: 16,
+						right: 16,
 						bottom: 16,
 						zIndex: (t) => t.zIndex.drawer + 2,
 						boxShadow: 3,
@@ -100,8 +100,7 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 				<Sidebar
 					open={open}
 					onClose={onClose}
-					variant="primary"
-					width={250}
+					width={230}
 					position="left"
 					sticky
 					header={<Text as="h2" size="md" weight="bold">Admin Panel</Text>}
@@ -116,13 +115,19 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 								&copy;2025 Universidad Autónoma Tomás Frías
 							</div>
 						</div>
-		}
+					}
 				>
 					{items.map((it) => (
 						<Link key={it.to} to={it.to} style={{ textDecoration: 'none', textAlign:'left' }}>
 							<TextItemRow
 								icon={it.icon}
-								label={<Text as="span" size="sm" colorKey="sidebar.text">{it.label}</Text>}
+								label={<Text as="span" size="sm" colorKey="sidebar.primary">{it.label}</Text>}
+								sx={{
+									textAlign: 'left',        
+									justifyContent: 'flex-start',
+									pl: 1, 
+									width: '100%',
+								}}
 							/>
 						</Link>
 					))}
@@ -134,7 +139,6 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 				<Sidebar
 					open
 					onClose={handleClose}
-					variant="primary"       // si tu Sidebar tiene "temporary"/"overlay", úsalo aquí
 					width={250}
 					position="left"
 					sticky={false}
@@ -161,7 +165,7 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 						>
 							<TextItemRow
 								icon={it.icon}
-								label={<Text as="span" size="sm" colorKey="sidebar.text">{it.label}</Text>}
+								label={<Text as="span" size="sm" colorKey="sidebar.primary">{it.label}</Text>}
 							/>
 						</Link>
 					))}

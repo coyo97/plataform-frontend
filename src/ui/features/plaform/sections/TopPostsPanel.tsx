@@ -28,7 +28,6 @@ const TopPostsPanel: React.FC = () => {
 		query: '',
 	});
 
-	// carga inicial
 	useEffect(() => {
 		if (!pubs.length) load(1);
 	}, [pubs.length, load]);
