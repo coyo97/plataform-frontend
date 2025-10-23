@@ -1,7 +1,7 @@
 export interface Report {
 	_id: string;
 	reporter: { _id: string; username: string };
-	publication: {
+	publication?: {
 		_id: string;
 		title: string;
 		author: { _id: string; username: string };
@@ -10,5 +10,15 @@ export interface Report {
 	status: "pending" | "reviewed" | "dismissed";
 	createdAt: string;
 	updatedAt: string;
+	targetType: "publication" | "stream" | "message" | "academicHelp";
+	  target?: {
+    _id: string;
+    title?: string;
+    content?: string;
+    author?: {
+      _id: string;
+      username: string;
+    };
+  };
 }
 

@@ -1,4 +1,4 @@
-import { get, put } from "../api";
+import { get, put, post } from "../api";
 import getEnvVariables from "../../config/configEnvs";
 import * as R from "../routes/reportRoutes";
 import { Report } from "../../types/centerAlert";
@@ -12,3 +12,9 @@ export const listReports = () =>
 export const updateReportStatus = (id: string, status: "reviewed" | "dismissed") =>
 	put<void>(url(R.REPORT(id)), { status });
 
+export const sendReportNotification = (
+  reportId: string,
+  message: string,
+  type = "report_alert"
+) =>
+  post<void>(url(`${R.REPORT(reportId)}/notify`), { message, type });
