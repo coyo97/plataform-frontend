@@ -18,6 +18,7 @@ const Card: React.FC<CardProps> = ({
 	title,
 	description,
 	author,
+	authorCareers,
 	date,
 	tags,
 	media,
@@ -38,6 +39,22 @@ const Card: React.FC<CardProps> = ({
 							<div>
 								<div><strong>{author.name}</strong></div>
 								{author.subtitle && <small>{author.subtitle}</small>}
+								{authorCareers && authorCareers.length > 0 && (
+									<div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+										{authorCareers.map((c, i) => (
+											<Badge
+												key={`author-career-${i}`}
+												variant="soft"
+												color="secondary"
+												size="md"
+												shape="rounded"
+												ariaLabel={`Carrera ${c}`}
+											>
+												{c}
+											</Badge>
+										))}
+									</div>
+								)}
 							</div>
 						</AuthorInfo>
 					)}

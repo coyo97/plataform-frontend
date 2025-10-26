@@ -163,7 +163,6 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 		const openMenu  = () => setMenuOpen(true);
 		const closeMenu = () => setMenuOpen(false);
 
-		// ⬇️ NUEVO: confirmación para eliminar
 		const [confirmOpen, setConfirmOpen] = React.useState(false);
 		const askDelete = () => {
 			closeMenu();
@@ -186,7 +185,6 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 		const handleEdit = () => {
 			closeMenu();
 
-			// 🔹 Avisamos al componente padre (HomeAcademicHelp)
 			// para que abra el diálogo con los datos de esta ayuda
 			onEditRequested?.(help);
 		};

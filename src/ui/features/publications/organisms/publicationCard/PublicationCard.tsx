@@ -9,6 +9,7 @@ import ActionMenu from '../../../../shared/molecules/actionMenu/ActionMenu'; // 
 import CommentDialogViewer from '../../../comments/organisms/CommentDialog/CommentDialogViewer';
 import { Publication } from '../../../../../types/publication';
 import { getUserId } from '../../../../../utils/auth/getUserId';
+import { fetchCareers } from '../../../../../async/services/careerService'; 
 
 interface Props {
 	HOST: string;
@@ -47,6 +48,7 @@ const PublicationCard: React.FC<Props> = ({
 	// Estado del menú "⋮"
 	const [menuOpen, setMenuOpen] = React.useState(false);
 	const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+	const [careerMap, setCareerMap] = React.useState<Record<string, string>>({});
 
 	const openMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
 		setAnchorEl(e.currentTarget);
@@ -69,31 +71,116 @@ const PublicationCard: React.FC<Props> = ({
 		onDelete?.(publication);
 	};
 	const handleSave = () => {
-		// TODO: marcar como guardada en tu backend o estado
+		//  marcar como guardada en tu backend o estado
 		console.info('Guardar publicación (TODO)');
 	};
+
+	const authorObj = publication.author as any | undefined;
+  const authorStatus = (authorObj?.status ?? '').toLowerCase();
+  const isAuthorMissing = !authorObj;
+  const isAuthorDeleted =
+    isAuthorMissing ||
+    authorStatus === 'deleted' ||
+    authorStatus === 'eliminado' ||
+    authorStatus === 'deactivated' ||
+    authorStatus === 'desactivado' ||
+    authorStatus === 'blacklisted' ||
+    authorStatus === 'bloqueado';
+
+  // Nombre y avatar seguros
+  const authorName = isAuthorDeleted
+    ? 'Usuario eliminado'
+    : (authorObj?.username || 'Usuario');
+
+  const authorAvatarUrl = !isAuthorDeleted && authorObj?.profile?.profilePicture
+    ? `${HOST}/${authorObj.profile.profilePicture}`
+    : undefined;
+
+
+	React.useEffect(() => {
+		let mounted = true;
+		(async () => {
+			try {
+				const careers = await fetchCareers(); // [{ _id, name }]
+				if (!mounted) return;
+				const map = Object.fromEntries(
+					(careers ?? []).map((c: any) => [String(c._id), String(c.name ?? '')])
+				);
+				setCareerMap(map);
+			} catch (e) {
+				console.error('No se pudo cargar catálogo de carreras', e);
+			}
+		})();
+		return () => { mounted = false; };
+	}, []);
+	const getId = (x: any) => (typeof x === 'string' ? x : x?._id);
+	const getNameFromAny = (x: any) => {
+		// si ya viene objeto con name
+		if (x && typeof x === 'object' && x.name) return String(x.name);
+		// si viene string (id), buscar en el mapa
+		const id = getId(x);
+		return id && careerMap[id] ? careerMap[id] : undefined;
+	};
+
+	const getCareerNames = (p: any): string[] => {
+		const out: string[] = [];
+
+		// 1) Carrera de la publicación (string id u objeto)
+		if (p?.career) {
+			const n = getNameFromAny(p.career);
+			if (n) out.push(n);
+			else if (typeof p.career === 'string') out.push(p.career); // fallback: muestra id si no hay nombre
+		}
+		if (typeof p?.careerName === 'string' && p.careerName.trim()) {
+			out.push(p.careerName.trim());
+		}
+
+		// 2) Carreras en el autor (varias formas)
+		const a = p?.author ?? {};
+		const arrays = [a?.careers, a?.profile?.careers].filter(Boolean);
+		for (const arr of arrays) {
+			if (Array.isArray(arr)) {
+				for (const item of arr) {
+					const n = getNameFromAny(item);
+					if (n) out.push(n);
+					else if (typeof item === 'string') out.push(item); // fallback id
+				}
+			}
+		}
+
+		// 3) Objetos sueltos
+		if (a?.career) {
+			const n = getNameFromAny(a.career);
+			if (n) out.push(n);
+		}
+		if (a?.profile?.career) {
+			const n = getNameFromAny(a.profile.career);
+			if (n) out.push(n);
+		}
+
+		// únicos y limpios
+		return Array.from(new Set(out.filter(Boolean)));
+	};
+
+	const authorCareerNames = React.useMemo(
+		() => getCareerNames(publication),
+		[publication, careerMap] 
+	);
 
 	return (
 		<>
 			<Card
 				title={publication.title}
 				description={publication.content}
-				author={
-					publication.author
-						? {
-							name: publication.author.username,
-							avatarUrl: publication.author.profile?.profilePicture
-								? `${HOST}/${publication.author.profile.profilePicture}`
-								: undefined,
-								subtitle: 'Autor',
-						}
-						: undefined
-				}
+				author={{
+					name: authorName,
+					avatarUrl: authorAvatarUrl,
+				}}
+				authorCareers={authorCareerNames}
 				date={publication.created_at}
 				tags={publication.tags ?? []}
 				onTagClick={onTagClick}
 				media={renderFile(publication)}
-				/* ===== Header actions: aquí va el “⋮” ===== */
 				headerActions={
 					<>
 						<IconButton
@@ -106,7 +193,6 @@ const PublicationCard: React.FC<Props> = ({
 
 						{menuOpen && (
 							<ActionMenu
-								/* SIN anchorEl: igual que tu ShareMenu */
 								isOwner={isOwner}
 								link={`${window.location.origin}/publications/${publication._id}`}
 								onEdit={handleEdit}

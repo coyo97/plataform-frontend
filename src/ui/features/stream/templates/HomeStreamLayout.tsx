@@ -1,13 +1,10 @@
-// src/ui/features/stream/templates/HomeStreamLayout.tsx
 import React, { useState } from 'react';
 import {
-	FormControl,
-	InputLabel,
-	MenuItem,
-	Select,
-	SelectChangeEvent,
 	useTheme,
 	useMediaQuery,
+	Box,
+	Tabs, Tab,
+	Fab, Drawer
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SectionTitle from '../../../shared/atoms/titles/SectionTitle';
@@ -17,21 +14,19 @@ import type { Stream } from '../../../../types/stream';
 import { styles } from './homeStreamLayout.styles';
 import GridContainer from '../../../shared/atoms/grid/GridContainer';
 import GridColumn from '../../../shared/atoms/grid/GridColumn';
-import IconButton from '../../../shared/atoms/buttons/iconButton/IconButton';
-import Sidebar from '../../../shared/organisms/sidebar/Sidebar';
 import Header from '../../../shared/organisms/header/Header';
 import { navLinks } from '../../../../config/navLinks';
 import Logo from '../../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
 import SearchOverlay from '../../../shared/organisms/SearchOverlay/SearchOverlay';
-import { Tabs, Tab, Box } from '@mui/material';
 import { userHasAdminRole } from '../../../../utils/auth/getUserId';
+
+type StreamTab = 'live' | 'scheduled' | 'ended' | 'mine';
 
 interface LayoutProps {
 	children?: React.ReactNode;
-	onStreamCreated: (id: string, access?: string) => void;
+	onStreamCreated: (id: string, access?: string, stream?: Stream) => void;
 	onStreamSelected: (s: Stream) => void;
 }
-type StreamTab = 'live' | 'scheduled' | 'ended' | 'mine';
 
 const HomeStreamLayout: React.FC<LayoutProps> = ({
 	children,
@@ -40,10 +35,14 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 }) => {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-	const [openSidebar, setOpenSidebar] = useState(false);
+	const [openDrawer, setOpenDrawer] = useState(false);
+
+	const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
+	const [accessCode, setAccessCode] = useState<string | undefined>();
+	const [activeStream, setActiveStream] = useState<Stream | null>(null);
 
 	const hasChild = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
-
+	const containerVariant = hasChild ? 'desktopFluid' : 'desktopFixed';
 	const [tab, setTab] = useState<StreamTab>('live');
 	const listTypeFor = (t: StreamTab): 'live' | 'ended' | 'all' => {
 		if (t === 'live') return 'live';
@@ -54,60 +53,82 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 		scheduled: t === 'scheduled' || undefined,
 		mine: t === 'mine' || undefined,
 	});
-		const hasAdmin = userHasAdminRole();
+
+	const hasAdmin = userHasAdminRole();
 	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
 
+	const handleStreamCreated = (id: string, access?: string, stream?: Stream) => {
+		setActiveStream(stream ?? null);
+		setSelectedStreamId(id);
+		setAccessCode(access);
+		onStreamCreated?.(id, access, stream); // por si el padre navega al detalle
+	};
 
 	return (
 		<>
-				<Header
+			<Header
 				logoSrc={Logo}
-				variant='gradient'
+				variant="gradient"
 				navLinks={visibleLinks}
 				userRole={hasAdmin ? 'admi' : 'student'}
 				onLogout={() => console.log('Logout')}
 				onNotificationsClick={() => console.log('Abrir notificaciones')}
 				onAvatarClick={() => console.log('Abrir menú usuario')}
 				SearchComponent={
-					<SearchOverlay
-						onSearch={(q, cat) =>
-							console.log(`Buscar "${q}" en categoría "${cat}"`)
-						}
-					/>
+					<SearchOverlay onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)} />
 				}
 			/>
-					{/* Botón hamburguesa (solo mobile) */}
+
+			{/* FAB móvil para abrir el formulario como Drawer */}
 			{isMobile && (
-				<IconButton
-					ariaLabel="Abrir menú"
-					onClick={() => setOpenSidebar(true)}
-					sx={styles.menuButton(theme)}
+				<Fab
+					aria-label="Crear stream"
+					onClick={() => setOpenDrawer(true)}
+					sx={{
+						position: 'fixed',
+						right: 16,
+						bottom: 16,
+						zIndex: (t) => t.zIndex.modal + 1,
+						boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+					}}
+					color="primary"
 				>
 					<MenuIcon />
-				</IconButton>
+				</Fab>
 			)}
 
+			{/* Drawer con formulario en móvil */}
+			<Drawer
+				anchor="bottom"
+				open={isMobile && openDrawer}
+				onClose={() => setOpenDrawer(false)}
+				PaperProps={{
+					sx: {
+						borderTopLeftRadius: 16,
+						borderTopRightRadius: 16,
+						maxHeight: '85dvh',
+						p: 2,
+				},
+				}}
+				keepMounted
+			>
+				<SectionTitle>Crear nuevo stream</SectionTitle>
+				<Box sx={{ mt: 2 }}>
+					<StreamCreateForm
+						onStreamCreated={(id, access, stream) => {
+							setOpenDrawer(false);
+							handleStreamCreated(id, access, stream); // usa el handler local + propaga
+						}}
+					/>
+				</Box>
+			</Drawer>
 			<GridContainer
-				variant="desktopFixed"
-				style={{ paddingTop: 'calc(var(--header-h) + 20px)' }}
+				variant={containerVariant}
+				style={{ paddingTop: 'calc(var(--header-h) + 12px)' }}
 				columns={{ xxs: 4, sm: 6, md: 12 }}
 			>
-				{/* Columna izquierda: Form */}
-				{isMobile ? (
-					<GridColumn span={{ xxs: 12 }}>
-						<Sidebar
-							open={openSidebar}
-							onClose={() => setOpenSidebar(false)}
-							variant="flat"
-							position="left"
-							header={<SectionTitle>Crear nuevo stream</SectionTitle>}
-							/* En móvil ocupa todo el ancho */
-							width={undefined}
-						>
-							<StreamCreateForm onStreamCreated={onStreamCreated} />
-						</Sidebar>
-					</GridColumn>
-				) : (
+				{/* Columna izquierda: Form (solo desktop y cuando NO hay detalle) */}
+				{!isMobile && !hasChild && (
 					<GridColumn span={{ xxs: 12, md: 5, lg: 5, xl: 5 }}>
 						<Box
 							sx={{
@@ -122,22 +143,26 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 								'&::-webkit-scrollbar': { display: 'none' },
 							}}
 						>
-							<Sidebar
-								open
-								sticky
-								variant="flat"
-								position="left"
-								header={<SectionTitle>Crear nuevo stream</SectionTitle>}
-								width={300} // ~600px recomendado (Refactoring UI 400–600px)
-							>
-								<StreamCreateForm onStreamCreated={onStreamCreated} />
-							</Sidebar>
+							<SectionTitle>Crear nuevo stream</SectionTitle>
+							<Box sx={{ mt: 2 }}>
+								<StreamCreateForm
+									onStreamCreated={(id, access, stream) => {
+										handleStreamCreated(id, access, stream);
+									}}
+								/>
+							</Box>
 						</Box>
 					</GridColumn>
 				)}
 
-				{/* Columna derecha: Listado */}
-				<GridColumn span={{ xxs: 12, md: 7, lg: 7, xl: 7 }}>
+				{/* Columna derecha: Listado o Children */}
+				<GridColumn
+					span={
+						hasChild
+							? { xxs: 12, md: 12, lg: 12, xl: 12 } 
+							: { xxs: 12, md: 7,  lg: 7,  xl: 7 }  // layout de lista normal
+					}
+				>
 					{hasChild ? (
 						children
 					) : (
@@ -167,6 +192,7 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 					)}
 				</GridColumn>
 			</GridContainer>
+
 		</>
 	);
 };

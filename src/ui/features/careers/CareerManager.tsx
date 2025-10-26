@@ -15,6 +15,7 @@ import FacultyManager from './FacultyManager';
 import CycleManager from './CycleManager';
 import UnitManager from './UnitManager';
 import SubjectManager from './SubjectManager';
+import AccessPolicyManager from '../roles/AccessPolicyManager';
 
 interface Faculty { _id:string; name:string }
 interface Career  { _id:string; name:string; description?:string; facultyId?:string; mode?:'semester'|'trimester'|'year'; }
@@ -142,6 +143,7 @@ const CareerManager:React.FC = () => {
 			<CycleManager/>
 			<SubjectManager/>
 			<UnitManager/>
+			<AccessPolicyManager/>
 		</Container>
 	);
 };

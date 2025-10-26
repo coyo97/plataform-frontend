@@ -28,6 +28,8 @@ export const StreamCard: React.FC<StreamCardProps> = ({
 	onClick,
 	dense = false,
 }) => {
+	const liveLabel = '🔴 En vivo';
+
 	return (
 		<GridColumn as="article" span={dense ? 1 : 2}>
 			<CardContainer onClick={onClick} dense={dense} role="button" tabIndex={0}>
@@ -36,7 +38,7 @@ export const StreamCard: React.FC<StreamCardProps> = ({
 					aria-label={`Miniatura del stream ${title}`}
 					style={{ backgroundImage: `url(${thumbnailUrl || '/default-thumb.jpg'})` }}
 				>
-					{isLive && <LiveBadge>LIVE</LiveBadge>}
+					{isLive && <LiveBadge aria-label="Transmisión en vivo">{liveLabel}</LiveBadge>}
 				</Thumbnail>
 
 				<Content dense={dense}>
@@ -61,7 +63,7 @@ export const StreamCard: React.FC<StreamCardProps> = ({
 						/>
 						<span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
 							<VisibilityIcon fontSize="small" />
-							<Text size="sm">
+							<Text size="sm" aria-label="Personas viendo">
 								{viewerCount}{' '}
 								{viewerCount === 1 ? 'persona viendo' : 'personas viendo'}
 							</Text>

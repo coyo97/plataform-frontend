@@ -379,11 +379,13 @@ const AssignRolesToUser: React.FC = () => {
 								colorType="primary"
 								btnVariant="solid"
 								type="button"
-								label="Asignar Roles (usuario seleccionado)"
 								onClick={handleAssignRoles}
 								disabled={!selectedUserId || selectedRoles.length === 0}
 								fullWidth
-							/>
+							>
+								Asignar Roles (usuario seleccionado)
+							</FilledButton>
+
 						</SmartBox>
 					</SmartBox>
 				</>
@@ -508,11 +510,13 @@ const AssignRolesToUser: React.FC = () => {
 								colorType="primary"
 								btnVariant="solid"
 								type="button"
-								label="Asignar Roles a seleccionados"
 								disabled={bulkSelectedUserIds.length === 0 || selectedRoles.length === 0 || bulkLoading}
 								onClick={handleAssignRolesBulk}
 								fullWidth
-							/>
+							>
+								Asignar Roles a seleccionados
+							</FilledButton>
+
 						</SmartBox>
 					</SmartBox>
 				</>

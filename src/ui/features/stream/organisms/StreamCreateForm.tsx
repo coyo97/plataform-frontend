@@ -43,7 +43,7 @@ const validateCode = (v: string) => {
 };
 
 interface Props {
-	onStreamCreated: (id: string, accessCode?: string) => void;
+	onStreamCreated: (id: string, accessCode?: string, stream?: any) => void;
 }
 
 const StreamCreateForm: React.FC<Props> = ({ onStreamCreated }) => {
@@ -112,7 +112,7 @@ const StreamCreateForm: React.FC<Props> = ({ onStreamCreated }) => {
 				localStorage.setItem('accessCode', res.accessCode);
 				setAccessCode(res.accessCode);
 			}
-			onStreamCreated(res.stream._id, res.accessCode ?? accessCode);
+			onStreamCreated(res.stream._id, res.accessCode ?? accessCode, res.stream);
 		} catch (err) {
 			console.error('Error al crear el stream:', err);
 		} finally {
