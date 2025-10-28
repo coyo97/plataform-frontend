@@ -41,23 +41,22 @@ export function createSignalingClient(socket: SocketLike, streamId: string) {
     socket.emit('request-screen-share', viewerSocketId ? { streamId, viewerSocketId } : { streamId });
 
   // Screen-share: exigir SIEMPRE "to"
-  const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) => {
-    if (!requireTarget(to, 'screen-offer')) return false;
-    socket.emit('screen-share-offer', { streamId, offer, to });
-    return true;
-  };
+  // Screen-share: permitir broadcast (offer) y dirigido (late joiners). Answer/ICE comúnmente dirigido.
+  const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) =>
+    to
+      ? socket.emit('screen-share-offer', { streamId, offer, to })
+      : socket.emit('screen-share-offer', { streamId, offer });
 
-  const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) => {
-    if (!requireTarget(to, 'screen-answer')) return false;
-    socket.emit('screen-share-answer', { streamId, answer, to });
-    return true;
-  };
+  const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) =>
+    to
+      ? socket.emit('screen-share-answer', { streamId, answer, to })
+      : socket.emit('screen-share-answer', { streamId, answer });
 
-  const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) => {
-    if (!requireTarget(to, 'screen-ice')) return false;
-    socket.emit('screen-share-ice', { streamId, candidate, to });
-    return true;
-  };
+  const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) =>
+    to
+      ? socket.emit('screen-share-ice', { streamId, candidate, to })
+      : socket.emit('screen-share-ice', { streamId, candidate });
+
 
   /* ──────────────── ON ──────────────── */
   const onOffer = (cb: (p: OfferPayload) => void) =>

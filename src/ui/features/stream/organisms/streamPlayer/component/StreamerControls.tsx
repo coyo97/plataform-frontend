@@ -1,4 +1,4 @@
-// components/StreamerControls.tsx
+// component/StreamerControls.tsx
 import React from 'react';
 import SmartBox from '../../../../../shared/atoms/box/SmartBox';
 import GhostButton from '../../../../../shared/atoms/buttons/ghostButton/GhostButton';
@@ -7,240 +7,238 @@ import Text from '../../../../../shared/atoms/typography/Text';
 
 import { IconButton, Tooltip, Badge, Menu, MenuItem, useMediaQuery } from '@mui/material';
 import {
-	Mic as MicOnIcon,
-	MicOff as MicOffIcon,
-	Videocam as CamOnIcon,
-	VideocamOff as CamOffIcon,
-	PresentToAll as ScreenIcon,
-	StopScreenShare as StopScreenIcon,
-	People as PeopleIcon,
-	MoreVert as MoreIcon,
-	FiberManualRecord as RecordIcon,
-	Stop as StopIcon,
-	GetApp as DownloadIcon,
-	Fullscreen as FullIcon,
-	FullscreenExit as FullExitIcon,
-	CallEnd as EndIcon,
+  Mic as MicOnIcon,
+  MicOff as MicOffIcon,
+  Videocam as CamOnIcon,
+  VideocamOff as CamOffIcon,
+  PresentToAll as ScreenIcon,
+  StopScreenShare as StopScreenIcon,
+  People as PeopleIcon,
+  MoreVert as MoreIcon,
+  FiberManualRecord as RecordIcon,
+  Stop as StopIcon,
+  GetApp as DownloadIcon,
+  Fullscreen as FullIcon,
+  FullscreenExit as FullExitIcon,
+  CallEnd as EndIcon,
 } from '@mui/icons-material';
 
 interface Props {
-	isScreenSharing: boolean;
-	isCamOn: boolean;
-	isMicOn: boolean;
-	isRecording?: boolean; // ← nuevo: refleja estado real de la grabación
-	viewers: { _id: string; username: string }[];
-	showViewers: boolean;
-	toggleViewers: () => void;
-	startScreen: () => void;
-	stopScreen: () => void;
-	toggleCam: () => void;
-	toggleMic: () => void;
-	startRec: () => void;
-	stopRec: () => void;
-	kickViewer: (id: string) => void;
-	leave: () => void;
-	fullscreen: () => void;
-	isFullscreen: boolean;
+  isScreenSharing: boolean;
+  isCamOn: boolean;
+  isMicOn: boolean;
+  isRecording?: boolean;
+  viewers: { _id: string; username: string }[];
+  showViewers: boolean;
+  toggleViewers: () => void;
+  startScreen: () => void;
+  stopScreen: () => void;
+  toggleCam: () => void;
+  toggleMic: () => void;
+  startRec: () => void;
+  stopRec: () => void;
+  kickViewer: (id: string) => void;
+  leave: () => void;
+  fullscreen: () => void;
+  isFullscreen: boolean;
 }
 
 const StreamerControls: React.FC<Props> = ({
-	isScreenSharing,
-	isCamOn,
-	isMicOn,
-	isRecording,
-	viewers,
-	showViewers,
-	toggleViewers,
-	startScreen,
-	stopScreen,
-	toggleCam,
-	toggleMic,
-	startRec,
-	stopRec,
-	kickViewer,
-	leave,
-	fullscreen,
-	isFullscreen,
+  isScreenSharing,
+  isCamOn,
+  isMicOn,
+  isRecording,
+  viewers,
+  showViewers,
+  toggleViewers,
+  startScreen,
+  stopScreen,
+  toggleCam,
+  toggleMic,
+  startRec,
+  stopRec,
+  kickViewer,
+  leave,
+  fullscreen,
+  isFullscreen,
 }) => {
-	const isMdUp = useMediaQuery('(min-width: 900px)'); // md breakpoint
-	const [menuEl, setMenuEl] = React.useState<null | HTMLElement>(null);
-	const menuOpen = Boolean(menuEl);
+  useMediaQuery('(min-width: 900px)'); // md breakpoint
+  const [menuEl, setMenuEl] = React.useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(menuEl);
 
-	const shareHandlers = isScreenSharing ? { onClick: stopScreen, icon: <StopScreenIcon />, label: 'Detener pantalla', aria: 'Detener compartir pantalla', key: 's' }
-		: { onClick: startScreen, icon: <ScreenIcon />, label: 'Compartir pantalla', aria: 'Compartir pantalla', key: 's' };
+  const shareHandlers = isScreenSharing
+    ? { onClick: stopScreen, icon: <StopScreenIcon />, label: 'Detener pantalla', aria: 'Detener compartir pantalla' }
+    : { onClick: startScreen, icon: <ScreenIcon />, label: 'Compartir pantalla', aria: 'Compartir pantalla' };
 
-		const recordHandlers = isRecording ? { onClick: stopRec, icon: <StopIcon />, label: 'Detener/Guardar', aria: 'Detener grabación', key: 'r' }
-			: { onClick: startRec, icon: <RecordIcon />, label: 'Grabar', aria: 'Iniciar grabación', key: 'r' };
+  const recordHandlers = isRecording
+    ? { onClick: stopRec, icon: <StopIcon />, label: 'Detener/Guardar', aria: 'Detener grabación' }
+    : { onClick: startRec, icon: <RecordIcon />, label: 'Grabar', aria: 'Iniciar grabación' };
 
-			return (
-				<>
-					{/* Toolbar fija bajo el video */}
-					<SmartBox
-						row
-						between
-						gap="px2"
-						p="px2"
-						style={{
-							position: 'absolute',   
-							left: 12,
-							right: 12,              // hace que la barra use el ancho del video
-							bottom: 12,
-							zIndex: 5,              // por encima de la columna "Streams activos"
-							backdropFilter: 'blur(6px)',
-							background: 'rgba(20,20,20,0.5)',
-							borderRadius: 12,
-							border: '1px solid rgba(255,255,255,0.08)',
-							flexWrap: 'wrap',       // por si no alcanza en móviles
-							overflowX: 'auto',      // scroll suave si aún no alcanza
-						}}
-					>
-						{/* Grupo primario (siempre visible) */}
-						<SmartBox row gap="px1" >
-							{/* Mic */}
-							<Tooltip title={`${isMicOn ? 'Silenciar' : 'Activar micrófono'}  •  atajo: M`}>
-								<span>
-									<IconButton
-										aria-label={isMicOn ? 'Silenciar micrófono' : 'Activar micrófono'}
-										aria-pressed={isMicOn}
-										onClick={toggleMic}
-									>
-										{isMicOn ? <MicOnIcon /> : <MicOffIcon />}
-									</IconButton>
-								</span>
-							</Tooltip>
+  return (
+    <>
+      {/* Toolbar fija bajo el video */}
+      <SmartBox
+        row
+        between
+        gap="px2"
+        p="px2"
+        style={{
+          position: 'absolute',
+          left: 12,
+          right: 12,
+          bottom: 12,
+          zIndex: 5,
+          backdropFilter: 'blur(6px)',
+          background: 'rgba(20,20,20,0.5)',
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.08)',
+          flexWrap: 'wrap',
+          overflowX: 'auto',
+        }}
+      >
+        {/* Grupo primario (siempre visible) */}
+        <SmartBox row gap="px1">
+          {/* Mic */}
+          <Tooltip title={`${isMicOn ? 'Silenciar' : 'Activar micrófono'}  •  atajo: M`}>
+            <span>
+              <IconButton
+                aria-label={isMicOn ? 'Silenciar micrófono' : 'Activar micrófono'}
+                aria-pressed={isMicOn}
+                onClick={toggleMic}
+              >
+                {isMicOn ? <MicOnIcon /> : <MicOffIcon />}
+              </IconButton>
+            </span>
+          </Tooltip>
 
-							{/* Cam */}
-							<Tooltip title={`${isCamOn ? 'Apagar cámara' : 'Encender cámara'}  •  atajo: C`}>
-								<span>
-									<IconButton
-										aria-label={isCamOn ? 'Apagar cámara' : 'Encender cámara'}
-										aria-pressed={isCamOn}
-										onClick={toggleCam}
-									>
-										{isCamOn ? <CamOnIcon /> : <CamOffIcon />}
-									</IconButton>
-								</span>
-							</Tooltip>
+          {/* Cam */}
+          <Tooltip title={`${isCamOn ? 'Apagar cámara' : 'Encender cámara'}  •  atajo: C`}>
+            <span>
+              <IconButton
+                aria-label={isCamOn ? 'Apagar cámara' : 'Encender cámara'}
+                aria-pressed={isCamOn}
+                onClick={toggleCam}
+              >
+                {isCamOn ? <CamOnIcon /> : <CamOffIcon />}
+              </IconButton>
+            </span>
+          </Tooltip>
 
-							{/* Screen share */}
-							<Tooltip title={`${shareHandlers.label}  •  atajo: S`}>
-								<span>
-									<IconButton
-										aria-label={shareHandlers.aria}
-										aria-pressed={isScreenSharing}
-										onClick={shareHandlers.onClick}
-									>
-										{shareHandlers.icon}
-									</IconButton>
-								</span>
-							</Tooltip>
+          {/* Screen share */}
+          <Tooltip title={`${shareHandlers.label}  •  atajo: S`}>
+            <span>
+              <IconButton
+                aria-label={shareHandlers.aria}
+                aria-pressed={isScreenSharing}
+                onClick={shareHandlers.onClick}
+              >
+                {shareHandlers.icon}
+              </IconButton>
+            </span>
+          </Tooltip>
 
-							{/* Record (estado muy visible) */}
-							<Tooltip title={`${recordHandlers.label}  •  atajo: R`}>
-								<span>
-									<IconButton
-										aria-label={recordHandlers.aria}
-										aria-pressed={isRecording}
-										onClick={recordHandlers.onClick}
-										style={isRecording ? { color: '#e53935' } : undefined}
-									>
-										{recordHandlers.icon}
-									</IconButton>
-								</span>
-							</Tooltip>
-						</SmartBox>
+          {/* Record */}
+          <Tooltip title={`${recordHandlers.label}  •  atajo: R`}>
+            <span>
+              <IconButton
+                aria-label={recordHandlers.aria}
+                aria-pressed={isRecording}
+                onClick={recordHandlers.onClick}
+                style={isRecording ? { color: '#e53935' } : undefined}
+              >
+                {recordHandlers.icon}
+              </IconButton>
+            </span>
+          </Tooltip>
+        </SmartBox>
 
-						{/* Centro (solo md+ muestra etiquetas junto a iconos) */}
+        {/* Grupo derecho: viewers + overflow + finalizar */}
+        <SmartBox row gap="px2">
+          <Tooltip title="Espectadores">
+            <span>
+              <IconButton aria-label="Ver espectadores" onClick={toggleViewers}>
+                <Badge badgeContent={viewers.length} color="primary">
+                  <PeopleIcon />
+                </Badge>
+              </IconButton>
+            </span>
+          </Tooltip>
 
+          {/* Overflow */}
+          <Tooltip title="Más acciones">
+            <span>
+              <IconButton aria-label="Más acciones" onClick={(e) => setMenuEl(e.currentTarget)}>
+                <MoreIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Menu anchorEl={menuEl} open={menuOpen} onClose={() => setMenuEl(null)}>
+            <MenuItem
+              onClick={() => {
+                fullscreen();
+                setMenuEl(null);
+              }}
+            >
+              {isFullscreen ? <FullExitIcon fontSize="small" /> : <FullIcon fontSize="small" />}
+              <Text>{isFullscreen ? 'Salir pantalla completa' : 'Pantalla completa'}</Text>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                // si stopRec ya maneja descarga, puedes omitir este item
+                stopRec();
+                setMenuEl(null);
+              }}
+            >
+              <DownloadIcon fontSize="small" />
+              <Text>Descargar</Text>
+            </MenuItem>
+          </Menu>
 
-						{/* Grupo derecho: viewers + overflow + finalizar */}
-						<SmartBox row gap="px2" >
-							<Tooltip title="Espectadores">
-								<span>
-									<IconButton aria-label="Ver espectadores" onClick={toggleViewers}>
-										<Badge badgeContent={viewers.length} color="primary">
-											<PeopleIcon />
-										</Badge>
-									</IconButton>
-								</span>
-							</Tooltip>
+          {/* Finalizar */}
+          <Tooltip title="Finalizar transmisión • atajo: Q">
+            <span>
+              <IconButton
+                aria-label="Finalizar transmisión"
+                onClick={() => {
+                  if (window.confirm('¿Seguro que deseas finalizar la transmisión?')) {
+                    leave();
+                  }
+                }}
+                style={{
+                  backgroundColor: '#E53935',
+                  color: '#fff',
+                  borderRadius: 8,
+                  width: 44,
+                  height: 44,
+                }}
+              >
+                <EndIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </SmartBox>
+      </SmartBox>
 
-							{/* Fullscreen y otras acciones al menú overflow */}
-							<Tooltip title="Más acciones">
-								<span>
-									<IconButton aria-label="Más acciones" onClick={(e) => setMenuEl(e.currentTarget)}>
-										<MoreIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<Menu anchorEl={menuEl} open={menuOpen} onClose={() => setMenuEl(null)}>
-								<MenuItem
-									onClick={() => {
-										fullscreen();
-										setMenuEl(null);
-									}}
-								>
-									{isFullscreen ? <FullExitIcon fontSize="small" /> : <FullIcon fontSize="small" />}
-									<Text>{isFullscreen ? 'Salir pantalla completa' : 'Pantalla completa'}</Text>
-								</MenuItem>
-								<MenuItem
-									onClick={() => {
-										// Si tu stopRec ya descarga, puedes omitir esto o delegar a un handler de descarga.
-										stopRec();
-										setMenuEl(null);
-									}}
-								>
-									<DownloadIcon fontSize="small" />
-									<Text >Descargar</Text>
-								</MenuItem>
-							</Menu>
-
-							{/* Destructivo siempre visible */}
-							<Tooltip title="Finalizar transmisión • atajo: Q">
-								<span>
-									<IconButton
-										aria-label="Finalizar transmisión"
-										onClick={() => {
-											if (window.confirm('¿Seguro que deseas finalizar la transmisión?')) {
-												leave();
-											}
-										}}
-										style={{
-											backgroundColor: '#E53935',
-											color: '#fff',
-											borderRadius: 8,
-											width: 44,
-											height: 44,
-										}}
-									>
-										<EndIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-
-						</SmartBox>
-					</SmartBox>
-
-					{/* Panel de espectadores (mantenemos tu lógica) */}
-					{showViewers && (
-						<SmartBox mt="px2">
-							<Text>Espectadores</Text>
-							<ul>
-								{viewers.map((v) => (
-									<li key={v._id}>
-										{v.username}{' '}
-										<GhostButton
-											label="Expulsar"
-											colorType="secondary"
-											onClick={() => kickViewer(v._id)}
-										/>
-									</li>
-								))}
-							</ul>
-						</SmartBox>
-					)}
-				</>
-			);
+      {/* Panel de espectadores */}
+      {showViewers && (
+        <SmartBox mt="px2">
+          <Text>Espectadores</Text>
+          <ul>
+            {viewers.map((v) => (
+              <li key={v._id}>
+                {v.username}{' '}
+                <GhostButton
+                  label="Expulsar"
+                  colorType="secondary"
+                  onClick={() => kickViewer(v._id)}
+                />
+              </li>
+            ))}
+          </ul>
+        </SmartBox>
+      )}
+    </>
+  );
 };
 
 export default StreamerControls;

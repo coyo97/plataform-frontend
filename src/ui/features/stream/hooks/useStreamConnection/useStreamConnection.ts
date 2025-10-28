@@ -1,20 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSocket } from '../../../../shared/hooks/useSocket';
 import { EVENTS } from '../../../../../utils/socket/events';
-import { STUN_SERVERS } from './constants';
-import { createMediaControls } from './mediaControls';
-import { createScreenShare } from './screenShare';
-import { createRecorder } from './recording';
-import { createLeaveHandlers } from './leaveStream';
 import { Viewer, UseStreamConnectionProps } from './types';
 
-// NUEVO
-import { createSignalingClient } from './signaling/signalingClient';
-import { createPeerConnection } from './webrtc/peerFactory';
-import { createPeerStore, closeAll } from './webrtc/peerStore';
-import { attachStreamToVideo } from './webrtc/mediaAttach';
-import { startPublisherMedia, startViewerMic, stopTracks } from './features/cameraMic';
-import { safeAddIce } from './utils/ice';
+import { buildContext } from './deps';
+
+// controladores
+import { setupPublisherCam } from './controllers/publisherCam';
+import { setupPerViewerCam } from './controllers/perViewerCam';
+import { setupAnswersHandlers } from './controllers/answersHandlers';
+import { setupIceHandlers } from './controllers/iceHandlers';
+import { setupScreenSender } from './controllers/screenSender';
+import { setupScreenViewer } from './controllers/screenViewer';
 
 export const useStreamConnection = ({
   streamId,
@@ -28,6 +25,7 @@ export const useStreamConnection = ({
   const [isMicOn, setMicOn] = useState(true);
 
   const sock = useSocket();
+<<<<<<< HEAD
   const signaling = useMemo(() => createSignalingClient(sock, streamId), [sock, streamId]);
   const storeRef = useRef(createPeerStore());
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -51,10 +49,46 @@ export const useStreamConnection = ({
     isStreamer,
     sock,
     localStream: () => (isStreamer ? localStreamRef.current : viewerMicRef.current),
+=======
+
+  const {
+    signaling,
+    storeRef,
+    localStreamRef,
+    viewerMicRef,
+    lastOfferPcRef,
+    screenPCsRef,
+    pendingScreenCandidatesRef,
+    startRecording,
+    stopRecording,
+    toggleCamera,
+    toggleMic,
+    startScreenShare,
+    stopScreenShare,
+    handleLeaveStream,
+    stopLocalMedia,
+    sendDirectScreenOfferTo,
+    clearRemoteScreen,
+    safeAddIce,
+
+    // NUEVO: acciones del viewer expuestas por buildContext
+    viewerStartCam,
+    viewerStopCam,
+    viewerStartScreenShare,
+    viewerStopScreenShare,
+  } = buildContext({
+    streamId,
+    isStreamer,
+    accessCode,
+    onStreamEnd,
+    sock,
+    setIsScreenSharing,
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
     setCamOn,
     setMicOn,
   });
 
+<<<<<<< HEAD
   // createScreenShare lo seguimos usando para iniciar/detener y exponer setIsScreenSharing.
   // OJO: ya NO usaremos su sendScreenOfferTo (broadcast) — ahora haremos ofertas dirigidas por viewer.
   const { startScreenShare, stopScreenShare } = createScreenShare({
@@ -509,23 +543,153 @@ export const useStreamConnection = ({
 
     // otros eventos
     signaling.onUpdateViewers(({ viewers }) => {
+=======
+  // Estrechamos el tipo localmente para encajar con los controladores (sin tocar tu implementación real)
+  const sig = signaling as unknown as {
+    emitIce: (c: RTCIceCandidateInit, to?: string) => void;
+    emitOffer: (o: RTCSessionDescriptionInit, to?: string) => void;
+    onRequestOffer: (cb: (p: { viewerSocketId: string }) => void) => unknown;
+
+    onOffer: (cb: (p: { offer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
+    onAnswer: (cb: (p: { answer: RTCSessionDescriptionInit; from?: string }) => void) => unknown;
+
+    onIce: (cb: (p: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
+
+    // pantalla
+    onRequestScreenShare: (cb: (p: { viewerSocketId: string }) => void) => unknown;
+    onScreenOffer: (cb: (p: { offer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
+    onScreenAnswer: (cb: (p: { answer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
+    onScreenIce: (cb: (p: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
+    emitScreenIce: (c: RTCIceCandidateInit, to: string) => void;
+    emitScreenAnswer: (a: RTCSessionDescriptionInit, to: string) => void;
+    onStopScreenShare?: (cb: () => void) => unknown;
+
+    // estado / varios
+    onCurrentStreamState?: (cb: (p: {
+      isSharingScreen?: boolean;
+      isStreamerMuted?: boolean;
+      viewersCount?: number;
+      hasCamera?: boolean;
+      hasMic?: boolean;
+    }) => void) => unknown;
+
+    onUpdateViewers: (cb: (p: { viewers: Viewer[] }) => void) => unknown;
+    onStreamEnded: (cb: () => void) => unknown;
+    onKicked: (cb: () => void) => unknown;
+    onStreamError: (cb: (p: { message: string }) => void) => unknown;
+
+    // acciones directas
+    joinStream: (accessCode?: string) => unknown;
+    leaveStream: () => unknown;
+    requestScreenShare: () => void;
+    offAll: () => unknown;
+  };
+
+  const kicked = useRef(false);
+
+  useEffect(() => {
+    console.log('[[CLT]] joinStream streamId=%s isStreamer=%s', streamId, isStreamer);
+    sig.joinStream(accessCode);
+
+    // Snapshot del estado del stream al unirse
+    sig.onCurrentStreamState?.(({ isSharingScreen, isStreamerMuted, viewersCount, hasCamera, hasMic }) => {
+      if (typeof isSharingScreen === 'boolean') setIsScreenSharing(isSharingScreen);
+      if (typeof hasCamera === 'boolean') setCamOn(hasCamera);
+      if (typeof hasMic === 'boolean') setMicOn(hasMic);
+      console.log(
+        '[[STATE]] snapshot -> screen=%s cam=%s mic=%s viewers=%s muted=%s',
+        isSharingScreen, hasCamera, hasMic, viewersCount, isStreamerMuted
+      );
+    });
+
+    // ====== Controladores (registran handlers en signaling y usan el contexto) ======
+    // Streamer: media local + broadcast inicial + ofertas dirigidas de cam/mic
+    const publisherCleanup = setupPublisherCam({
+      isStreamer,
+      signaling: sig,
+      storeRef,
+      localStreamRef,
+      lastOfferPcRef,
+    });
+
+    // Viewer: recepción de cam/mic, attach mic del viewer
+    const perViewerCleanup = setupPerViewerCam({
+      isStreamer,
+      signaling: sig,
+      storeRef,
+      viewerMicRef,
+    });
+
+    // Respuestas (answers) cam/mic y screen
+    const answersCleanup = setupAnswersHandlers({
+      isStreamer,
+      signaling: sig,
+      storeRef,
+      lastOfferPcRef,
+      screenPCsRef,
+      pendingScreenCandidatesRef,
+      safeAddIce,
+    });
+
+    // ICE handlers (cam/mic y screen)
+    const iceCleanup = setupIceHandlers({
+      isStreamer,
+      signaling: sig,
+      storeRef,
+      screenPCsRef,
+      pendingScreenCandidatesRef,
+      safeAddIce,
+    });
+
+    // Streamer: envío directo de pantalla por viewer + stop-screen-share
+    const screenSenderCleanup = setupScreenSender({
+      isStreamer,
+      signaling: sig,
+      screenPCsRef,
+      pendingScreenCandidatesRef,
+      sendDirectScreenOfferTo,
+    });
+
+    // Viewer: recepción de oferta de pantalla y render
+    const screenViewerCleanup = setupScreenViewer({
+      isStreamer,
+      signaling: sig,
+      storeRef,
+      clearRemoteScreen,
+    });
+
+    // Lista de viewers
+    sig.onUpdateViewers(({ viewers }) => {
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
       console.log('[[CLT]] update-viewers size=%d', viewers?.length ?? 0);
       setViewers(viewers);
     });
 
+<<<<<<< HEAD
     signaling.onStreamEnded(() => {
+=======
+    sig.onStreamEnded(() => {
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
       console.log('[[CLT]] stream-ended → cleanup');
       stopLocalMedia();
       onStreamEnd?.();
     });
 
+<<<<<<< HEAD
     signaling.onKicked(() => {
+=======
+    sig.onKicked(() => {
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
       console.warn('[[CLT]] kicked → leave');
       kicked.current = true;
       handleLeaveStream();
     });
 
+<<<<<<< HEAD
     signaling.onStreamError(({ message }) => {
+=======
+    sig.onStreamError(({ message }) => {
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
       console.warn('[[CLT]] stream-error:', message);
       if (message.toLowerCase().includes('expulsado')) {
         kicked.current = true;
@@ -533,6 +697,7 @@ export const useStreamConnection = ({
       }
     });
 
+<<<<<<< HEAD
     // VIEWER: al entrar o reconectar, solicita pantalla (sin pasar sock.id; backend usa socket.id por defecto)
     if (!isStreamer) {
       console.log('[[VIEWER]] request-screen-share (initial)');
@@ -564,6 +729,54 @@ export const useStreamConnection = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signaling, isStreamer]);
+=======
+    // Viewer: solicitar pantalla al entrar y al reconectar
+    if (!isStreamer) {
+      console.log('[[VIEWER]] request-screen-share (initial)');
+      sig.requestScreenShare();
+      sock.on('connect', () => {
+        console.log('[[VIEWER]] request-screen-share (reconnect)');
+        sig.requestScreenShare();
+      });
+    }
+
+    return () => {
+      console.log('[[CLT]] cleanup useStreamConnection');
+      sig.leaveStream();
+      sig.offAll();
+      stopLocalMedia();
+      // cerrar tracks locales
+      try { localStreamRef.current?.getTracks().forEach(t => t.stop()); } catch {}
+      try { viewerMicRef.current?.getTracks().forEach(t => t.stop()); } catch {}
+
+      // cerrar PCs en store
+      try { storeRef.current.publisher?.close(); } catch {}
+      storeRef.current.publisher = undefined;
+      try { storeRef.current.screenPublisher?.close(); } catch {}
+      storeRef.current.screenPublisher = undefined;
+
+      Object.values(storeRef.current.perViewer).forEach((pc: RTCPeerConnection) => { try { pc.close(); } catch {} });
+      storeRef.current.perViewer = {};
+      Object.values(storeRef.current.perStreamer).forEach((pc: RTCPeerConnection) => { try { pc.close(); } catch {} });
+      storeRef.current.perStreamer = {};
+
+      // cerrar PCs de pantalla por viewer
+      Object.values(screenPCsRef.current).forEach((pc: RTCPeerConnection) => { try { pc.close(); } catch {} });
+      screenPCsRef.current = {};
+      pendingScreenCandidatesRef.current = {};
+
+      // unbinds
+      sock.off('connect');
+      publisherCleanup();
+      perViewerCleanup();
+      answersCleanup();
+      iceCleanup();
+      screenSenderCleanup();
+      screenViewerCleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, isStreamer]);
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
 
   return {
     viewers,
@@ -578,6 +791,15 @@ export const useStreamConnection = ({
     toggleCamera,
     toggleMic,
 
+<<<<<<< HEAD
+=======
+    // NUEVO: expone acciones para el viewer
+    viewerStartCam,
+    viewerStopCam,
+    viewerStartScreenShare,
+    viewerStopScreenShare,
+
+>>>>>>> 28b91ed (avance para que ambos pueda compartir pantalla, ademas esta refactorizado, tiene algunos errores)
     kickViewer: (id: string) => sock.emit(EVENTS.KICK_VIEWER, { streamId, viewerId: id }),
     handleLeaveStream,
     wasKicked: kicked.current,
