@@ -16,7 +16,14 @@ export function createSignalingClient(socket: SocketLike, streamId: string) {
     // el backend ya protege contra self-target. Igual validamos formato básico.
     return true;
   };
-
+socket.onAny?.((ev: string, ...args: any[]) => {
+  console.log('[SIG<-]', ev, args?.[0] ?? '');
+});
+const _emit = socket.emit.bind(socket);
+socket.emit = (ev: string, payload?: any) => {
+  console.log('[SIG->]', ev, payload ?? '');
+  return _emit(ev, payload);
+};
   /* ──────────────── EMIT ──────────────── */
   const joinStream = (accessCode?: string) =>
     socket.emit(EVENTS.JOIN_STREAM, { streamId, accessCode });
@@ -42,21 +49,23 @@ export function createSignalingClient(socket: SocketLike, streamId: string) {
 
   // Screen-share: exigir SIEMPRE "to"
   // Screen-share: permitir broadcast (offer) y dirigido (late joiners). Answer/ICE comúnmente dirigido.
-  const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) =>
-    to
-      ? socket.emit('screen-share-offer', { streamId, offer, to })
-      : socket.emit('screen-share-offer', { streamId, offer });
+  const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) => {
+  if (!requireTarget(to, 'screen-offer')) return;
+  socket.emit('screen-share-offer', { streamId, offer, to });
+};
 
-  const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) =>
-    to
-      ? socket.emit('screen-share-answer', { streamId, answer, to })
-      : socket.emit('screen-share-answer', { streamId, answer });
+const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) => {
+  if (!requireTarget(to, 'screen-answer')) return;
+  socket.emit('screen-share-answer', { streamId, answer, to });
+};
+const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) => {
+  if (!requireTarget(to, 'screen-ice')) return;
+  socket.emit('screen-share-ice', { streamId, candidate, to });
+};
 
-  const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) =>
-    to
-      ? socket.emit('screen-share-ice', { streamId, candidate, to })
-      : socket.emit('screen-share-ice', { streamId, candidate });
-
+// 4) añade un helper para el owner (azúcar sintáctico)
+const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
+  socket.on('stream-owner', cb);
 
   /* ──────────────── ON ──────────────── */
   const onOffer = (cb: (p: OfferPayload) => void) =>
@@ -135,7 +144,7 @@ export function createSignalingClient(socket: SocketLike, streamId: string) {
     onStopScreenShare,
 
     onCurrentStreamState,
-
+onStreamOwner,
     offAll,
   };
 }
