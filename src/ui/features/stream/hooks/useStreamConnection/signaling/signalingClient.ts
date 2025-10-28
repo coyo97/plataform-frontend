@@ -12,18 +12,19 @@ export function createSignalingClient(socket: SocketLike, streamId: string) {
       console.warn(`[SIG][${label}] missing "to" target — refusing broadcast`);
       return false;
     }
-    // Nota: no podemos comparar contra socket.id desde aquí (no siempre expuesto),
-    // el backend ya protege contra self-target. Igual validamos formato básico.
     return true;
   };
-socket.onAny?.((ev: string, ...args: any[]) => {
-  console.log('[SIG<-]', ev, args?.[0] ?? '');
-});
-const _emit = socket.emit.bind(socket);
-socket.emit = (ev: string, payload?: any) => {
-  console.log('[SIG->]', ev, payload ?? '');
-  return _emit(ev, payload);
-};
+
+  // Log inbound/outbound para depurar
+  socket.onAny?.((ev: string, ...args: any[]) => {
+    console.log('[SIG<-]', ev, args?.[0] ?? '');
+  });
+  const _emit = socket.emit.bind(socket);
+  socket.emit = (ev: string, payload?: any) => {
+    console.log('[SIG->]', ev, payload ?? '');
+    return _emit(ev, payload);
+  };
+
   /* ──────────────── EMIT ──────────────── */
   const joinStream = (accessCode?: string) =>
     socket.emit(EVENTS.JOIN_STREAM, { streamId, accessCode });
@@ -48,24 +49,24 @@ socket.emit = (ev: string, payload?: any) => {
     socket.emit('request-screen-share', viewerSocketId ? { streamId, viewerSocketId } : { streamId });
 
   // Screen-share: exigir SIEMPRE "to"
-  // Screen-share: permitir broadcast (offer) y dirigido (late joiners). Answer/ICE comúnmente dirigido.
   const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) => {
-  if (!requireTarget(to, 'screen-offer')) return;
-  socket.emit('screen-share-offer', { streamId, offer, to });
-};
+    if (!requireTarget(to, 'screen-offer')) return;
+    socket.emit('screen-share-offer', { streamId, offer, to });
+  };
 
-const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) => {
-  if (!requireTarget(to, 'screen-answer')) return;
-  socket.emit('screen-share-answer', { streamId, answer, to });
-};
-const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) => {
-  if (!requireTarget(to, 'screen-ice')) return;
-  socket.emit('screen-share-ice', { streamId, candidate, to });
-};
+  const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) => {
+    if (!requireTarget(to, 'screen-answer')) return;
+    socket.emit('screen-share-answer', { streamId, answer, to });
+  };
 
-// 4) añade un helper para el owner (azúcar sintáctico)
-const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
-  socket.on('stream-owner', cb);
+  const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) => {
+    if (!requireTarget(to, 'screen-ice')) return;
+    socket.emit('screen-share-ice', { streamId, candidate, to });
+  };
+
+  // Azúcar: quién es el owner actual
+  const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
+    socket.on('stream-owner', cb);
 
   /* ──────────────── ON ──────────────── */
   const onOffer = (cb: (p: OfferPayload) => void) =>
@@ -75,7 +76,7 @@ const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
     socket.on(EVENTS.ANSWER, (payload) => {
       // Backend ideal: { answer, from }
       if (payload?.from && payload?.answer) return cb(payload);
-      // Fallback compat (viejo): { answer }
+      // Fallback compat: { answer }
       cb({ answer: payload?.answer ?? payload, from: payload?.from });
     });
 
@@ -115,7 +116,7 @@ const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
   const onStopScreenShare = (cb: () => void) =>
     socket.on('stop-screen-share', cb);
 
-  // Nuevo: snapshot de estado actual al unirse
+  // Snapshot de estado actual al unirse
   const onCurrentStreamState = (cb: (d: {
     isSharingScreen?: boolean;
     isStreamerMuted?: boolean;
@@ -144,7 +145,8 @@ const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
     onStopScreenShare,
 
     onCurrentStreamState,
-onStreamOwner,
+    onStreamOwner,
+
     offAll,
   };
 }

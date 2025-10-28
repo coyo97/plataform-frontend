@@ -11,6 +11,7 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useAudioToggle } from './hooks/useAudioToggle';
 
 import { Stream } from '../../../../../types/stream';
+import { attachLocalPreview, clearVideoEl } from '../../hooks/useStreamConnection/webrtc/mediaAttach';
 
 interface Props {
   streamId: string;
@@ -144,11 +145,13 @@ const StreamPlayer: React.FC<Props> = ({
   const onViewerToggleScreen = async () => {
     if (viewerScreenOn) {
       viewerStopScreenShare();
+      clearVideoEl('viewerLocalScreen');
       setViewerScreenOn(false);
       return;
     }
     try {
-      await viewerStartScreenShare();
+      const displayStream = await viewerStartScreenShare();
+      attachLocalPreview('viewerLocalScreen', displayStream, { muted: true });
       setViewerScreenOn(true);
     } catch (e) {
       console.warn('[VIEWER] no se pudo compartir pantalla', e);
@@ -207,9 +210,10 @@ const StreamPlayer: React.FC<Props> = ({
             className="video-stage"
             style={{ position: 'relative', width: '100%' }}
           >
+            {/* Video principal (host) */}
             <VideoSurface ref={localVideoRef} id="localVideo" autoPlay muted playsInline />
 
-            {/* pantalla compartida del streamer */}
+            {/* Pantalla compartida del host (si aplica) */}
             <VideoSurface
               ref={screenRef}
               id="screenVideo"
@@ -217,6 +221,19 @@ const StreamPlayer: React.FC<Props> = ({
               playsInline
               hiddenWhenEmpty
               style={{ marginTop: 8 }}
+            />
+
+            {/* GRID para pantallas de VIEWERS (múltiples) */}
+            <div
+              id="screenGrid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: 12,
+                marginTop: 12,
+                width: '100%',
+              }}
+              aria-label="Pantallas compartidas por estudiantes"
             />
 
             <StreamerControls
@@ -258,6 +275,19 @@ const StreamPlayer: React.FC<Props> = ({
               style={{ marginTop: 8 }}
             />
 
+            {/* GRID para pantallas compartidas por otros VIEWERS (si el backend las relaya) */}
+            <div
+              id="screenGrid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: 12,
+                marginTop: 12,
+                width: '100%',
+              }}
+              aria-label="Pantallas compartidas por otros estudiantes"
+            />
+
             {/* mini preview local del viewer cuando enciende su cámara */}
             <video
               ref={viewerLocalPreviewRef}
@@ -275,6 +305,26 @@ const StreamPlayer: React.FC<Props> = ({
                 objectFit: 'cover',
                 boxShadow: '0 8px 24px rgba(0,0,0,.35)',
                 display: viewerCamOn ? 'block' : 'none',
+                background: '#000',
+              }}
+            />
+
+            {/* mini preview local de la pantalla cuando el viewer comparte */}
+            <video
+              id="viewerLocalScreen"
+              autoPlay
+              muted
+              playsInline
+              style={{
+                position: 'absolute',
+                right: viewerCamOn ? 192 : 16, // si tiene la cámara encendida, corre a la izquierda
+                bottom: 16,
+                width: 160,
+                height: 90,
+                borderRadius: 8,
+                objectFit: 'cover',
+                boxShadow: '0 8px 24px rgba(0,0,0,.35)',
+                display: viewerScreenOn ? 'block' : 'none',
                 background: '#000',
               }}
             />

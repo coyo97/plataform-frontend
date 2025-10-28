@@ -26,6 +26,7 @@ export interface IcePayload {
 export interface Viewer {
   _id: string;
   username: string;
+  socketId: string;//
 }
 
 export interface UseStreamConnectionProps {

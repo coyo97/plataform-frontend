@@ -11,15 +11,50 @@ type Ctx = {
 		emitScreenAnswer: (ans: RTCSessionDescriptionInit, to: string) => void;
 	};
 	storeRef: React.MutableRefObject<any>;
-	targetVideoId?: string; // id del <video> donde quieres mostrar la pantalla del viewer (p.ej. 'viewerScreen')
 };
 
-export function setupScreenFromViewer(ctx: Ctx) {
-	const { isStreamer, signaling, storeRef, targetVideoId = 'screenVideo' } = ctx;
+function ensureScreenVideoElement(id: string) {
+	let el = document.getElementById(id) as HTMLVideoElement | null;
+	if (el) return el;
 
+	let grid = document.getElementById('screenGrid');
+	if (!grid) {
+		grid = document.createElement('div');
+		grid.id = 'screenGrid';
+		Object.assign(grid.style, {
+			display: 'grid',
+			gap: '12px',
+			gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+			width: '100%',
+			marginTop: '8px',
+		} as CSSStyleDeclaration);
+		const stage = document.querySelector('.video-stage') as HTMLElement | null;
+		(stage ?? document.body).appendChild(grid);
+	}
+
+	el = document.createElement('video');
+	el.id = id;
+	el.autoplay = true;
+	el.playsInline = true;
+	el.controls = false;
+	Object.assign(el.style, {
+		width: '100%',
+		height: '180px',
+		borderRadius: '10px',
+		objectFit: 'cover',
+		background: '#000',
+		boxShadow: '0 8px 24px rgba(0,0,0,.25)',
+	} as CSSStyleDeclaration);
+
+	grid.appendChild(el);
+	return el;
+}
+
+export function setupScreenFromViewer(ctx: Ctx) {
+	const { isStreamer, signaling, storeRef } = ctx;
 	if (!isStreamer) return () => {};
 
-	const onMaybe = signaling.onScreenOffer(async ({ offer, from }) => {
+	const off = signaling.onScreenOffer(async ({ offer, from }) => {
 		let pc: RTCPeerConnection | undefined = storeRef.current.perViewerScreen?.[from];
 		if (!pc || pc.signalingState === 'closed') {
 			pc = createPeerConnection({
@@ -27,13 +62,25 @@ export function setupScreenFromViewer(ctx: Ctx) {
 				onIce: (e) => e.candidate && signaling.emitScreenIce(e.candidate, from),
 				onTrack: (ev) => {
 					const [ms] = ev.streams;
-					attachStreamToVideo(targetVideoId, ms);
-					const el = document.getElementById(targetVideoId) as HTMLVideoElement | null;
-					if (el) {
-						el.style.display = 'block';
-						el.muted = false;
-						el.play?.().catch(() => {});
+					const vidId = `screenVideo-${from}`;
+					ensureScreenVideoElement(vidId);
+					attachStreamToVideo(vidId, ms);
+
+					const v = document.getElementById(vidId) as HTMLVideoElement | null;
+					if (v) {
+						v.style.display = 'block';
+						v.muted = false;
+						v.play?.().catch(() => {});
 					}
+
+					// Guarda el stream para relay
+					if (!storeRef.current.viewerScreens) storeRef.current.viewerScreens = {};
+					storeRef.current.viewerScreens[from] = ms;
+
+					// 🔔 Notifica al hook que hay NUEVA pantalla desde "from"
+					window.dispatchEvent(
+						new CustomEvent('viewer-screen-added', { detail: { from } })
+					);
 				},
 			});
 			if (!storeRef.current.perViewerScreen) storeRef.current.perViewerScreen = {};
@@ -47,7 +94,7 @@ export function setupScreenFromViewer(ctx: Ctx) {
 	});
 
 	return () => {
-		if (typeof onMaybe === 'function') onMaybe();
+		if (typeof off === 'function') off();
 	};
 }
 
