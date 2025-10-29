@@ -1,3 +1,4 @@
+// controllers/publisherCam.ts
 import { STUN_SERVERS } from '../constants';
 import { createPeerConnection } from '../webrtc/peerFactory';
 import { attachStreamToVideo } from '../webrtc/mediaAttach';
@@ -6,114 +7,110 @@ import { startPublisherMedia } from '../features/cameraMic';
 type Ctx = {
 	isStreamer: boolean;
 	signaling: {
-		emitIce: (candidate: RTCIceCandidateInit, to?: string) => void;
-		emitOffer: (offer: RTCSessionDescriptionInit, to?: string) => void;
-		onRequestOffer: (cb: (p: { viewerSocketId: string }) => void) => unknown; // <- puede devolver socket/void
+		emitIce: (candidate: RTCIceCandidateInit, to: string) => void;            // <- to requerido
+		emitOffer: (offer: RTCSessionDescriptionInit, to: string) => void;        // <- to requerido
+		onRequestOffer: (cb: (p: { viewerSocketId: string }) => void) => unknown;  // puede devolver off()
 	};
-	storeRef: React.MutableRefObject<any>;
+	storeRef: React.MutableRefObject<{
+		publisher?: RTCPeerConnection;                      // opcional (no broadcast)
+		perViewer: Record<string, RTCPeerConnection>;
+	}>;
 	localStreamRef: React.MutableRefObject<MediaStream | null>;
-	lastOfferPcRef: React.MutableRefObject<RTCPeerConnection | null>;
+	lastOfferPcRef: React.MutableRefObject<RTCPeerConnection | null>;           // ya no se usa para broadcast
 };
 
 export function setupPublisherCam(ctx: Ctx) {
-	const { isStreamer, signaling, storeRef, localStreamRef, lastOfferPcRef } = ctx;
+	const { isStreamer, signaling, storeRef, localStreamRef } = ctx;
 
-	if (isStreamer) {
-		// media local y broadcast inicial
-		startPublisherMedia()
-		.then((stream) => {
-			localStreamRef.current = stream;
-			attachStreamToVideo('localVideo', stream);
+	if (!isStreamer) return () => {};
 
-			const pc = createPeerConnection({
+	// 1) Obtener y mostrar medios locales (sin crear PC de broadcast)
+	startPublisherMedia()
+	.then((stream) => {
+		localStreamRef.current = stream;
+		attachStreamToVideo('localVideo', stream);
+		console.log('[[HOST]] local media ready: a=%d v=%d',
+					stream.getAudioTracks().length, stream.getVideoTracks().length);
+	})
+	.catch((e) => console.error('[[HOST]] startPublisherMedia error', e));
+
+	// 2) Para cada viewer que entra, crear UN PC dirigido y enviar offer con `to`
+	const offReq = signaling.onRequestOffer(({ viewerSocketId }) => {
+		console.log('[[HOST]] onRequestOffer → viewer=%s', viewerSocketId);
+
+		let pc = storeRef.current.perViewer?.[viewerSocketId];
+		if (!pc || pc.signalingState === 'closed' || pc.connectionState === 'failed') {
+			pc = createPeerConnection({
 				iceServers: STUN_SERVERS,
-				onIce: (e) => e.candidate && signaling.emitIce(e.candidate),
-			});
-			storeRef.current.publisher = pc;
-
-			stream.getTracks().forEach((t) => {
-				pc.addTrack(t, stream);
-				console.log('[[CLT-PC]] publisher addTrack kind=%s id=%s', t.kind, t.id);
-			});
-
-			// Fallback BROADCAST (cam/mic)
-			pc.createOffer().then((offer: RTCSessionDescriptionInit) => {
-				pc.setLocalDescription(offer);
-				lastOfferPcRef.current = pc;
-				console.log('[[CLT-SIG]] emitOffer BROADCAST (cam/mic) sdpType=%s', offer.type);
-				signaling.emitOffer(offer);
-			});
-		})
-		.catch(console.error);
-
-		// Ofertas dirigidas (onRequestOffer)
-		const offReqMaybe = signaling.onRequestOffer(({ viewerSocketId }: { viewerSocketId: string }) => {
-			console.log('[[CLT]] onRequestOffer viewer=%s', viewerSocketId);
-
-			let pcDir: RTCPeerConnection | undefined = storeRef.current.perViewer[viewerSocketId];
-			if (!pcDir || pcDir.signalingState === 'closed') {
-				pcDir = createPeerConnection({
-					iceServers: STUN_SERVERS,
-					onIce: (e) => e.candidate && signaling.emitIce(e.candidate, viewerSocketId),
-					onTrack: (ev) => {
-						// Audio del viewer hacia streamer (si aplica)
-						const id = `aud-${viewerSocketId}`;
-						let el = document.getElementById(id) as HTMLAudioElement | null;
-						if (!el) {
-							el = document.createElement('audio');
-							el.id = id;
-							el.autoplay = true;
-							el.controls = true;
-							el.muted = false;
-							document.body.appendChild(el);
-						}
-						if (el.srcObject !== ev.streams[0]) el.srcObject = ev.streams[0];
-					},
-				});
-				storeRef.current.perViewer[viewerSocketId] = pcDir;
-			} else {
-				console.log('[[CLT]] reusing perViewer PC for %s (signaling=%s)', viewerSocketId, pcDir.signalingState);
-			}
-
-			const ls = localStreamRef.current;
-			const need = { audio: true as boolean, video: true as boolean };
-
-			pcDir.getSenders().forEach((s: RTCRtpSender) => {
-				if (s.track?.kind === 'audio') need.audio = false;
-				if (s.track?.kind === 'video') need.video = false;
-			});
-
-			if (!ls) {
-				console.warn('[[CLT-PC]] no localStreamRef al preparar oferta cam/mic -> viewer=%s', viewerSocketId);
-			} else {
-				if (need.audio) {
-					const at = ls.getAudioTracks()[0];
-					if (at) {
-						pcDir.addTrack(at, ls);
-						console.log('[[CLT-PC]] addTrack AUDIO -> %s id=%s', viewerSocketId, at.id);
+				onIce: (e) => e.candidate && signaling.emitIce(e.candidate, viewerSocketId),
+				onTrack: (ev) => {
+					// (opcional) audio del viewer hacia el host
+					const [stream] = ev.streams;
+					const id = `aud-${viewerSocketId}`;
+					let el = document.getElementById(id) as HTMLAudioElement | null;
+					if (!el) {
+						el = document.createElement('audio');
+						el.id = id;
+						el.autoplay = true;
+						el.controls = true;
+						el.muted = false;
+						document.body.appendChild(el);
 					}
-				}
-				if (need.video) {
-					const vt = ls.getVideoTracks()[0];
-					if (vt) {
-						pcDir.addTrack(vt, ls);
-						console.log('[[CLT-PC]] addTrack VIDEO -> %s id=%s', viewerSocketId, vt.id);
-					}
-				}
-			}
-
-			pcDir.createOffer().then(async (off: RTCSessionDescriptionInit) => {
-				await pcDir!.setLocalDescription(off);
-				console.log('[[CLT-SIG]] emitOffer DIRECTA (cam/mic) to=%s sdpType=%s', viewerSocketId, off.type);
-				signaling.emitOffer(off, viewerSocketId);
+					if (el.srcObject !== stream) el.srcObject = stream;
+				},
 			});
+			storeRef.current.perViewer = storeRef.current.perViewer || {};
+			storeRef.current.perViewer[viewerSocketId] = pc;
+
+			pc.onconnectionstatechange = () => {
+				const st = pc!.connectionState;
+				if (st === 'failed' || st === 'disconnected' || st === 'closed') {
+					try { pc!.close(); } catch {}
+					delete storeRef.current.perViewer[viewerSocketId];
+				}
+			};
+		} else {
+			console.log('[[HOST]] reusing perViewer PC for %s (signaling=%s)', viewerSocketId, pc.signalingState);
+		}
+
+		const ls = localStreamRef.current;
+		if (!ls) {
+			console.warn('[[HOST]] localStreamRef vacío; no puedo adjuntar tracks a viewer=%s', viewerSocketId);
+			return;
+		}
+
+		// Evitar duplicar senders
+		const need = { audio: true, video: true };
+		pc.getSenders().forEach((s) => {
+			if (s.track?.kind === 'audio') need.audio = false;
+			if (s.track?.kind === 'video') need.video = false;
 		});
 
-		return () => {
-			if (typeof offReqMaybe === 'function') offReqMaybe(); // si tu signaling no devuelve función, no pasa nada
-		};
-	}
+		if (need.audio) {
+			const at = ls.getAudioTracks()[0];
+			if (at) {
+				pc.addTrack(at, ls);
+				console.log('[[HOST]] addTrack AUDIO → %s id=%s', viewerSocketId, at.id);
+			}
+		}
+		if (need.video) {
+			const vt = ls.getVideoTracks()[0];
+			if (vt) {
+				pc.addTrack(vt, ls);
+				console.log('[[HOST]] addTrack VIDEO → %s id=%s', viewerSocketId, vt.id);
+			}
+		}
 
-	return () => {};
+		(async () => {
+			const offer = await pc!.createOffer();
+			await pc!.setLocalDescription(offer);
+			console.log('[[HOST-SIG]] emitOffer to=%s type=%s', viewerSocketId, offer.type);
+			signaling.emitOffer(offer, viewerSocketId);
+		})().catch((e) => console.error('[[HOST]] createOffer error → to=%s', viewerSocketId, e));
+	});
+
+	return () => {
+		try { (offReq as any)?.(); } catch {}
+	};
 }
 

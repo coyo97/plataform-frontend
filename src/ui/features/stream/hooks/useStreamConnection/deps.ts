@@ -1,31 +1,30 @@
-//
-// buildContext.ts (versión parcheada)
-//
+// useBuildContext.ts (antes buildContext.ts)
 import { useMemo, useRef } from 'react';
 import { STUN_SERVERS } from './constants';
 import { createSignalingClient } from './signaling/signalingClient';
 import { createPeerConnection } from './webrtc/peerFactory';
 import { createPeerStore } from './webrtc/peerStore';
 import { attachStreamToVideo, attachLocalPreview, clearVideoEl } from './webrtc/mediaAttach';
-import { startPublisherMedia, startViewerMic, stopTracks } from './features/cameraMic';
+import { stopTracks } from './features/cameraMic'; // <- dejé solo lo que usas aquí
 import { createMediaControls } from './mediaControls';
 import { createScreenShare } from './screenShare';
 import { createRecorder } from './recording';
 import { createLeaveHandlers } from './leaveStream';
 import { safeAddIce as _safeAddIce } from './utils/ice';
 
-type BuildCtxParams = {
+type UseBuildCtxParams = {
 	streamId: string;
 	isStreamer: boolean;
 	accessCode?: string;
 	onStreamEnd?: () => void;
-	sock: any;
+	sock: any; // si tienes tu tipo SocketLike, úsalo aquí
 	setIsScreenSharing: (v: boolean) => void;
 	setCamOn: (v: boolean) => void;
 	setMicOn: (v: boolean) => void;
 };
 
-export function buildContext({
+
+export function useBuildContext({
 	streamId,
 	isStreamer,
 	accessCode,
@@ -34,7 +33,7 @@ export function buildContext({
 	setIsScreenSharing,
 	setCamOn,
 	setMicOn,
-}: BuildCtxParams) {
+}: UseBuildCtxParams) {
 	const signaling = useMemo(() => createSignalingClient(sock, streamId), [sock, streamId]);
 
 	const storeRef = useRef(createPeerStore());
@@ -47,10 +46,12 @@ export function buildContext({
 	const pendingScreenCandidatesRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
 
 	const screenRelayPCsRef = useRef<Record<string, Record<string, RTCPeerConnection>>>({});
-	// NEW: referencias para que el VIEWER pueda emitir hacia el streamer
+
+	// NEW: refs para que el VIEWER pueda emitir hacia el streamer
 	const ownerSocketIdRef = useRef<string | undefined>(undefined);
-	const viewerOutCamPcRef = useRef<RTCPeerConnection | null>(null);
-	const viewerOutScreenPcRef = useRef<RTCPeerConnection | null>(null);
+	const viewerOutCamPcRef = useRef<RTCPeerConnection | undefined>(undefined);
+	const viewerOutScreenPcRef = useRef<RTCPeerConnection | undefined>(undefined);
+
 	const viewerLocalCamRef = useRef<MediaStream | null>(null);
 	const viewerLocalScreenRef = useRef<MediaStream | null>(null);
 
@@ -69,7 +70,7 @@ export function buildContext({
 				return cur;
 			}
 			console.log(`[OWNER] aún no llega (try ${i + 1}/${opts.tries}) → solicitar al backend`);
-			sock.emit?.('request-screen-share', { streamId });
+			signaling.requestScreenShare();
 			await new Promise((r) => setTimeout(r, opts.delayMs));
 		}
 		console.warn('[OWNER] no llegó ownerSocketId tras reintentos');
@@ -171,6 +172,7 @@ export function buildContext({
 			console.error('[[STREAMER]] sendDirectScreenOfferTo error -> viewer=%s', viewerSocketId, err);
 		}
 	};
+
 	async function relayViewerScreenOfferTo(screenOwnerSocketId: string, targetViewerSocketId: string) {
 		try {
 			const ms: MediaStream | undefined = storeRef.current.viewerScreens?.[screenOwnerSocketId];
@@ -189,13 +191,10 @@ export function buildContext({
 				pc = createPeerConnection({
 					iceServers: STUN_SERVERS,
 					onIce: (e) => e.candidate && signaling.emitScreenIce(e.candidate, targetViewerSocketId),
-					onTrack: () => {
-						// no esperamos ontrack en relay desde host → solo enviamos
-					},
+					onTrack: () => { /* relay solo envía */ },
 				});
 				screenRelayPCsRef.current[screenOwnerSocketId][targetViewerSocketId] = pc;
 
-				// clona el track del viewer
 				const cloned = baseTrack.clone();
 				const out = new MediaStream([cloned]);
 				pc.addTrack(cloned, out);
@@ -211,14 +210,10 @@ export function buildContext({
 		}
 	}
 
-	const safeAddIce = _safeAddIce; // alias para inyectar en controladores
+	const safeAddIce = _safeAddIce;
 
-	// ======== NUEVO: Acciones del VIEWER ========
+	// ======== Acciones del VIEWER ========
 
-	/**
-	 * El viewer enciende su cámara+mic y ofrece al streamer.
-	 * Retorna el MediaStream local para que el UI lo pueda previsualizar si desea.
-	 */
 	async function viewerStartCam(): Promise<MediaStream> {
 		const ms = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 		viewerLocalCamRef.current = ms;
@@ -265,16 +260,12 @@ export function buildContext({
 
 	function viewerStopCam() {
 		try { viewerOutCamPcRef.current?.close(); } catch {}
-		viewerOutCamPcRef.current = null;
+		viewerOutCamPcRef.current = undefined;
 		clearVideoEl('viewerSelfCam');
 		stopTracks(viewerLocalCamRef.current);
 		viewerLocalCamRef.current = null;
 	}
 
-	/**
-	 * El viewer comparte su pantalla hacia el streamer.
-	 * Retorna el MediaStream de display para UI (preview local).
-	 */
 	async function viewerStartScreenShare(): Promise<MediaStream> {
 		let target: string | undefined = ownerSocketIdRef.current;
 		if (!target) {
@@ -287,23 +278,31 @@ export function buildContext({
 			target = waited;
 		}
 
-		const display: MediaStream = await (navigator.mediaDevices as any)
-		.getDisplayMedia({ video: true, audio: false });
+		const display: MediaStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false });
 		viewerLocalScreenRef.current = display;
 
 		// Preview local de pantalla (miniatura)
 		attachLocalPreview('viewerSelfScreen', display, { muted: true });
 
+		const seenOutgoingIce = new Set<string>();
+		const key = (c: RTCIceCandidateInit) => `${c.sdpMid ?? ''}|${c.sdpMLineIndex ?? ''}|${c.candidate ?? ''}`;
+
 		const pc = createPeerConnection({
 			iceServers: STUN_SERVERS,
 			onIce: (e) => {
 				if (!e.candidate) return;
+				const k = key(e.candidate);
+				if (seenOutgoingIce.has(k)) return;
+				seenOutgoingIce.add(k);
 				console.log('[SCRN][VIEWER] emit screen-ice → to=', target);
 				signaling.emitScreenIce(e.candidate, target!);
 			},
 		});
 		viewerOutScreenPcRef.current = pc;
 
+		// Mapea YA el PC por ownerId para que ICE handler lo encuentre de inmediato
+		screenPCsRef.current[target] = pc;
+		console.log('[SCRN][VIEWER] map screenPCsRef[%s] = viewerOutScreenPc', target);
 		lastOfferPcRef.current = pc;
 
 		const track = display.getVideoTracks()[0];
@@ -325,10 +324,24 @@ export function buildContext({
 
 	function viewerStopScreenShare() {
 		try { viewerOutScreenPcRef.current?.close(); } catch {}
-		viewerOutScreenPcRef.current = null;
+		viewerOutScreenPcRef.current = undefined;
 		clearVideoEl('viewerSelfScreen');
 		stopTracks(viewerLocalScreenRef.current);
 		viewerLocalScreenRef.current = null;
+
+		// Limpia mapping y pendientes asociados al owner
+		const curOwner = ownerSocketIdRef.current;
+		if (curOwner) {
+			if (screenPCsRef.current[curOwner]) {
+				try { screenPCsRef.current[curOwner].close(); } catch {}
+				delete screenPCsRef.current[curOwner];
+			}
+			if (pendingScreenCandidatesRef.current[curOwner]?.length) {
+				console.log('[SCRN][VIEWER] limpiando ICE pendientes del owner=%s (%d)',
+							curOwner, pendingScreenCandidatesRef.current[curOwner].length);
+							delete pendingScreenCandidatesRef.current[curOwner];
+			}
+		}
 
 		// notifica fin de pantalla (si tu backend lo usa)
 		sock.emit?.('stop-screen-share', { streamId });
@@ -351,10 +364,11 @@ export function buildContext({
 		handleLeaveStream,
 		stopLocalMedia,
 		sendDirectScreenOfferTo,
+		relayViewerScreenOfferTo,
 		clearRemoteScreen,
 		safeAddIce,
 
-		// NEW: acciones del viewer
+		// Acciones del viewer
 		viewerStartCam,
 		viewerStopCam,
 		viewerStartScreenShare,

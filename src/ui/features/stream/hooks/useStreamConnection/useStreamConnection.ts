@@ -4,8 +4,7 @@ import { useSocket } from '../../../../shared/hooks/useSocket';
 import { EVENTS } from '../../../../../utils/socket/events';
 import { Viewer, UseStreamConnectionProps } from './types';
 
-import { buildContext } from './deps';
-
+import { useBuildContext } from './deps';
 // controladores
 import { setupPublisherCam } from './controllers/publisherCam';
 import { setupPerViewerCam } from './controllers/perViewerCam';
@@ -13,7 +12,7 @@ import { setupAnswersHandlers } from './controllers/answersHandlers';
 import { setupIceHandlers } from './controllers/iceHandlers';
 import { setupScreenSender } from './controllers/screenSender';
 import { setupScreenViewer } from './controllers/screenViewer';
-import { setupScreenFromViewer } from './controllers/screenFromViewer'; // <-- Host per-viewer screen
+import { setupScreenFromViewer } from './controllers/screenFromViewer';
 
 export const useStreamConnection = ({
 	streamId,
@@ -57,7 +56,7 @@ export const useStreamConnection = ({
 		// extras
 		viewerOutScreenPcRef,
 		ownerSocketIdRef,
-	} = buildContext({
+	} = useBuildContext({
 		streamId,
 		isStreamer,
 		accessCode,
@@ -68,21 +67,24 @@ export const useStreamConnection = ({
 		setMicOn,
 	});
 
-	// ==== RELAY: PCs por (origin -> receiver)
-	// Para resolver onScreenIce/onScreenAnswer de relay, indexamos por receiver.
+	// ==== ROLE tagging para logs del signaling (si existe) ====
+	try {
+		(signaling as any)?.setRole?.(isStreamer ? 'owner' : 'viewer');
+	} catch {}
+
+	// ==== RELAY: PCs por (origin -> receiver) ====
 	const relayPCsByReceiverRef = useRef<Record<string, RTCPeerConnection>>({});
-	// Opcional: acceso por origin -> {receiver -> pc}
 	const relayPCsByOriginRef = useRef<Record<string, Record<string, RTCPeerConnection>>>({});
 
 	// Para detectar "nuevos viewers"
 	const knownViewersRef = useRef<Set<string>>(new Set());
 
-	// Tipado estrecho de signaling
+	// Tipado estrecho del signaling, ahora **exige `to`** en offer/ice:
 	const sig = signaling as unknown as {
-		emitIce: (c: RTCIceCandidateInit, to?: string) => void;
-		emitOffer: (o: RTCSessionDescriptionInit, to?: string) => void;
+		emitIce: (c: RTCIceCandidateInit, to: string) => void;         // requerido
+		emitOffer: (o: RTCSessionDescriptionInit, to: string) => void; // requerido
 		onRequestOffer: (cb: (p: { viewerSocketId: string }) => void) => unknown;
-
+		emitAnswer: (a: RTCSessionDescriptionInit, to: string) => void;  // <- AÑADIR ESTA LÍNEA
 		onOffer: (cb: (p: { offer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
 		onAnswer: (cb: (p: { answer: RTCSessionDescriptionInit; from?: string }) => void) => unknown;
 
@@ -95,7 +97,7 @@ export const useStreamConnection = ({
 		onScreenIce: (cb: (p: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
 		emitScreenIce: (c: RTCIceCandidateInit, to: string) => void;
 		emitScreenAnswer: (a: RTCSessionDescriptionInit, to: string) => void;
-		onStopScreenShare?: (cb: () => void) => unknown;
+		emitScreenOffer: (o: RTCSessionDescriptionInit, to: string) => void;
 
 		// estado / varios
 		onCurrentStreamState?: (cb: (p: {
@@ -115,6 +117,7 @@ export const useStreamConnection = ({
 		joinStream: (accessCode?: string) => unknown;
 		leaveStream: () => unknown;
 		requestScreenShare: () => void;
+		onStreamOwner?: (cb: (d: { ownerSocketId?: string }) => void) => unknown;
 		offAll: () => unknown;
 	};
 
@@ -137,7 +140,71 @@ export const useStreamConnection = ({
 			}
 		);
 
-		// Controladores base
+		// Guardar ownerSocketId para flows directos (útil para depurar rutas)
+		const offOwner = sig.onStreamOwner?.(({ ownerSocketId }) => {
+			ownerSocketIdRef.current = ownerSocketId;
+			if (isStreamer) {
+				console.log('[[OWNER]] stream-owner set ownerSocketId=%s (yo soy owner)', ownerSocketId);
+			} else {
+				console.log('[[VIEWER]] stream-owner recibido ownerSocketId=%s', ownerSocketId);
+			}
+		});
+
+		// Helper: RELAY per viewer
+		const relayViewerScreen = async (from: string, to: string) => {
+			if (!isStreamer) return;
+			if (to === from) return;
+
+			const ms = storeRef.current.viewerScreens?.[from] as MediaStream | undefined;
+			if (!ms) {
+				console.log('[[RELAY]] no existe viewerScreens[%s] aún, skip → to=%s', from, to);
+				return;
+			}
+
+			if (!relayPCsByOriginRef.current[from]) relayPCsByOriginRef.current[from] = {};
+			if (relayPCsByOriginRef.current[from][to]) {
+				const pc0 = relayPCsByOriginRef.current[from][to];
+				if (pc0.connectionState !== 'failed' && pc0.signalingState !== 'closed') {
+					console.log('[[RELAY]] ya existe pc (from=%s → to=%s), skip', from, to);
+					return;
+				}
+			}
+
+			console.log('[[RELAY]] crear pc (from=%s → to=%s)', from, to);
+			const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+			relayPCsByOriginRef.current[from][to] = pc;
+			relayPCsByReceiverRef.current[to] = pc;
+
+			pc.onicecandidate = (e) => {
+				if (e.candidate) sig.emitScreenIce(e.candidate, to);
+			};
+
+			pc.onconnectionstatechange = () => {
+				const st = pc.connectionState;
+				if (st === 'failed' || st === 'closed' || st === 'disconnected') {
+					console.log('[[RELAY]] pc state=%s → close (from=%s → to=%s)', st, from, to);
+					try { pc.close(); } catch {}
+					delete relayPCsByOriginRef.current[from]?.[to];
+					delete relayPCsByReceiverRef.current[to];
+				}
+			};
+
+			const vtrack = ms.getVideoTracks()[0];
+			if (!vtrack) {
+				console.warn('[[RELAY]] viewerScreens[%s] sin video track', from);
+				return;
+			}
+			const cloned = vtrack.clone();
+			const relayStream = new MediaStream([cloned]);
+			pc.addTrack(cloned, relayStream);
+
+			const offer = await pc.createOffer();
+			await pc.setLocalDescription(offer);
+			sig.emitScreenOffer(offer, to);
+			console.log('[[RELAY]] emit screen-offer (from=%s → to=%s)', from, to);
+		};
+
+		// Controladores base (cámara/mic por-viewer):
 		const publisherCleanup = setupPublisherCam({
 			isStreamer,
 			signaling: sig,
@@ -161,7 +228,7 @@ export const useStreamConnection = ({
 			screenPCsRef,
 			pendingScreenCandidatesRef,
 			safeAddIce,
-			viewerOutScreenPcRef,
+			viewerOutScreenPcRef, // opcional
 			ownerSocketIdRef,
 		});
 
@@ -172,6 +239,8 @@ export const useStreamConnection = ({
 			screenPCsRef,
 			pendingScreenCandidatesRef,
 			safeAddIce,
+			viewerOutScreenPcRef, // opcional
+			ownerSocketIdRef,
 		});
 
 		const screenSenderCleanup = setupScreenSender({
@@ -182,87 +251,42 @@ export const useStreamConnection = ({
 			sendDirectScreenOfferTo,
 		});
 
+		// Host recibe pantallas de viewers → re-publica a todos (relay SFU ligero)
 		const screenRoleCleanup = isStreamer
 			? setupScreenFromViewer({
 				isStreamer: true,
 				signaling: sig,
 				storeRef,
+				screenPCsRef,
+				pendingScreenCandidatesRef,
+				safeAddIce,
+				// clave: pasamos nuestro helper como "relayViewerScreenOfferTo"
+				relayViewerScreenOfferTo: relayViewerScreen,
 			})
 				: setupScreenViewer({
 					isStreamer: false,
 					signaling: sig,
 					storeRef,
 					clearRemoteScreen,
+					screenPCsRef,
+					pendingScreenCandidatesRef,
+					safeAddIce,
 				});
 
 				// ==== RELAY HANDLERS (solo host necesita relays) ====
 				let offScreenAnsRelay: any;
 				let offScreenIceRelay: any;
 
-				// Helper: clona y relanza una pantalla (from) a (to)
-				const relayViewerScreen = async (from: string, to: string) => {
-					if (!isStreamer) return;
-					if (to === from) return;
-					const ms = storeRef.current.viewerScreens?.[from] as MediaStream | undefined;
-					if (!ms) {
-						console.log('[RELAY] no hay viewerScreens[%s] aún, skip → to=%s', from, to);
-						return;
-					}
-
-					// evita duplicados
-					if (!relayPCsByOriginRef.current[from]) relayPCsByOriginRef.current[from] = {};
-					if (relayPCsByOriginRef.current[from][to]) {
-						const pc = relayPCsByOriginRef.current[from][to];
-						if (pc.connectionState !== 'failed' && pc.signalingState !== 'closed') {
-							console.log('[RELAY] ya existe pc (from=%s → to=%s), skip', from, to);
-							return;
-						}
-					}
-
-					const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-					relayPCsByOriginRef.current[from][to] = pc;
-					relayPCsByReceiverRef.current[to] = pc;
-
-					pc.onicecandidate = (e) => {
-						if (e.candidate) {
-							// to = receiver
-							signaling.emitScreenIce(e.candidate, to);
-						}
-					};
-
-					pc.onconnectionstatechange = () => {
-						const st = pc.connectionState;
-						if (st === 'failed' || st === 'closed' || st === 'disconnected') {
-							try { pc.close(); } catch {}
-							delete relayPCsByOriginRef.current[from]?.[to];
-							delete relayPCsByReceiverRef.current[to];
-						}
-					};
-
-					// adjunta track clonado
-					const vtrack = ms.getVideoTracks()[0];
-					if (!vtrack) {
-						console.warn('[RELAY] viewerScreens[%s] no tiene video track', from);
-						return;
-					}
-					const cloned = vtrack.clone();
-					const relayStream = new MediaStream([cloned]);
-					pc.addTrack(cloned, relayStream);
-
-					const offer = await pc.createOffer();
-					await pc.setLocalDescription(offer);
-					signaling.emitScreenOffer(offer, to);
-					console.log('[RELAY] emit screen-offer (from=%s → to=%s)', from, to);
-				};
-
 				if (isStreamer) {
-					// Responder ANSWER / ICE que llegan de los receptores del relay (clave = receiver)
+					// Responder ANSWER / ICE de los receptores del relay (clave = receiver socketId)
 					offScreenAnsRelay = sig.onScreenAnswer(({ from, answer }) => {
 						const pc = relayPCsByReceiverRef.current[from];
 						if (pc && pc.signalingState !== 'closed') {
 							pc.setRemoteDescription(answer).catch((e) =>
-																  console.warn('[RELAY] setRemoteDescription(answer) fallo receiver=%s', from, e)
+																  console.warn('[[RELAY]] setRemoteDescription(answer) fallo receiver=%s', from, e)
 																 );
+						} else {
+							console.log('[[RELAY]] onScreenAnswer receiver=%s sin PC activo', from);
 						}
 					});
 
@@ -270,13 +294,14 @@ export const useStreamConnection = ({
 						const pc = relayPCsByReceiverRef.current[from];
 						if (pc && pc.signalingState !== 'closed') {
 							safeAddIce(pc, candidate).catch((e) =>
-															console.warn('[RELAY] addIceCandidate fallo receiver=%s', from, e)
+															console.warn('[[RELAY]] addIceCandidate fallo receiver=%s', from, e)
 														   );
+						} else {
+							console.log('[[RELAY]] onScreenIce receiver=%s sin PC activo', from);
 						}
 					});
 				}
 
-				// ==== Lista de viewers (y relanzar pantallas a los nuevos) ====
 				// ==== Lista de viewers (y relanzar pantallas a los nuevos) ====
 				const offViewers = sig.onUpdateViewers(({ viewers }) => {
 					console.log('[[CLT]] update-viewers size=%d', viewers?.length ?? 0);
@@ -287,10 +312,10 @@ export const useStreamConnection = ({
 					const getSid = (v: any) => v?.socketId ?? v?.socket?.id ?? v?.id ?? v?._id ?? '';
 					const cur = new Set((viewers || []).map(getSid).filter(Boolean) as string[]);
 
-					// detecta nuevos
+					// detectar nuevos viewers y relanzar TODAS las pantallas conocidas
 					cur.forEach((sid) => {
 						if (!knownViewersRef.current.has(sid)) {
-							// nuevo viewer → relanzar TODAS las pantallas conocidas
+							console.log('[[OWNER]] nuevo viewer detectado=%s → relanzar pantallas existentes', sid);
 							const origins = Object.keys(storeRef.current.viewerScreens || {});
 							origins.forEach((from) => {
 								if (from !== sid) relayViewerScreen(from, sid);
@@ -306,6 +331,7 @@ export const useStreamConnection = ({
 					const from: string | undefined = ev?.detail?.from;
 					if (!from) return;
 					const targets = Array.from(knownViewersRef.current);
+					console.log('[[OWNER]] viewer-screen-added from=%s → relay a %d viewers', from, targets.length);
 					targets.forEach((to) => {
 						if (to !== from) relayViewerScreen(from, to);
 					});
@@ -314,23 +340,27 @@ export const useStreamConnection = ({
 
 				// Ended / Kicked / Error
 				const offEnded = sig.onStreamEnded(() => {
+					console.log('[[CLT]] onStreamEnded → stopLocalMedia');
 					stopLocalMedia();
 					onStreamEnd?.();
 				});
 				const offKicked = sig.onKicked(() => {
+					console.log('[[CLT]] onKicked → handleLeaveStream');
 					kicked.current = true;
 					handleLeaveStream();
 				});
 				const offError = sig.onStreamError(({ message }) => {
+					console.error('[[CLT]] onStreamError:', message);
 					if (message.toLowerCase().includes('expulsado')) {
 						kicked.current = true;
 						handleLeaveStream();
 					}
 				});
 
-				// Viewer solicita pantalla al entrar / reconectar
+				// Viewer: al entrar/reconectar, pedir pantalla si el owner ya estaba compartiendo
 				const onReconnect = () => {
 					if (!isStreamer) {
+						console.log('[[VIEWER]] reconnect → requestScreenShare()');
 						sig.requestScreenShare();
 					}
 				};
@@ -344,6 +374,7 @@ export const useStreamConnection = ({
 
 					// Off básicos
 					try { offSnapshot && (offSnapshot as any)(); } catch {}
+					try { offOwner && (offOwner as any)(); } catch {}
 					try { offViewers && (offViewers as any)(); } catch {}
 					try { offEnded && (offEnded as any)(); } catch {}
 					try { offKicked && (offKicked as any)(); } catch {}

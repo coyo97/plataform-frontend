@@ -1,222 +1,149 @@
 // controllers/answersHandlers.ts
-type SignalAPI = {
-  onAnswer: (cb: (payload: { answer: RTCSessionDescriptionInit; from?: string }) => void) => unknown;
-  onScreenAnswer: (cb: (payload: { answer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
-  // Opcionales: si tu signaling ya expone estos, los usamos; si no, no pasa nada.
-  onIce?: (cb: (payload: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
-  onScreenIce?: (cb: (payload: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
-};
-
-// controllers/answersHandlers.ts
-
 type Ctx = {
-  isStreamer: boolean;
-  signaling: {
-    onAnswer: (cb: (payload: { answer: RTCSessionDescriptionInit; from?: string }) => void) => unknown;
-    onScreenAnswer: (cb: (payload: { answer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
-    onIce?: (cb: (payload: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
-    onScreenIce?: (cb: (payload: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
-  };
-  storeRef: React.MutableRefObject<any>;
-  lastOfferPcRef: React.MutableRefObject<RTCPeerConnection | null>;
-  screenPCsRef: React.MutableRefObject<Record<string, RTCPeerConnection>>;
-  pendingScreenCandidatesRef: React.MutableRefObject<Record<string, RTCIceCandidateInit[]>>;
-  safeAddIce: (pc: RTCPeerConnection, cand: RTCIceCandidateInit, pending?: RTCIceCandidateInit[]) => Promise<void>;
-
-  // 🔹 NUEVO: para que el VIEWER aplique la answer de screen
-  viewerOutScreenPcRef?: React.MutableRefObject<RTCPeerConnection | null>;
-
-  // 🔹 NUEVO: opcional, por si quieres loguear/validar
-  ownerSocketIdRef?: React.MutableRefObject<string | undefined>;
+	isStreamer: boolean;
+	signaling: {
+		onAnswer: (cb: (payload: { answer: RTCSessionDescriptionInit; from?: string }) => void) => unknown;
+		onScreenAnswer: (cb: (payload: { answer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
+		onIce?: (cb: (payload: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
+		onScreenIce?: (cb: (payload: { from: string; candidate: RTCIceCandidateInit }) => void) => unknown;
+	};
+	storeRef: React.MutableRefObject<{
+		perViewer: Record<string, RTCPeerConnection>;
+		perStreamer: Record<string, RTCPeerConnection>;
+	}>;
+	lastOfferPcRef: React.MutableRefObject<RTCPeerConnection | null>; // ya no se usa para broadcast
+	screenPCsRef: React.MutableRefObject<Record<string, RTCPeerConnection>>;
+	pendingScreenCandidatesRef: React.MutableRefObject<Record<string, RTCIceCandidateInit[]>>;
+	safeAddIce: (pc: RTCPeerConnection, cand: RTCIceCandidateInit, pending?: RTCIceCandidateInit[]) => Promise<void>;
+	viewerOutScreenPcRef?: React.MutableRefObject<RTCPeerConnection | null | undefined>;
+	ownerSocketIdRef?: React.MutableRefObject<string | undefined>;
 };
-
 
 export function setupAnswersHandlers(ctx: Ctx) {
-  const {
-    isStreamer,
-    signaling,
-    storeRef,
-    lastOfferPcRef,
-    screenPCsRef,
-    pendingScreenCandidatesRef,
-    safeAddIce,
-    viewerOutScreenPcRef,
-  } = ctx;
+	const {
+		isStreamer,
+		signaling,
+		storeRef,
+		screenPCsRef,
+		pendingScreenCandidatesRef,
+		safeAddIce,
+		viewerOutScreenPcRef,
+	} = ctx;
 
-  // Buffer local para ICE de pantalla del VIEWER,
-  // por si llegan antes de que viewerOutScreenPcRef.current exista.
-  const pendingViewerScreenIce: RTCIceCandidateInit[] = [];
+	// Buffer local para ICE de pantalla del VIEWER si llega antes del PC (lado viewer saliente)
+	const pendingViewerScreenIce: RTCIceCandidateInit[] = [];
 
-  /* ─────────────────────────────
-   * ANSWER de cámara/mic (ruta "normal")
-   * ───────────────────────────── */
-  const offAnsMaybe = signaling.onAnswer(async (payload) => {
-    const answer = payload?.answer ?? (payload as any);
-    const from = (payload as any)?.from as string | undefined;
+	/* ── ANSWER cam/mic (ruta normal, siempre dirigida con from) ── */
+	const offAns = signaling.onAnswer(async ({ answer, from }) => {
+		if (!from) return;
 
-    if (isStreamer) {
-      // STREAMER: o es dirigida (per viewer) o broadcast fallback
-      if (from) {
-        const pc: RTCPeerConnection | undefined = storeRef.current?.perViewer?.[from];
-        if (!pc) {
-          console.warn('[[CLT]] (streamer) no PC perViewer para from=%s', from);
-          return;
-        }
-        if (pc.signalingState !== 'have-local-offer') {
-          console.warn('[[CLT]] (streamer) ignorando answer tardía/duplicada from=%s, signaling=%s', from, pc.signalingState);
-          return;
-        }
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription(answer));
-          console.log('[[CLT]] (streamer) setRemoteDescription OK (dirigida) from=%s', from);
-        } catch (e) {
-          console.warn('[[CLT]] (streamer) setRemoteDescription error (dirigida) from=%s', from, e);
-        }
-        return;
-      }
+		if (isStreamer) {
+			const pc = storeRef.current.perViewer?.[from];
+			if (!pc) {
+				console.warn('[[ANS]] (host) no perViewer PC for from=%s', from);
+				return;
+			}
+			try {
+				await pc.setRemoteDescription(new RTCSessionDescription(answer));
+				console.log('[[ANS]] (host) setRemoteDescription OK from=%s', from);
+			} catch (e) {
+				console.warn('[[ANS]] (host) setRemoteDescription fail from=%s', from, e);
+			}
+		} else {
+			const pc = storeRef.current.perStreamer?.[from];
+			if (!pc) {
+				console.warn('[[ANS]] (viewer) no perStreamer PC for from=%s', from);
+				return;
+			}
+			try {
+				await pc.setRemoteDescription(new RTCSessionDescription(answer));
+				console.log('[[ANS]] (viewer) setRemoteDescription OK from=%s', from);
+			} catch (e) {
+				console.warn('[[ANS]] (viewer) setRemoteDescription fail from=%s', from, e);
+			}
+		}
+	});
 
-      // Fallback broadcast
-      const pc = lastOfferPcRef.current;
-      if (!pc) return;
-      if (pc.signalingState !== 'have-local-offer') {
-        console.warn('[[CLT]] (streamer) ignorando broadcast answer; signaling=%s', pc.signalingState);
-        return;
-      }
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log('[[CLT]] (streamer) setRemoteDescription OK (broadcast fallback)');
-      } catch (e) {
-        console.warn('[[CLT]] (streamer) Fallback ANSWER error', e);
-      }
-      return;
-    } else {
-      // VIEWER: normalmente respuesta del streamer a la oferta de cam/mic del viewer
-      if (!from) return;
-      const pc: RTCPeerConnection | undefined = storeRef.current?.perStreamer?.[from];
-      if (!pc) {
-        console.warn('[[CLT]] (viewer) no PC perStreamer para from=%s', from);
-        return;
-      }
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log('[[CLT]] (viewer) setRemoteDescription OK (cam/mic) from=%s', from);
-      } catch (e) {
-        console.warn('[[CLT]] (viewer) setRemoteDescription error (cam/mic) from=%s', from, e);
-      }
-    }
-  });
+	/* ── ANSWER de compartir pantalla ── */
+	const offScreenAns = signaling.onScreenAnswer(async ({ answer, from }) => {
+		if (!from) return;
 
-  /* ─────────────────────────────
-   * ANSWER de compartir pantalla
-   * ───────────────────────────── */
-  const offScreenAnsMaybe = signaling.onScreenAnswer(async ({ answer, from }) => {
-    console.log('[[CLT]] onScreenAnswer from=%s type=%s', from ?? '(unknown)', answer?.type);
-    if (!from) return;
+		// Host empujando pantalla hacia "from"
+		const pcHostOut = screenPCsRef.current[from];
+		if (pcHostOut && pcHostOut.signalingState !== 'closed') {
+			try {
+				await pcHostOut.setRemoteDescription(new RTCSessionDescription(answer));
+				console.log('[[ANS-SCREEN]] (host) setRemoteDescription OK from=%s', from);
+				const pend = pendingScreenCandidatesRef.current[from] ?? [];
+				if (pend.length) {
+					for (const c of pend) await safeAddIce(pcHostOut, c);
+					pendingScreenCandidatesRef.current[from] = [];
+				}
+			} catch (e) {
+				console.warn('[[ANS-SCREEN]] (host) setRemoteDescription fail from=%s', from, e);
+			}
+			return;
+		}
 
-    if (isStreamer) {
-      // STREAMER recibe answer del VIEWER al que le empujó pantalla
-      const pc = screenPCsRef.current[from];
-      if (!pc) {
-        console.warn('[[CLT]] (streamer) screenPC inexistente para from=%s', from);
-        return;
-      }
-      if (pc.signalingState !== 'have-local-offer') {
-        console.warn('[[CLT]] (streamer) onScreenAnswer, estado inesperado=%s (from=%s)', pc.signalingState, from);
-      }
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log('[[CLT]] (streamer) screen setRemoteDescription OK (from=%s)', from);
+		// Viewer compartiendo hacia host (respuesta del host al viewer)
+		const viewerOut = viewerOutScreenPcRef?.current ?? null;
+		if (viewerOut && viewerOut.signalingState !== 'closed') {
+			try {
+				await viewerOut.setRemoteDescription(new RTCSessionDescription(answer));
+				console.log('[[ANS-SCREEN]] (viewer) setRemoteDescription OK from=%s', from);
+				if (pendingViewerScreenIce.length) {
+					for (const c of pendingViewerScreenIce.splice(0)) await safeAddIce(viewerOut, c);
+				}
+			} catch (e) {
+				console.warn('[[ANS-SCREEN]] (viewer) setRemoteDescription fail from=%s', from, e);
+			}
+		}
+	});
 
-        // si teníamos ICE bufferizado para este viewer, aplícalo
-        const pend = pendingScreenCandidatesRef.current[from] ?? [];
-        if (pend.length) {
-          for (const c of pend) await safeAddIce(pc, c);
-          pendingScreenCandidatesRef.current[from] = [];
-        }
-      } catch (e) {
-        console.warn('[[CLT]] (streamer) screen setRemoteDescription error (from=%s)', from, e);
-      }
-    } else {
-      // VIEWER recibe answer del OWNER a SU oferta de pantalla
-      const pc = viewerOutScreenPcRef?.current ?? null;
-      if (!pc) {
-        console.warn('[[CLT]] (viewer) viewerOutScreenPcRef vacío; no puedo aplicar answer from=%s', from);
-        return;
-      }
-      if (pc.signalingState !== 'have-local-offer') {
-        console.warn('[[CLT]] (viewer) onScreenAnswer estado inesperado=%s', pc.signalingState);
-      }
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log('[[CLT]] (viewer) screen setRemoteDescription OK (from=%s)', from);
-        // Aplica ICE que llegó antes de que existiera el PC
-        if (pendingViewerScreenIce.length) {
-          for (const c of pendingViewerScreenIce.splice(0)) {
-            await safeAddIce(pc, c);
-          }
-        }
-      } catch (e) {
-        console.warn('[[CLT]] (viewer) screen setRemoteDescription error (from=%s)', from, e);
-      }
-    }
-  });
+	/* ── ICE cam/mic (opcional si tu signaling lo emite por este canal) ── */
+	const offIce =
+		typeof signaling.onIce === 'function'
+			? signaling.onIce(async ({ from, candidate }) => {
+				if (!from || !candidate) return;
+				const pc = isStreamer
+					? storeRef.current.perViewer?.[from]
+					: storeRef.current.perStreamer?.[from];
+					if (!pc || pc.signalingState === 'closed') return;
+					try { await safeAddIce(pc, candidate); } catch (e) { console.warn('[[ICE]] cam add fail', e); }
+			})
+				: undefined;
 
-  /* ─────────────────────────────
-   * ICE genérico (cam/mic) — opcional
-   * ───────────────────────────── */
-  const offIceMaybe =
-    typeof signaling.onIce === 'function'
-      ? signaling.onIce(async ({ from, candidate }) => {
-          if (!from || !candidate) return;
+				/* ── ICE screen-share (opcional) ── */
+				const offScreenIce =
+					typeof signaling.onScreenIce === 'function'
+						? signaling.onScreenIce(async ({ from, candidate }) => {
+							if (!from || !candidate) return;
 
-          if (isStreamer) {
-            const pc = storeRef.current?.perViewer?.[from];
-            if (!pc) return;
-            await safeAddIce(pc, candidate);
-          } else {
-            const pc = storeRef.current?.perStreamer?.[from];
-            if (!pc) return;
-            await safeAddIce(pc, candidate);
-          }
-        })
-      : undefined;
+							// Host empujando pantalla a "from"
+							const pcHostOut = screenPCsRef.current[from];
+							if (pcHostOut && pcHostOut.signalingState !== 'closed') {
+								try { await safeAddIce(pcHostOut, candidate, pendingScreenCandidatesRef.current[from]); }
+								catch (e) { console.warn('[[ICE]] (host) screen add fail', e); }
+								return;
+							}
 
-  /* ─────────────────────────────
-   * ICE de screen-share — opcional
-   * ───────────────────────────── */
-  const offScreenIceMaybe =
-    typeof signaling.onScreenIce === 'function'
-      ? signaling.onScreenIce(async ({ from, candidate }) => {
-          if (!from || !candidate) return;
+							// Viewer saliendo a host (buffer si aún no existe viewerOutScreenPcRef)
+							const viewerOut = viewerOutScreenPcRef?.current ?? null;
+							if (!viewerOut) {
+								pendingViewerScreenIce.push(candidate);
+								console.warn('[[ICE]] (viewer) buffer early screen ICE from=%s', from);
+								return;
+							}
+							try { await safeAddIce(viewerOut, candidate, pendingViewerScreenIce); }
+							catch (e) { console.warn('[[ICE]] (viewer) screen add fail', e); }
+						})
+							: undefined;
 
-          if (isStreamer) {
-            // STREAMER agrega ICE al PC dedicado con ese viewer; si no existe aún, bufferiza
-            let pc = screenPCsRef.current[from];
-            if (!pc) {
-              const pend = (pendingScreenCandidatesRef.current[from] ||= []);
-              pend.push(candidate);
-              console.warn('[[CLT]] (streamer) buffering screen ICE from=%s', from);
-              return;
-            }
-            await safeAddIce(pc, candidate, pendingScreenCandidatesRef.current[from]);
-          } else {
-            // VIEWER agrega ICE a su PC de salida hacia el owner; si no existe, bufferiza localmente
-            const pc = viewerOutScreenPcRef?.current ?? null;
-            if (!pc) {
-              pendingViewerScreenIce.push(candidate);
-              console.warn('[[CLT]] (viewer) buffering screen ICE from=%s', from);
-              return;
-            }
-            await safeAddIce(pc, candidate, pendingViewerScreenIce);
-          }
-        })
-      : undefined;
-
-  return () => {
-    if (typeof offAnsMaybe === 'function') offAnsMaybe();
-    if (typeof offScreenAnsMaybe === 'function') offScreenAnsMaybe();
-    if (typeof offIceMaybe === 'function') offIceMaybe();
-    if (typeof offScreenIceMaybe === 'function') offScreenIceMaybe();
-  };
+							return () => {
+								try { (offAns as any)?.(); } catch {}
+								try { (offScreenAns as any)?.(); } catch {}
+								try { (offIce as any)?.(); } catch {}
+								try { (offScreenIce as any)?.(); } catch {}
+							};
 }
 

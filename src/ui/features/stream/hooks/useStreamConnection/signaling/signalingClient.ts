@@ -1,153 +1,254 @@
+// src/ui/features/stream/hooks/useStreamConnection/signaling/signalingClient.ts
 import { EVENTS } from '../../../../../../utils/socket/events';
 import type {
-  SocketLike, OfferPayload, AnswerPayload, IcePayload,
-  ScreenOfferPayload, ScreenAnswerPayload, ScreenIcePayload,
-  ViewerJoinedRequest
+	SocketLike, OfferPayload, AnswerPayload, IcePayload,
+	ScreenOfferPayload, ScreenAnswerPayload, ScreenIcePayload,
+	ViewerJoinedRequest
 } from './types';
 
 export function createSignalingClient(socket: SocketLike, streamId: string) {
-  /* ───────── helpers ───────── */
-  const requireTarget = (to?: string, label?: string) => {
-    if (!to) {
-      console.warn(`[SIG][${label}] missing "to" target — refusing broadcast`);
-      return false;
-    }
-    return true;
-  };
+	// Instrumentación y estado de depuración
+	let role: 'owner' | 'viewer' | 'unknown' = 'unknown';
+	let lastOwnerSocketId: string | undefined;
 
-  // Log inbound/outbound para depurar
-  socket.onAny?.((ev: string, ...args: any[]) => {
-    console.log('[SIG<-]', ev, args?.[0] ?? '');
-  });
-  const _emit = socket.emit.bind(socket);
-  socket.emit = (ev: string, payload?: any) => {
-    console.log('[SIG->]', ev, payload ?? '');
-    return _emit(ev, payload);
-  };
+	// Setter opcional desde fuera: signaling.setRole('owner' | 'viewer' | 'unknown')
+	const setRole = (r: 'owner' | 'viewer' | 'unknown') => {
+		role = r;
+		console.log(`[SIG][role:set] stream=${streamId} role=${role}`);
+	};
+	const getOwnerSocketId = () => lastOwnerSocketId;
 
-  /* ──────────────── EMIT ──────────────── */
-  const joinStream = (accessCode?: string) =>
-    socket.emit(EVENTS.JOIN_STREAM, { streamId, accessCode });
+	const tag = () => `[SIG][${role}][stream:${streamId}]`;
 
-  const leaveStream = () =>
-    socket.emit(EVENTS.LEAVE_STREAM, { streamId });
+	const requireTarget = (to?: string, label?: string) => {
+		if (!to) {
+			console.warn(`${tag()} ${label ?? 'emit'} missing "to" target — refusing broadcast`);
+			return false;
+		}
+		return true;
+	};
 
-  // General peer (permitimos opcionalmente broadcast por retrocompatibilidad)
-  const emitOffer = (offer: RTCSessionDescriptionInit, to?: string) =>
-    socket.emit(EVENTS.OFFER, to ? { streamId, to, offer } : { streamId, offer });
+	// Log global de inbound (compacto)
+	socket.onAny?.((ev: string, ...args: any[]) => {
+		const p = args?.[0];
+		const sdpLen =
+			p?.offer?.sdp?.length ?? p?.answer?.sdp?.length ?? 0;
+		const hasTo = typeof p?.to !== 'undefined';
+		const hasFrom = typeof p?.from !== 'undefined';
+		console.log(`${tag()} [IN] ${ev}`, {
+			hasFrom, from: p?.from,
+			hasTo,   to: p?.to,
+			sdpLen,  hasCandidate: !!p?.candidate
+		});
+	});
 
-  const emitAnswer = (answer: RTCSessionDescriptionInit, to: string) =>
-    socket.emit(EVENTS.ANSWER, { streamId, to, answer });
+	// Wrap de emit: log outbound
+	const _emit = socket.emit.bind(socket);
+	socket.emit = (ev: string, payload?: any) => {
+		const sdpLen =
+			payload?.offer?.sdp?.length ?? payload?.answer?.sdp?.length ?? 0;
+		console.log(`${tag()} [OUT] ${ev}`, {
+			to: payload?.to,
+			hasTo: typeof payload?.to !== 'undefined',
+			sdpLen,
+			hasCandidate: !!payload?.candidate
+		});
+		return _emit(ev, payload);
+	};
 
-  const emitIce = (candidate: RTCIceCandidateInit, to?: string) =>
-    socket.emit(EVENTS.ICE_CANDIDATE, to ? { streamId, to, candidate } : { streamId, candidate });
+	const joinStream = (accessCode?: string) => {
+		console.log(`${tag()} joinStream()`);
+		socket.emit(EVENTS.JOIN_STREAM, { streamId, accessCode });
+	};
 
-  const requestOffer = (viewerSocketId: string) =>
-    socket.emit('request-offer', { viewerSocketId, streamId });
+	const leaveStream = () => {
+		console.log(`${tag()} leaveStream()`);
+		socket.emit(EVENTS.LEAVE_STREAM, { streamId });
+	};
 
-  const requestScreenShare = (viewerSocketId?: string) =>
-    socket.emit('request-screen-share', viewerSocketId ? { streamId, viewerSocketId } : { streamId });
+	// General peer — EXIGE 'to' (no-broadcast)
+	const emitOffer = (offer: RTCSessionDescriptionInit, to?: string) => {
+		if (!requireTarget(to, 'offer')) return;
+		console.log(`${tag()} emitOffer()`, { to, sdpType: offer?.type });
+		socket.emit(EVENTS.OFFER, { streamId, to, offer });
+	};
 
-  // Screen-share: exigir SIEMPRE "to"
-  const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) => {
-    if (!requireTarget(to, 'screen-offer')) return;
-    socket.emit('screen-share-offer', { streamId, offer, to });
-  };
+	const emitAnswer = (answer: RTCSessionDescriptionInit, to: string) => {
+		console.log(`${tag()} emitAnswer()`, { to, sdpType: answer?.type });
+		socket.emit(EVENTS.ANSWER, { streamId, to, answer });
+	};
 
-  const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) => {
-    if (!requireTarget(to, 'screen-answer')) return;
-    socket.emit('screen-share-answer', { streamId, answer, to });
-  };
+	const emitIce = (candidate: RTCIceCandidateInit, to?: string) => {
+		if (!requireTarget(to, 'ice')) return;
+		console.log(`${tag()} emitIce()`, { to });
+		socket.emit(EVENTS.ICE_CANDIDATE, { streamId, to, candidate });
+	};
 
-  const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) => {
-    if (!requireTarget(to, 'screen-ice')) return;
-    socket.emit('screen-share-ice', { streamId, candidate, to });
-  };
+	const requestOffer = (viewerSocketId: string) => {
+		console.log(`${tag()} requestOffer() -> owner`, { viewerSocketId });
+		socket.emit('request-offer', { viewerSocketId, streamId });
+	};
 
-  // Azúcar: quién es el owner actual
-  const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
-    socket.on('stream-owner', cb);
+	const requestScreenShare = (viewerSocketId?: string) => {
+		console.log(`${tag()} requestScreenShare() -> owner`, {
+			viewerSocketId: viewerSocketId ?? '(self)'
+		});
+		socket.emit('request-screen-share', viewerSocketId ? { streamId, viewerSocketId } : { streamId });
+	};
 
-  /* ──────────────── ON ──────────────── */
-  const onOffer = (cb: (p: OfferPayload) => void) =>
-    socket.on(EVENTS.OFFER, ({ offer, from }) => cb({ offer, from }));
+	// Screen-share: exigir SIEMPRE "to" (modelo owner-republish)
+	const emitScreenOffer = (offer: RTCSessionDescriptionInit, to?: string) => {
+		if (!requireTarget(to, 'screen-offer')) return;
+		console.log(`${tag()} emitScreenOffer()`, { to, sdpType: offer?.type, ownerHint: lastOwnerSocketId });
+		socket.emit('screen-share-offer', { streamId, offer, to });
+	};
 
-  const onAnswer = (cb: (p: AnswerPayload) => void) =>
-    socket.on(EVENTS.ANSWER, (payload) => {
-      // Backend ideal: { answer, from }
-      if (payload?.from && payload?.answer) return cb(payload);
-      // Fallback compat: { answer }
-      cb({ answer: payload?.answer ?? payload, from: payload?.from });
-    });
+	const emitScreenAnswer = (answer: RTCSessionDescriptionInit, to?: string) => {
+		if (!requireTarget(to, 'screen-answer')) return;
+		console.log(`${tag()} emitScreenAnswer()`, { to, sdpType: answer?.type });
+		socket.emit('screen-share-answer', { streamId, answer, to });
+	};
 
-  const onIce = (cb: (p: IcePayload) => void) =>
-    socket.on(EVENTS.ICE_CANDIDATE, ({ from, candidate }) => cb({ from, candidate }));
+	const emitScreenIce = (candidate: RTCIceCandidateInit, to?: string) => {
+		if (!requireTarget(to, 'screen-ice')) return;
+		console.log(`${tag()} emitScreenIce()`, { to });
+		socket.emit('screen-share-ice', { streamId, candidate, to });
+	};
 
-  const onRequestOffer = (cb: (p: ViewerJoinedRequest) => void) =>
-    socket.on('request-offer', cb);
+	// Azúcar: quién es el owner actual
+	const onStreamOwner = (cb: (d: { ownerSocketId?: string }) => void) =>
+		socket.on('stream-owner', (d: { ownerSocketId?: string }) => {
+		lastOwnerSocketId = d?.ownerSocketId;
+		console.log(`${tag()} [STATE] stream-owner`, { ownerSocketId: lastOwnerSocketId });
+		cb(d);
+	});
 
-  const onRequestScreenShare = (cb: (p: ViewerJoinedRequest) => void) =>
-    socket.on('request-screen-share', cb);
+	const onOffer = (cb: (p: OfferPayload) => void) =>
+		socket.on(EVENTS.OFFER, ({ offer, from }) => {
+		console.log(`${tag()} onOffer() from=${from}`, { sdpType: offer?.type });
+		cb({ offer, from });
+	});
 
-  const onScreenOffer = (cb: (p: ScreenOfferPayload) => void) =>
-    socket.on('screen-share-offer', ({ offer, from }) => cb({ offer, from }));
+	const onAnswer = (cb: (p: AnswerPayload) => void) =>
+		socket.on(EVENTS.ANSWER, (payload) => {
+		const from = payload?.from;
+		const answer = payload?.answer ?? payload;
+		console.log(`${tag()} onAnswer() from=${from}`, { sdpType: answer?.type });
+		cb({ answer, from });
+	});
 
-  const onScreenAnswer = (cb: (p: ScreenAnswerPayload) => void) =>
-    socket.on('screen-share-answer', (payload) => {
-      if (payload?.from && payload?.answer) return cb(payload);
-      cb({ answer: payload?.answer ?? payload, from: payload?.from });
-    });
+	const onIce = (cb: (p: IcePayload) => void) =>
+		socket.on(EVENTS.ICE_CANDIDATE, ({ from, candidate }) => {
+		console.log(`${tag()} onIce() from=${from}`, { hasCandidate: !!candidate });
+		cb({ from, candidate });
+	});
 
-  const onScreenIce = (cb: (p: ScreenIcePayload) => void) =>
-    socket.on('screen-share-ice', ({ from, candidate }) => cb({ from, candidate }));
+	const onRequestOffer = (cb: (p: ViewerJoinedRequest) => void) =>
+		socket.on('request-offer', (p: ViewerJoinedRequest) => {
+		console.log(`${tag()} onRequestOffer()`, p);
+		cb(p);
+	});
 
-  const onUpdateViewers = (cb: (d: { viewers: any[] }) => void) =>
-    socket.on(EVENTS.UPDATE_VIEWERS, cb);
+	const onRequestScreenShare = (cb: (p: ViewerJoinedRequest) => void) =>
+		socket.on('request-screen-share', (p: ViewerJoinedRequest) => {
+		console.log(`${tag()} onRequestScreenShare()`, p);
+		cb(p);
+	});
 
-  const onStreamEnded = (cb: () => void) =>
-    socket.on(EVENTS.STREAM_ENDED, cb);
+	const onScreenOffer = (cb: (p: ScreenOfferPayload) => void) =>
+		socket.on('screen-share-offer', ({ offer, from }) => {
+		console.log(`${tag()} onScreenOffer() from=${from}`, { sdpType: offer?.type });
+		cb({ offer, from });
+	});
 
-  const onKicked = (cb: () => void) =>
-    socket.on('kicked', cb);
+	const onScreenAnswer = (cb: (p: ScreenAnswerPayload) => void) =>
+		socket.on('screen-share-answer', (payload) => {
+		const from = payload?.from;
+		const answer = payload?.answer ?? payload;
+		console.log(`${tag()} onScreenAnswer() from=${from}`, { sdpType: answer?.type });
+		cb({ answer, from });
+	});
 
-  const onStreamError = (cb: (d: { message: string }) => void) =>
-    socket.on('stream-error', cb);
+	const onScreenIce = (cb: (p: ScreenIcePayload) => void) =>
+		socket.on('screen-share-ice', ({ from, candidate }) => {
+		console.log(`${tag()} onScreenIce() from=${from}`, { hasCandidate: !!candidate });
+		cb({ from, candidate });
+	});
 
-  const onStopScreenShare = (cb: () => void) =>
-    socket.on('stop-screen-share', cb);
+	const onUpdateViewers = (cb: (d: { viewers: any[] }) => void) =>
+		socket.on(EVENTS.UPDATE_VIEWERS, (d) => {
+		console.log(`${tag()} onUpdateViewers()`, { count: d?.viewers?.length ?? 0 });
+		cb(d);
+	});
 
-  // Snapshot de estado actual al unirse
-  const onCurrentStreamState = (cb: (d: {
-    isSharingScreen?: boolean;
-    isStreamerMuted?: boolean;
-    viewersCount?: number;
-    hasCamera?: boolean;
-    hasMic?: boolean;
-  }) => void) => socket.on('current-stream-state', cb);
+	const onStreamEnded = (cb: () => void) =>
+		socket.on(EVENTS.STREAM_ENDED, () => {
+		console.log(`${tag()} onStreamEnded()`);
+		cb();
+	});
 
-  const offAll = () => socket.off();
+	const onKicked = (cb: () => void) =>
+		socket.on('kicked', () => {
+		console.log(`${tag()} onKicked()`);
+		cb();
+	});
 
-  /* ──────────────── RETURN ──────────────── */
-  return {
-    joinStream,
-    leaveStream,
+	const onStreamError = (cb: (d: { message: string }) => void) =>
+		socket.on('stream-error', (d) => {
+		console.error(`${tag()} onStreamError()`, d);
+		cb(d);
+	});
 
-    emitOffer, emitAnswer, emitIce,
-    requestOffer, requestScreenShare,
+	const onStopScreenShare = (cb: () => void) =>
+		socket.on('stop-screen-share', () => {
+		console.log(`${tag()} onStopScreenShare()`);
+		cb();
+	});
 
-    emitScreenOffer, emitScreenAnswer, emitScreenIce,
+	const onCurrentStreamState = (cb: (d: {
+		isSharingScreen?: boolean;
+		isStreamerMuted?: boolean;
+		viewersCount?: number;
+		hasCamera?: boolean;
+		hasMic?: boolean;
+	}) => void) =>
+		socket.on('current-stream-state', (d) => {
+		console.log(`${tag()} onCurrentStreamState()`, d);
+		cb(d);
+	});
 
-    onOffer, onAnswer, onIce,
-    onRequestOffer, onRequestScreenShare,
-    onScreenOffer, onScreenAnswer, onScreenIce,
-    onUpdateViewers, onStreamEnded,
-    onKicked, onStreamError,
-    onStopScreenShare,
+	const offAll = () => {
+		console.log(`${tag()} offAll()`);
+		socket.off();
+	};
 
-    onCurrentStreamState,
-    onStreamOwner,
+	return {
+		// flujo base
+		joinStream,
+		leaveStream,
 
-    offAll,
-  };
+		// RTCPeerConnection genérico (siempre dirigido)
+		emitOffer, emitAnswer, emitIce,
+		requestOffer, requestScreenShare,
+
+		// screen-share (owner-republish exige 'to')
+		emitScreenOffer, emitScreenAnswer, emitScreenIce,
+
+		// listeners
+		onOffer, onAnswer, onIce,
+		onRequestOffer, onRequestScreenShare,
+		onScreenOffer, onScreenAnswer, onScreenIce,
+		onUpdateViewers, onStreamEnded,
+		onKicked, onStreamError,
+		onStopScreenShare,
+		onCurrentStreamState,
+		onStreamOwner,
+
+		// utilidades de depuración
+		getOwnerSocketId,
+		setRole,
+
+		offAll,
+	};
 }
 

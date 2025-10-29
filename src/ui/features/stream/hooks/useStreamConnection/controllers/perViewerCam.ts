@@ -1,105 +1,92 @@
+// controllers/perViewerCam.ts
 import { STUN_SERVERS } from '../constants';
 import { createPeerConnection } from '../webrtc/peerFactory';
 import { attachStreamToVideo } from '../webrtc/mediaAttach';
 import { startViewerMic } from '../features/cameraMic';
 
 type Ctx = {
-  isStreamer: boolean;
-  signaling: {
-    onOffer: (cb: (p: { offer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
-    emitIce: (candidate: RTCIceCandidateInit, to: string) => void;
-    emitAnswer?: (answer: RTCSessionDescriptionInit, to: string) => void;
-  };
-  storeRef: React.MutableRefObject<any>;
-  viewerMicRef: React.MutableRefObject<MediaStream | null>;
+	isStreamer: boolean;
+	signaling: {
+		onOffer: (cb: (p: { offer: RTCSessionDescriptionInit; from: string }) => void) => unknown;
+		emitIce: (candidate: RTCIceCandidateInit, to: string) => void;                 
+		emitAnswer: (answer: RTCSessionDescriptionInit, to: string) => void;          
+	};
+	storeRef: React.MutableRefObject<{
+		perStreamer: Record<string, RTCPeerConnection>;
+	}>;
+	viewerMicRef: React.MutableRefObject<MediaStream | null>;
 };
 
 export function setupPerViewerCam(ctx: Ctx) {
-  const { isStreamer, signaling, storeRef, viewerMicRef } = ctx;
+	const { isStreamer, signaling, storeRef, viewerMicRef } = ctx;
 
-  if (!isStreamer) {
-    // mic del viewer (una vez)
-    startViewerMic()
-      .then((ms) => {
-        viewerMicRef.current = ms;
-        console.log('[[VIEWER]] mic ready tracks=%d', ms.getAudioTracks().length);
-      })
-      .catch((e) => console.error('[[VIEWER]] mic error', e));
+	if (isStreamer) return () => {}; // este controlador es del VIEWER
 
-    // Evitar múltiples ANSWER por la misma oferta por viewer
-    const answeredOnceRef = { current: {} as Record<string, boolean> };
+	// Preparar mic del viewer (upstream opcional)
+	startViewerMic()
+	.then((ms) => {
+		viewerMicRef.current = ms;
+		console.log('[[VIEWER]] mic ready: a=%d', ms.getAudioTracks().length);
+	})
+	.catch((e) => console.error('[[VIEWER]] mic error', e));
 
-    const offMaybe = signaling.onOffer(async ({ offer, from }: { offer: RTCSessionDescriptionInit; from: string }) => {
-      console.log('[[VIEWER]] onOffer from=%s type=%s', from, offer?.type);
+	// Evitar múltiples respuestas por la misma offer
+	const answeredOnceRef = { current: {} as Record<string, boolean> };
 
-      // Reutiliza PC si existe; si está cerrado, crea nuevo
-      let pc: RTCPeerConnection | undefined = storeRef.current.perStreamer[from];
-      if (!pc || pc.signalingState === 'closed') {
-        pc = createPeerConnection({
-          iceServers: STUN_SERVERS,
-          onIce: (e) => e.candidate && signaling.emitIce(e.candidate, from),
-          onTrack: (ev) => {
-            const [remote] = ev.streams;
-            console.log(
-              '[[VIEWER]] ontrack kind=%s a=%d v=%d',
-              ev.track.kind,
-              remote.getAudioTracks().length,
-              remote.getVideoTracks().length
-            );
+	const offOffer = signaling.onOffer(async ({ offer, from }) => {
+		console.log('[[VIEWER]] onOffer from=%s type=%s', from, offer?.type);
 
-            attachStreamToVideo('remoteVideo', remote);
-            const videoEl = document.getElementById('remoteVideo') as HTMLVideoElement | null;
-            if (videoEl) {
-              videoEl.style.display = 'block';
-              videoEl.muted = false;
-              const p = videoEl.play?.();
-              if (p && typeof p.catch === 'function') {
-                p.catch((err: unknown) => {
-                  console.warn('[[VIEWER]] video.play() blocked (autoplay?)', err);
-                });
-              }
-            }
-          },
-        });
-        storeRef.current.perStreamer[from] = pc;
+		let pc = storeRef.current.perStreamer?.[from];
+		if (!pc || pc.signalingState === 'closed' || pc.connectionState === 'failed') {
+			pc = createPeerConnection({
+				iceServers: STUN_SERVERS,
+				onIce: (e) => e.candidate && signaling.emitIce(e.candidate, from),
+				onTrack: (ev) => {
+					const [remote] = ev.streams;
+					attachStreamToVideo('remoteVideo', remote);
+					const el = document.getElementById('remoteVideo') as HTMLVideoElement | null;
+					if (el) {
+						el.style.display = 'block';
+						el.muted = false;
+						el.play?.().catch((err) => console.warn('[[VIEWER]] video.play() blocked', err));
+					}
+				},
+			});
+			storeRef.current.perStreamer = storeRef.current.perStreamer || {};
+			storeRef.current.perStreamer[from] = pc;
 
-        // Envía micro del viewer hacia el streamer
-        viewerMicRef.current?.getAudioTracks().forEach((t) => {
-          pc!.addTrack(t, viewerMicRef.current!);
-          console.log('[[VIEWER]] addTrack mic to pc for from=%s id=%s', from, t.id);
-        });
+			// (Opcional) enviar mic del viewer hacia el host
+			viewerMicRef.current?.getAudioTracks().forEach((t) => {
+				pc!.addTrack(t, viewerMicRef.current!);
+				console.log('[[VIEWER]] addTrack mic → host=%s id=%s', from, t.id);
+			});
 
-        pc.onconnectionstatechange = () => {
-          const st = pc!.connectionState;
-          if (st === 'failed' || st === 'disconnected' || st === 'closed') {
-            try { pc!.close(); } catch {}
-            storeRef.current.perStreamer[from] = undefined;
-            // Permitir nuevamente responder si llega una nueva oferta
-            answeredOnceRef.current[from] = false;
-          }
-        };
-      }
+			pc.onconnectionstatechange = () => {
+				const st = pc!.connectionState;
+				if (st === 'failed' || st === 'disconnected' || st === 'closed') {
+					try { pc!.close(); } catch {}
+					delete storeRef.current.perStreamer[from];
+					answeredOnceRef.current[from] = false;
+				}
+			};
+		}
 
-      // Evita responder 2 veces a la misma oferta si por alguna razón se dispara doble
-      if (answeredOnceRef.current[from]) {
-        console.log('[[VIEWER]] ignoring duplicate offer flow from=%s (already answered)', from);
-        return;
-      }
+		if (answeredOnceRef.current[from]) {
+			console.log('[[VIEWER]] duplicate offer flow ignored for from=%s', from);
+			return;
+		}
 
-      await pc!.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer: RTCSessionDescriptionInit = await pc!.createAnswer();
-      await pc!.setLocalDescription(answer);
-      answeredOnceRef.current[from] = true;
+		await pc!.setRemoteDescription(new RTCSessionDescription(offer));
+		const answer = await pc!.createAnswer();
+		await pc!.setLocalDescription(answer);
+		answeredOnceRef.current[from] = true;
 
-      console.log('[[VIEWER-SIG]] emitAnswer to=%s type=%s', from, answer.type);
-      signaling.emitAnswer?.(answer, from);
-    });
+		console.log('[[VIEWER-SIG]] emitAnswer to=%s type=%s', from, answer.type);
+		signaling.emitAnswer(answer, from);
+	});
 
-    return () => {
-      if (typeof offMaybe === 'function') offMaybe();
-    };
-  }
-
-  return () => {};
+	return () => {
+		try { (offOffer as any)?.(); } catch {}
+	};
 }
 
