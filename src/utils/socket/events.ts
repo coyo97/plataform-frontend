@@ -22,6 +22,7 @@ export const EVENTS = {
 	LEAVE_STREAM: 'leave-stream',
 	TOGGLE_CAMERA : 'toggle-camera',
 	TOGGLE_MIC    : 'toggle-mic',
+	END_STREAM: 'end-stream',
 } as const;
 
 

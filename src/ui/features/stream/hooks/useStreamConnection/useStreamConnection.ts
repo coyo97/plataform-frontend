@@ -437,6 +437,11 @@ export const useStreamConnection = ({
 				};
 				// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [sig, isStreamer, streamId]);
+	const endStream = () => {
+		// si el signaling ya trae endStream(), úsalo; si no, emite directo
+		(signaling as any)?.endStream?.()
+			?? sock.emit(EVENTS.END_STREAM ?? 'end-stream', { streamId });
+	};
 
 	return {
 		viewers,
@@ -460,6 +465,7 @@ export const useStreamConnection = ({
 		kickViewer: (id: string) => sock.emit(EVENTS.KICK_VIEWER, { streamId, viewerId: id }),
 		handleLeaveStream,
 		wasKicked: kicked.current,
+		endStream,
 	};
 };
 

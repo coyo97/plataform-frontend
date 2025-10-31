@@ -382,62 +382,68 @@ const theme = createTheme({
 			xl: 1800,
 		},
 	},
-components: {
+	components: {
   MuiCssBaseline: {
-    styleOverrides: `
-      @font-face {
-        font-family: 'DM Sans';
-        src: url('${dmSans400}') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'DM Sans';
-        src: url('${dmSans500}') format('truetype');
-        font-weight: 500;
-        font-style: normal;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: 'Poppins';
-        src: url('${poppins400}') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: 'Inter';
-        src: url('${inter400}') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: 'Allerta Stencil';
-        src: url('${allertaStencil400}') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: 'Alatsi';
-        src: url('${alatsi400}') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-	  }
-
-	  body { font-family: Poppins, 'DM Sans', Inter, 'Allerta Stencil', Alatsi, sans-serif; }
-
-	  h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0; }
-	  `,
+    styleOverrides: {
+      '@font-face': [
+        {
+          fontFamily: 'DM Sans',
+          src: `url('${dmSans400}') format('truetype')`,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          fontDisplay: 'swap',
+        },
+        {
+          fontFamily: 'DM Sans',
+          src: `url('${dmSans500}') format('truetype')`,
+          fontWeight: 500,
+          fontStyle: 'normal',
+          fontDisplay: 'swap',
+        },
+        {
+          fontFamily: 'Poppins',
+          src: `url('${poppins400}') format('truetype')`,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          fontDisplay: 'swap',
+        },
+        {
+          fontFamily: 'Inter',
+          src: `url('${inter400}') format('truetype')`,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          fontDisplay: 'swap',
+        },
+        {
+          fontFamily: 'Allerta Stencil',
+          src: `url('${allertaStencil400}') format('truetype')`,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          fontDisplay: 'swap',
+        },
+        {
+          fontFamily: 'Alatsi',
+          src: `url('${alatsi400}') format('truetype')`,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          fontDisplay: 'swap',
+        },
+      ],
+      body: {
+        fontFamily: "Poppins, 'DM Sans', Inter, 'Allerta Stencil', Alatsi, sans-serif",
+      },
+      'h1, h2, h3, h4, h5, h6': {
+        margin: 0,
+        padding: 0,
+      },
+      // 👇 aquí va tu regla para ocultar el header
+      ':root[data-hide-header="true"] .AppHeader': {
+        display: 'none !important',
+      },
+    },
   },
 },
+
 	
 
 

@@ -11,7 +11,6 @@ import SectionTitle from '../../../shared/atoms/titles/SectionTitle';
 import StreamCreateForm from '../organisms/StreamCreateForm';
 import StreamList from '../organisms/StreamList';
 import type { Stream } from '../../../../types/stream';
-import { styles } from './homeStreamLayout.styles';
 import GridContainer from '../../../shared/atoms/grid/GridContainer';
 import GridColumn from '../../../shared/atoms/grid/GridColumn';
 import Header from '../../../shared/organisms/header/Header';

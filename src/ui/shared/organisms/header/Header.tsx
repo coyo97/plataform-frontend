@@ -67,7 +67,7 @@ useLayoutEffect(() => {
 
 	return (
 		<>
-			<HeaderContainer variant={variant} ref={ref}>
+			<HeaderContainer variant={variant} ref={ref} className="AppHeader">
 				{/* IZQUIERDA: Hamburguesa + Logo */}
 				<LeftSlot>
 					<HamburgerButton>
