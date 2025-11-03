@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import {
 	Toolbar,
 	Box,
@@ -24,7 +26,8 @@ import { HeaderProps } from './header.types';
 import { HeaderContainer, NavSection, ActionsSection, Logo, HeaderVariant, HamburgerButton, LeftSlot } from './header.styles';
 import mq from '../../../../config/mq';
 import SearchComponent from '../../molecules/searchInput';
-
+//import { useColorMode } from '../../../../Theme/useColorMode';
+import { useTheme } from '@mui/material/styles';
 
 const Header: React.FC<HeaderProps> = ({
 	logoSrc,
@@ -40,6 +43,9 @@ const Header: React.FC<HeaderProps> = ({
 	const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
 	const [userAnchor, setUserAnchor] = useState<null | HTMLElement>(null);
 	const ref = useRef<HTMLDivElement>(null);
+
+const theme = useTheme();
+//const { toggleColorMode, mode } = useColorMode();
 
 	useEffect(() => {
 		const onResize = () => {
@@ -104,6 +110,13 @@ useLayoutEffect(() => {
 
 				{/* DERECHA: Notificaciones + Avatar + Logout */}
 				<ActionsSection>
+					{/*				  <IconButton
+    color="inherit"
+    aria-label="Alternar modo claro/oscuro"
+    onClick={toggleColorMode}
+  >
+    {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+	</IconButton>*/}
 					<IconButton
 						color="inherit"
 						aria-label="Ver notificaciones"

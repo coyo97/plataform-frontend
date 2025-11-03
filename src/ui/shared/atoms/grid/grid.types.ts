@@ -26,5 +26,7 @@ extends React.HTMLAttributes<HTMLDivElement> {
 	children: React.ReactNode;
 	className?: string;
 	as?: keyof JSX.IntrinsicElements;
+	self?: 'start' | 'center' | 'end' | 'stretch'
+       | Partial<Record<BreakpointLabel, 'start' | 'center' | 'end' | 'stretch'>>;
 }
 

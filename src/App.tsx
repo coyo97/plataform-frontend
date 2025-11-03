@@ -133,7 +133,7 @@ const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 					</Router>
 				</SocketProvider>
 			</QueryClientProvider>
-		</Theme>
+			</Theme>
 	);
 }
 

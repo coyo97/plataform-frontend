@@ -1,4 +1,4 @@
-import { get, post } from '../api';
+import { get, post, del } from '../api';
 import getEnvVariables from '../../config/configEnvs';
 import * as R from '../routes/groupRoutes';
 import { Group } from '../../types/types';
@@ -23,14 +23,27 @@ export const joinGroup = (groupId: string) =>
 
 /* ----- mutaciones ----- */
 export const addUserToGroup = (groupId: string, userId: string) =>
-  post<{ group: Group }>(           // 👈 tipo devuelto
+  post<{ group: Group }>(           //  tipo devuelto
     url(R.ADD_USER_TO_GROUP(groupId)),
     { userToAddId: userId }
   );
 
 export const removeUserFromGroup = (groupId: string, userId: string) =>
-  post<{ group: Group }>(           // 👈 tipo devuelto
+  post<{ group: Group }>(           //  tipo devuelto
     url(R.REMOVE_USER_GROUP(groupId)),
     { userToRemoveId: userId }
   );
 
+  export const deleteGroup = (groupId: string) =>
+  del<{ message: string; groupId: string }>(url(R.DELETE_GROUP(groupId)));
+
+/* ----- NUEVO: salir del grupo (usuario normal) ----- */
+// async/services/groupService.ts
+export const leaveGroup = (groupId: string) =>
+  post<{ group: Group }>(url(R.LEAVE_GROUP(groupId)), {});
+
+export const grantGroupAdmin = (groupId: string, userId: string) =>
+  post<{ group: Group; message: string }>(url(R.GRANT_ADMIN(groupId)), { targetUserId: userId });
+
+export const revokeGroupAdmin = (groupId: string, userId: string) =>
+  post<{ group: Group; message: string }>(url(R.REVOKE_ADMIN(groupId)), { targetUserId: userId });

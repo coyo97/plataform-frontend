@@ -1,10 +1,9 @@
 // ui/features/profile/HomeProfile.page.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IconButton, useMediaQuery, Paper } from '@mui/material';
 import { breakPoints } from '../../../config/mq';
 
 import ProfileSidebarMenu from './ProfileSidebarMenu';
-
 import ViewProfilePage from './pages/ViewProfile.page';
 import UpdateProfilePage from './pages/UpdateProfile.page';
 import Header from '../../shared/organisms/header/Header';
@@ -19,12 +18,49 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useSearchParams } from 'react-router-dom';
 import { userHasAdminRole } from '../../../utils/auth/getUserId';
 
+// permisos desde el servidor
+import { getMyPermissions } from '../../../async/services/permissionService';
+
 const HomeProfilePage: React.FC = () => {
 	const [selectedSection, setSelectedSection] = useState('viewProfile');
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [params, setParams] = useSearchParams();
 
 	const isMobile = useMediaQuery(`(max-width:${breakPoints.values.sm - 1}px)`);
+
+	// ===== Obtener permisos efectivos del usuario (verdad del servidor) =====
+	const [serverPerms, setServerPerms] = useState<string[] | null>(null);
+	const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
+
+	useEffect(() => {
+		let alive = true;
+		(async () => {
+			try {
+				const perms = await getMyPermissions();
+				if (alive) setServerPerms(perms);
+			} catch {
+				if (alive) setServerPerms([]);
+			} finally {
+				if (alive) setLoadingPerms(false);
+			}
+		})();
+		return () => {
+			alive = false;
+		};
+	}, []);
+
+	// ===== Calcular permiso “profile:update” =====
+	const canEditProfile = !loadingPerms && !!serverPerms?.includes('profile:update');
+
+	// Si ya puede editar, limpia flag persistente de 403 y notifica
+	useEffect(() => {
+		if (canEditProfile) {
+			try {
+				localStorage.removeItem('profile:update:forbidden');
+				window.dispatchEvent(new Event('profile:update:allowed' as any));
+			} catch {}
+		}
+	}, [canEditProfile]);
 
 	const sectionToTab: Record<string, 'solicitudes' | 'amigos' | 'buscar' | 'bloqueados' | undefined> = {
 		friendRequests: 'solicitudes',
@@ -58,15 +94,16 @@ const HomeProfilePage: React.FC = () => {
 				return <UpdateProfilePage />;
 			case 'viewProfile':
 				default:
-				// Tabs internas (Solicitudes/Amigos/Buscar) viven dentro de ViewProfile, bajo el header del perfil
 				return <ViewProfilePage />;
 		}
 	};
+
 	const hasAdmin = userHasAdminRole();
 	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
+
 	return (
 		<>
-				<Header
+			<Header
 				logoSrc={Logo}
 				variant='gradient'
 				navLinks={visibleLinks}
@@ -82,19 +119,20 @@ const HomeProfilePage: React.FC = () => {
 					/>
 				}
 			/>
-					<GridContainer
+
+			<GridContainer
 				variant="desktopFluid"
 				columns={{ xs: 4, sm: 8, md: 12 }}
 				style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}
 			>
-				{/* Sidebar fijo en desktop (patrón Persistent Navigation) */}
+				{/* Sidebar fijo en desktop */}
 				{!isMobile && (
 					<GridColumn
 						as="aside"
-						span={{ xs: 4, sm: 2, md: 3 }} // ≈ 280–300px en desktop
+						span={{ xs: 4, sm: 2, md: 3 }}
 						style={{
 							position: 'sticky',
-							top: 104, // 88 header + margen
+							top: 104,
 							alignSelf: 'start',
 							zIndex: 10,
 							boxSizing: 'border-box',
@@ -114,33 +152,36 @@ const HomeProfilePage: React.FC = () => {
 								onClose={undefined}
 								onSelect={handleSelect}
 								selectedSection={selectedSection}
+								canEditProfile={canEditProfile}
 							/>
 						</Paper>
 					</GridColumn>
 				)}
 
-				{/* Columna principal: contenido centrado y limitado a 680–760px */}
+				{/* Columna principal */}
 				<GridColumn
 					as="main"
 					span={{ xs: 4, sm: 6, md: 9 }}
 					style={{ minWidth: 0, boxSizing: 'border-box' }}
 					key={selectedSection}
+					self="center"
 				>
 					{renderContent()}
 				</GridColumn>
 			</GridContainer>
 
-			{/* Sidebar LOCAL en móvil como modal */}
+			{/* Sidebar en móvil */}
 			{isMobile && (
 				<ProfileSidebarMenu
 					open={sidebarOpen}
 					onClose={() => setSidebarOpen(false)}
 					onSelect={handleSelect}
 					selectedSection={selectedSection}
+					canEditProfile={canEditProfile}
 				/>
 			)}
 
-			{/* FAB abajo-derecha (solo móvil) */}
+			{/* FAB móvil */}
 			<IconButton
 				aria-label="Abrir menú de perfil"
 				onClick={() => setSidebarOpen(true)}

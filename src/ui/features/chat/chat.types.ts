@@ -1,3 +1,3 @@
 // ui/features/chat/chat.types.ts
-export type ChatView = 'users' | 'groups' | 'none'; 
+export type ChatView = 'users' | 'groups' | 'none' | 'chats'; 
 

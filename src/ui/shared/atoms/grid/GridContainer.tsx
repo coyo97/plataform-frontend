@@ -18,6 +18,18 @@ const Root = styled('div', {
 			? `${settings.containerWidth}px`
 			: settings.containerWidth;
 
+			  //  toma la menor definición de columns como BASE
+  const pickBaseCols = () => {
+    if (!$columns) return settings.columns;
+    const order: BreakpointLabel[] = ['xxs','xs','sm','md','lg','xl'] as any;
+    for (const bp of order) {
+      const v = ($columns as any)[bp];
+      if (v) return v;
+    }
+    return settings.columns;
+  };
+  const baseCols = pickBaseCols();
+
 			const base: Record<string, any> = {
 				width: '100%',
 				maxWidth: maxW,
@@ -25,7 +37,7 @@ const Root = styled('div', {
 				paddingLeft: settings.marginX,
 				paddingRight: settings.marginX,
 				display: 'grid',
-				gridTemplateColumns: `repeat(${settings.columns}, minmax(0, 1fr))`,
+				gridTemplateColumns: `repeat(${baseCols}, minmax(0, 1fr))`,
 				gap: `${settings.gutter}px`,
 				boxSizing: 'border-box',
 			};

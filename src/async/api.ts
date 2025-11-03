@@ -66,8 +66,7 @@ const request = async <T>(endpoint: string, payload: Payload, method: HttpMethod
 		){
 			throw new ModerationError(message);
 		}
-
-		throw new Error(message);//propagamos un Error con .message
+		throw new Error(message)
 	}
 };
 

@@ -35,7 +35,7 @@ const SmartBox: React.FC<SmartBoxProps> = ({
 	return (
 		<MuiBox
 			sx={{
-				display: flexDirection ? 'flex' : undefined,
+				display: (flexDirection || center || between) ? 'flex' : undefined,
 				flexDirection,
 				alignItems: center ? 'center' : undefined,
 				justifyContent: between ? 'space-between' : center ? 'center' : undefined,

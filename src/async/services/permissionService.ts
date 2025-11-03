@@ -16,3 +16,15 @@ export const fetchPermissions = async (): Promise<Permission[]> => {
 	const { permissions } = await get<{ permissions: Permission[] }>(url('/permissions'), {});
 	return permissions;
 };
+export const getMyPermissions = async (): Promise<string[]> => {
+	try {
+		const { permissions } = await get<{ permissions: string[] }>(
+			url('/me/permissions'),
+			{}
+		);
+		return permissions ?? [];
+	} catch (error) {
+		console.error('Error al obtener permisos del usuario:', error);
+		return [];
+	}
+};
