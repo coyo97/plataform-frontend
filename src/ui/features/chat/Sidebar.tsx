@@ -43,6 +43,7 @@ interface SidebarProps {
 	currentChatId: string;
 	onSelectUser: (userId: string) => void;
 	onSelectGroup: (groupId: string) => void;
+	onlineSet?: Set<string>;
 }
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
@@ -109,12 +110,16 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 								props.users.find((u) => u._id === _id)?.profilePicture ??
 								undefined;
 
+
+							const isOnline = props.onlineSet?.has(_id) ?? false;
+
 							return (
 								<SidebarChatItem
 									key={_id}
 									item={{ _id, username, profile: { profilePicture } }}
 									isActive={isActive}
 									onClick={() => props.onSelectUser(_id)}
+									isOnline={isOnline} 
 								/>
 							);
 						})}
@@ -128,6 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
 						{usersSorted.map((u) => {
 							const profilePicture = u.profile?.profilePicture ?? u.profilePicture ?? undefined;
+							const isOnline = props.onlineSet?.has(u._id) ?? false; 
 
 							return (
 								<SidebarChatItem
@@ -135,6 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 									item={{ _id: u._id, username: u.username, profile: { profilePicture } }}
 									isActive={u._id === props.currentChatId}
 									onClick={() => props.onSelectUser(u._id)}
+									isOnline={isOnline} 
 								/>
 							);
 						})}
@@ -151,6 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 								item={{ _id: g._id, username: g.name }}
 								isActive={g._id === props.currentChatId}
 								onClick={() => props.onSelectGroup(g._id)}
+								// (sin dot de presencia para grupos)
 							/>
 						))}
 					</>

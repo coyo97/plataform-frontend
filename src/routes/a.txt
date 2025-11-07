@@ -1,0 +1,35 @@
+	this.app.getAppServer().post( `${this.route}/messages/send`, authMiddleware, this.sendMessage.bind(this));
+
+		this.app.getAppServer().get( `${this.route}/messages/conversations`, authMiddleware, this.getConversations.bind(this));
+
+		this.app.getAppServer().get( `${this.route}/messages/user/:userId`, authMiddleware, this.getMessages.bind(this));
+
+		this.app.getAppServer().get( `${this.route}/messages/group/:groupId`, authMiddleware, this.getGroupMessages.bind(this));
+
+		this.app.getAppServer().post( `${this.route}/messages/mark-as-read`, authMiddleware, this.markAsRead.bind(this));
+
+		this.app.getAppServer().post(
+			`${this.route}/messages/send-with-file`,
+			authMiddleware,
+			async (req, res, next) => {
+				// Obtén el maxUploadSize desde la base de datos
+				const Settings = SettingsModel(this.app.getClientMongoose());
+				const settings = await Settings.findOne().exec();
+				const maxUploadSize = settings?.maxUploadSize ?? 50 * 1024 * 1024;
+
+				// Obtén el middleware de subida con el tamaño actualizado
+				const upload = getUploadMiddleware(maxUploadSize);
+
+				// Llama al middleware de multer
+				upload.single('file')(req, res, (err) => {
+					if (err) {
+						return res.status(StatusCodes.BAD_REQUEST).json({ message: err.message });
+					}
+					next();
+				});
+			}, // Utiliza el middleware de subida
+			this.sendMessageWithFile.bind(this)
+		);
+		this.app.getAppServer().delete( `${this.route}/messages/:messageId`, authMiddleware, this.deleteMessage.bind(this));
+		this.app.getAppServer().get( `${this.route}/messages/unread`, authMiddleware, this.getUnreadConversations.bind(this));
+

@@ -38,6 +38,7 @@ interface InboxPeopleProps {
 	isFloating?: boolean;
 	showUserList: boolean;
 	toggleUserList: () => void;
+	onlineSet?: Set<string>;
 }
 
 export const InboxPeople: React.FC<InboxPeopleProps> = ({
@@ -50,6 +51,7 @@ export const InboxPeople: React.FC<InboxPeopleProps> = ({
 	isFloating = false,
 	showUserList,
 	toggleUserList,
+	onlineSet,
 }) => {
 	const [isMobile, setIsMobile] = useState(false);
 
@@ -90,6 +92,7 @@ export const InboxPeople: React.FC<InboxPeopleProps> = ({
 						currentChatId={currentChatId}
 						onSelectUser={(userId) => handleSelect(userId, false)}
 						onSelectGroup={(groupId) => handleSelect(groupId, true)}
+						onlineSet={onlineSet}
 					/>
 				</InboxPeopleContainer>
 			)}

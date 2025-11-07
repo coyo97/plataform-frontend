@@ -13,6 +13,7 @@ import AvatarX from '../../atoms/avatar/AvatarX';
 import Badge from '../../atoms/badges/Badge';
 import TooltipBubble from '../../atoms/tooltips/tooltipBubble/TooltipBubble';
 import DateTimeInfo from '../../atoms/dateTime/DateTimeInfo';
+import Text from '../../atoms/typography/Text';
 
 const Card: React.FC<CardProps> = ({
 	title,
@@ -27,6 +28,7 @@ const Card: React.FC<CardProps> = ({
 	onClickAuthor,
 	onTagClick,
 	headerActions,
+	children
 }) => {
 	return (
 		<CardRoot>
@@ -69,8 +71,8 @@ const Card: React.FC<CardProps> = ({
 
 			{/* Content */}
 			<Content>
-				{title && <h3>{title}</h3>}
-				{description && <p>{description}</p>}
+				{title && <Text headingLevel="h3" weight="bold">{title}</Text>}
+				{description && <Text size="md">{description}</Text>}
 				{tags && tags.length > 0 && (
 					<TagsWrapper>
 						{tags.map((tag) => {
@@ -105,6 +107,7 @@ const Card: React.FC<CardProps> = ({
 
 
 				{media && <MediaWrapper>{media}</MediaWrapper>}
+				  {children}
 			</Content>
 
 			{/* Actions */}

@@ -7,8 +7,8 @@ export interface CardAuthor {
 }
 
 export interface CardProps {
-	title?: string;
-	description?: string;
+	  title?: ReactNode;         // <- acepta JSX o string
+  description?: ReactNode;   // <- acepta JSX o string
 	author?: CardAuthor;
 	date?: string | Date;
 	tags?: string[];
@@ -19,5 +19,6 @@ export interface CardProps {
 	onTagClick?: (tag: string) => void;
 	headerActions?: React.ReactNode;
 	authorCareers?: string[];
+	  children?: ReactNode;
 }
 

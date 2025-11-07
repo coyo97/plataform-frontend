@@ -6,19 +6,28 @@ import { CleanAccordion } from './accordionSection.styles';
 import Text from '../../atoms/typography/Text';
 
 interface Props {
-	title: string;
-	children: ReactNode;
-	variant?: 'default' | 'transparent';
+  title: React.ReactNode;            // <- antes string
+  children: ReactNode;
+  variant?: 'default' | 'transparent';
+  defaultExpanded?: boolean;         // útil en “Agregar usuario”
+  disabled?: boolean;                // por permisos
+  summaryProps?: React.ComponentProps<typeof AccordionSummary>; // extensible
 }
 
-const AccordionSection: React.FC<Props> = ({ title, children, variant = 'default' }) => (
-	<CleanAccordion disableGutters $variant={variant}>
-		<AccordionSummary expandIcon={<ExpandMoreIcon />}>
-			<Text>{title}</Text>
-		</AccordionSummary>
-
-		<AccordionDetails>{children}</AccordionDetails>
-	</CleanAccordion>
+const AccordionSection: React.FC<Props> = ({
+  title,
+  children,
+  variant = 'default',
+  defaultExpanded,
+  disabled,
+  summaryProps,
+}) => (
+  <CleanAccordion disableGutters $variant={variant} defaultExpanded={defaultExpanded} disabled={disabled}>
+    <AccordionSummary expandIcon={<ExpandMoreIcon />} {...summaryProps}>
+      {typeof title === 'string' ? <Text headingLevel="h4">{title}</Text> : title}
+    </AccordionSummary>
+    <AccordionDetails>{children}</AccordionDetails>
+  </CleanAccordion>
 );
 
 export default AccordionSection;

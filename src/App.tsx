@@ -87,7 +87,8 @@ const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 							<Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />
 
 							<Route path="/profile/:id" element={<ProtectedRoute element={<AuthorProfile />} />} />
-							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} />} />
+							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />}         requiredModule="profile"
+        requiredAction="read"/>} />
 
 							<Route path="/material-user" element={<ProtectedRoute element={<UserMaterials />} />} />
 							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} />} />

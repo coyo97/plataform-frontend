@@ -1,5 +1,4 @@
-// OutgoingMessage.tsx
-
+// src/ui/features/chat/OutgoingMessage.tsx
 import React from 'react';
 import getEnvVariables from '../../../config/configEnvs';
 import {
@@ -12,11 +11,14 @@ import { Message } from '../../../types/types';
 interface MessageProps {
 	message: Message;
 	onDeleteMessage: (messageId: string) => void;
+	/** opcional: reintentar envío si falló (optimista) */
+	onResend?: (msg: Message) => void;
 }
 
 export const OutgoingMessage: React.FC<MessageProps> = ({
 	message,
 	onDeleteMessage,
+	onResend,
 }) => {
 	const { HOST } = getEnvVariables();
 
@@ -42,11 +44,36 @@ export const OutgoingMessage: React.FC<MessageProps> = ({
 			}
 		};
 
+		// soporta bandera de estado optimista si la agregaste (sending/failed)
+		const uiStatus = (message as any).uiStatus as 'sending' | 'failed' | undefined;
+
 		return (
 			<OutgoingMsgContainer>
 				<SentMsg>
 					{renderMessageContent()}
-					<TimeDate>{formattedDate}</TimeDate>
+
+					<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+						<TimeDate>{formattedDate}</TimeDate>
+
+						{/* Indicadores de estado (opcionales) */}
+						{uiStatus === 'sending' && (
+							<span style={{ fontSize: 12, opacity: 0.7 }}>Enviando…</span>
+						)}
+						{uiStatus === 'failed' && (
+							<>
+								<span style={{ fontSize: 12, color: '#e74c3c' }}>Falló</span>
+								{onResend && (
+									<button
+										style={{ marginLeft: 6 }}
+										onClick={() => onResend(message)}  
+									>
+										Reintentar
+									</button>
+								)}
+							</>
+						)}
+					</div>
+
 					<button onClick={() => onDeleteMessage(message._id)}>Eliminar</button>
 				</SentMsg>
 			</OutgoingMsgContainer>
