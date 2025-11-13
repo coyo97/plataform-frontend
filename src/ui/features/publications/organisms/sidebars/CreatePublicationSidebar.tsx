@@ -6,6 +6,8 @@ import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledBu
 import CreatePublicationDialog from '../CreatePublicationDialog';
 import { fetchCareers, createPublication, updatePublication } from '../../../../../async/services/publicationService';
 import type { Career, Publication } from '../../../../../types/publication';
+import { useMediaQuery } from '@mui/material';
+import { breakPoints } from '../../../../../config/mq';
 
 interface Props {
 	onNew   : (pub: Publication) => void;
@@ -20,15 +22,20 @@ interface Props {
 	onShowMyPosts: () => void;
 	onShowAll?: () => void;
 	onlyMine?: boolean;
+	canCreate?: boolean;
 }
 
 const CreatePublicationSidebar: React.FC<Props> = ({
 	onNew, open, onClose,
-	editPublication = null, editingOpen = false, onEditingClose, onUpdated,onShowMyPosts, onShowAll, onlyMine = false,
+	editPublication = null, editingOpen = false, onEditingClose, onUpdated,onShowMyPosts, onShowAll, onlyMine = false, canCreate = true,
 }) => {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [careers, setCareers] = useState<Career[]>([]);
 	useEffect(() => { fetchCareers().then(setCareers).catch(console.error); }, []);
+
+		const isMobile = useMediaQuery(`(max-width:${breakPoints.values.sm - 1}px)`);
+
+
 
 	const handleCreate = async (fd: FormData) => {
 		const pub = await createPublication(fd);
@@ -46,13 +53,19 @@ const CreatePublicationSidebar: React.FC<Props> = ({
 	const isEditing = !!editingOpen && !!editPublication;
 
 	return (
-		<Sidebar sticky open={open} variant="primary" onClose={onClose}>
+		<Sidebar sticky open={open} variant="flat" onClose={onClose} width={isMobile ? 180: 180}>
 			<SmartBox>
 				<FilledButton
 					colorType="primary"
 					btnVariant="default"
 					fullWidth
-					onClick={() => setDialogOpen(true)}
+										onClick={() => {
+						if (!canCreate) return;
+						setDialogOpen(true);
+					}}
+					aria-disabled={!canCreate}
+					disabled={!canCreate}
+					sx={!canCreate ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
 				>
 					Publicar
 				</FilledButton>
@@ -68,7 +81,7 @@ const CreatePublicationSidebar: React.FC<Props> = ({
 			</SmartBox>
 
 			<CreatePublicationDialog
-				open={isEditing ? true : dialogOpen}
+								open={canCreate ? (isEditing ? true : dialogOpen) : false}
 				onClose={() => (isEditing ? onEditingClose?.() : setDialogOpen(false))}
 				careers={careers}
 				onNew={onNew}

@@ -2,11 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import {
-	fetchCareers,
-	createPublication,
-	likePublication,
-	unlikePublication, deletePublication, fetchMyPublications
+import { fetchCareers, createPublication, likePublication, unlikePublication, deletePublication, fetchMyPublications
 } from '../../../../../async/services/publicationService';
 import type { Career, Publication } from '../../../../../types/publication';
 import getEnvVariables from '../../../../../config/configEnvs';
@@ -23,10 +19,7 @@ import CreatePublicationSidebar from '../../organisms/sidebars/CreatePublication
 import FilterPublicationSidebar from '../../organisms/sidebars/FilterPublicationSidebar';
 import { userHasAdminRole } from '../../../../../utils/auth/getUserId';
 
-import {
-	useTheme, useMediaQuery,
-	Fab, Dialog, SwipeableDrawer, Button, Box
-} from '@mui/material';
+import { useTheme, useMediaQuery, Fab, Dialog, SwipeableDrawer, Button, Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import FilterListIcon from '@mui/icons-material/FilterList';
 
@@ -37,6 +30,7 @@ import SearchOverlay from '../../../../shared/organisms/SearchOverlay/SearchOver
 import GridColumn from '../../../../shared/atoms/grid/GridColumn';
 import GridContainer from '../../../../shared/atoms/grid/GridContainer';
 import { Dialog as MuiDialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { getMyPermissions } from '../../../../../async/services/permissionService';
 type Filter = 'mostRecent' | 'mostLiked' | 'mostCommented' | 'career';
 
 // util simple para normalizar (opcional)
@@ -66,6 +60,31 @@ const normalizeTag = (s: string) =>
 		const [confirmDel, setConfirmDel] = useState<Publication | null>(null);
 		const [searchParams, setSearchParams] = useSearchParams();
 		const [onlyMine, setOnlyMine] = useState(false);
+
+			// ===== permisos desde el servidor =====
+		const [serverPerms, setServerPerms] = useState<string[] | null>(null);
+		const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
+
+		useEffect(() => {
+			let alive = true;
+			(async () => {
+				try {
+					const perms = await getMyPermissions();
+					if (alive) setServerPerms(perms);
+				} catch {
+					if (alive) setServerPerms([]);
+				} finally {
+					if (alive) setLoadingPerms(false);
+				}
+			})();
+			return () => { alive = false; };
+		}, []);
+
+		// Publicaciones:create (acepta singular o plural por si el backend normaliza)
+		const canCreatePublication =
+			!loadingPerms &&
+			(!!serverPerms?.includes('publication:create') ||
+			 !!serverPerms?.includes('publications:create'));
 
 		const activeTag = (() => {
 			const t = searchParams.get('tag') || '';
@@ -144,7 +163,7 @@ const normalizeTag = (s: string) =>
 			setCreateOpen(false);
 		};
 
-		// ✅ handler para tags: escribe ?tag=<tag> y reinicia a página 1
+		//  handler para tags: escribe ?tag=<tag> y reinicia a página 1
 		const handleTagClick = (tag: string) => {
 			const t = normalizeTag(tag);
 			const next = new URLSearchParams(searchParams);
@@ -215,19 +234,22 @@ const normalizeTag = (s: string) =>
 					style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}
 					columns={{ xs: 4, sm: 8, md: 12 }}
 				>
-					{/* ① CREATE – LEFT SIDEBAR */}
+					{/* CREATE – LEFT SIDEBAR */}
 					{isMobile ? (
 						<>
 							<Fab
 								color="secondary"
 								sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
-								onClick={() => setCreateOpen(true)}
+															disabled={!canCreatePublication}
+								onClick={() => {
+									if (!canCreatePublication) return;
+									setCreateOpen(true);
+								}}
 							>
 								<AddIcon />
 							</Fab>
 
 							<Dialog
-								fullScreen
 								open={createOpen}
 								onClose={() => setCreateOpen(false)}
 							>
@@ -242,11 +264,12 @@ const normalizeTag = (s: string) =>
 									onShowMyPosts={showMyPosts}
 									onShowAll={showAllPosts}
 									onlyMine={onlyMine}
+									canCreate={canCreatePublication}
 								/>
 							</Dialog>
 						</>
 					) : (
-						<GridColumn span={{ sm: 2, md: 3 }}>
+						<GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
 							<CreatePublicationSidebar
 								open={createOpen}
 								onClose={() => setCreateOpen(false)}
@@ -258,11 +281,12 @@ const normalizeTag = (s: string) =>
 								onShowMyPosts={showMyPosts}
 								onShowAll={showAllPosts}
 								onlyMine={onlyMine}
+								canCreate={canCreatePublication}
 							/>
 						</GridColumn>
 					)}
 
-					{/* ② FEED (siempre) */}
+					{/*  FEED (siempre) */}
 					<GridColumn span={{ xs: 4, sm: 4, md: 6 }}>
 						{activeTag ? (
 							<Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -287,14 +311,13 @@ const normalizeTag = (s: string) =>
 							onAuthor={handleAuthor}
 							onReport={(id) => setReport({ open: true, id })}
 							onSearch={handleSearch}
-							/* 🔗 ahora sí: los tags disparan este handler */
 							onTagClick={handleTagClick}
 							onEditRequested={onEditRequested}
 							onDeleted={onDeleted}
 						/>
 					</GridColumn>
 
-					{/* ③ FILTER – RIGHT SIDEBAR */}
+					{/*  FILTER RIGHT SIDEBAR */}
 					{isMobile ? (
 						<>
 							<Button
@@ -311,7 +334,7 @@ const normalizeTag = (s: string) =>
 								open={filterOpen}
 								onClose={() => setFilterOpen(false)}
 								onOpen={() => {}}
-								PaperProps={{ sx: { width: '80%' } }}
+								PaperProps={{ sx: { width: '0%' } }}
 							>
 								<FilterPublicationSidebar
 									open
@@ -325,7 +348,7 @@ const normalizeTag = (s: string) =>
 							</SwipeableDrawer>
 						</>
 					) : (
-						<GridColumn span={{ sm: 2, md: 3 }}>
+						<GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
 							<FilterPublicationSidebar
 								open={filterOpen}
 								onClose={() => setFilterOpen(false)}
@@ -339,7 +362,7 @@ const normalizeTag = (s: string) =>
 					)}
 				</GridContainer>
 
-				{/* ④ REPORT DIALOG */}
+				{/*  REPORT DIALOG */}
 				{report.open && (
 					<ReportDialog
 						open={report.open}
@@ -347,7 +370,7 @@ const normalizeTag = (s: string) =>
 						publicationId={report.id}
 					/>
 				)}
-				{/* ④ REPORT DIALOG */}
+				{/*  REPORT DIALOG */}
 				{report.open && (
 					<ReportDialog
 						open={report.open}
@@ -356,7 +379,6 @@ const normalizeTag = (s: string) =>
 					/>
 				)}
 
-				{/* ⑤ CONFIRMAR ELIMINAR */}
 				<MuiDialog
 					open={!!confirmDel}
 					onClose={() => setConfirmDel(null)}

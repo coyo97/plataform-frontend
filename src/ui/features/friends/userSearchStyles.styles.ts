@@ -24,6 +24,10 @@ export const SearchForm = styled('form')({
     width: '100%',
     justifyContent: 'center',
     marginBottom: '20px',
+	 '& .tf-compact': {
+    paddingBottom: 0,                    // ← elimina los 8px del wrapper
+    gap: 0,                              // ← sin gap extra si no hay label/helper
+  },
     [mq('sm', 'max')]: {
         flexDirection: 'column',
         alignItems: 'center',

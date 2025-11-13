@@ -1,23 +1,8 @@
 // ui/features/profile/ProfileSidebarMenu.tsx
 import React, { useEffect, useState } from 'react';
-import {
-	useMediaQuery,
-	List,
-	ListItemButton,
-	ListItemIcon,
-	ListItemText,
-	ListSubheader,
-	Badge,
-	Alert,
-	Box,
+import { useMediaQuery, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Alert, Box,
 } from '@mui/material';
-import {
-	Person as PersonIcon,
-	Edit as EditIcon,
-	Group as GroupIcon,
-	Search as SearchIcon,
-	Block as BlockIcon,
-	PersonAdd as MailOutlineIcon,
+import { Person as PersonIcon, Edit as EditIcon, Group as GroupIcon, Search as SearchIcon, Block as BlockIcon, PersonAdd as MailOutlineIcon,
 } from '@mui/icons-material';
 
 import Sidebar from '../../shared/organisms/sidebar/Sidebar';
@@ -101,7 +86,7 @@ const ProfileSidebarMenu: React.FC<Props> = ({
 			open={open}
 			onClose={onClose}
 			variant={isMobile ? 'modal' : 'elevated'}
-			width={isMobile ? 320 : 250}
+			width={isMobile ? 230: 250}
 			position="left"
 			sticky={!isMobile}
 			ariaLabel="Menú de perfil"

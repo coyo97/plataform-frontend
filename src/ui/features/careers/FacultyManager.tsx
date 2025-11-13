@@ -13,6 +13,7 @@ import {
 } from './careerManagerStyles';      // reutilizamos estilos
 
 import Loader from '../../shared/atoms/feedback/loader/Loader';
+import Text from '../../shared/atoms/typography/Text';
 
 interface Faculty { _id:string; name:string; dean?:string; icon?:string }
 
@@ -25,7 +26,6 @@ const FacultyManager:React.FC = () => {
 	const [icon, setIcon]           = useState('');
 	const [loading, setLoading]     = useState(true);
 
-	/* -------- load ---------- */
 	const load = async ()=>{
 		setLoading(true);
 		setFaculties(await fetchFaculties());
@@ -33,7 +33,6 @@ const FacultyManager:React.FC = () => {
 	};
 	useEffect(()=>{ load(); },[]);
 
-	/* -------- helpers -------- */
 	const clear = ()=>{ setSelected(null); setName(''); setDean(''); setIcon(''); };
 
 	const handleSave = async ()=>{
@@ -53,12 +52,11 @@ const FacultyManager:React.FC = () => {
 		await deleteFaculty(id); await load();
 	};
 
-	/* -------- UI ---------- */
 	if(loading)return <Loader/>;
 
 	return(
 		<Container>
-			<Title>Gestión de Facultades</Title>
+			<Text align='center' headingLevel='h3'>Gestión Facultades</Text>
 
 			<Input
 				placeholder="Nombre de la facultad"

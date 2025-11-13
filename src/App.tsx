@@ -37,6 +37,7 @@ import HomeOverlay from './ui/shared/organisms/SearchOverlay/HomeOverlay';
 import AdminSidebarMenu from './ui/features/admin/AdminSidebarMenu';
 import AuthorProfile from './ui/features/profile/AuthorProfile';
 import { useMediaQuery, useTheme } from '@mui/material';
+import AcademicCatalogTabs from './ui/features/careers/AcademicCatalogTabs';
 
 function App() {
 	const queryClient = new QueryClient();
@@ -83,12 +84,11 @@ const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 							<Route path="/academic-help/:helpId" element={<ProtectedRoute element={<AcademicHelpDetailPage />} />} />
 							<Route path="/test" element={<HomeTest/>}/>
 
-							<Route path="/publications" element={<ProtectedRoute element={<HomePublications />} />} />
+							<Route path="/publications" element={<ProtectedRoute element={<HomePublications />} requiredModule='publications' requiredAction='read'/>} />
 							<Route path="/publications/:publicationId" element={<ProtectedRoute element={<PublicationDetail />} />} />
 
 							<Route path="/profile/:id" element={<ProtectedRoute element={<AuthorProfile />} />} />
-							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />}         requiredModule="profile"
-        requiredAction="read"/>} />
+							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} requiredModule="profile" requiredAction="read"/>} />
 
 							<Route path="/material-user" element={<ProtectedRoute element={<UserMaterials />} />} />
 							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} />} />
@@ -119,7 +119,7 @@ const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 														<Route path="roles" element={<HomeRoles />} />
 														<Route path="moderator" element={<HomeModerator />} />
 														<Route path="center-alert" element={<HomeAlert />} />
-														<Route path="career" element={<CareerManager />} />
+														<Route path="career" element={<AcademicCatalogTabs/>} />
 														<Route path="conf-file" element={<HomeSetting />} />
 													</Routes>
 												</div>

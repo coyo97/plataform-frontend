@@ -16,26 +16,23 @@ import CycleManager from './CycleManager';
 import UnitManager from './UnitManager';
 import SubjectManager from './SubjectManager';
 import AccessPolicyManager from '../roles/AccessPolicyManager';
+import Text from '../../shared/atoms/typography/Text';
 
 interface Faculty { _id:string; name:string }
 interface Career  { _id:string; name:string; description?:string; facultyId?:string; mode?:'semester'|'trimester'|'year'; }
 
 const CareerManager:React.FC = () => {
-	/* catálogos */
 	const [faculties, setFaculties] = useState<Faculty[]>([]);
 	const [careers,   setCareers]   = useState<Career[]>([]);
-	/* formulario */
 	const [selected,    setSelected]    = useState<Career|null>(null);
 	const [name,        setName]        = useState('');
 	const [description, setDescription] = useState('');
 	const [facultyId,   setFacultyId]   = useState('');
 
- const [mode,setMode]         =useState<'semester'|'trimester'|'year'>('year');
+	const [mode,setMode]         =useState<'semester'|'trimester'|'year'>('year');
 
-	/* estado */
 	const [loading, setLoading] = useState(true);
 
-	/* ---------- load ---------- */
 	const loadAll = async () => {
 		setLoading(true);
 		const [fac, car] = await Promise.all([
@@ -45,7 +42,6 @@ const CareerManager:React.FC = () => {
 	};
 	useEffect(()=>{ loadAll(); },[]);
 
-	/* ---------- CRUD ---------- */
 	const clearForm = ()=>{ setSelected(null); setName(''); setDescription(''); setFacultyId(''); };
 
 	const handleSave = async () => {
@@ -65,14 +61,12 @@ const CareerManager:React.FC = () => {
 		await deleteCareer(id); loadAll(); alert('Carrera eliminada');
 	};
 
-	/* ---------- UI ---------- */
 	if(loading) return <Loader/>;
 
 	return(
 		<Container>
-			<Title>Gestión de Carreras</Title>
+			<Text align='center' headingLevel='h3'>Gestión de Carreras</Text>
 
-			{/* Selector facultad */}
 			<FormSelect
 				label="Facultad (opcional)"
 				value={facultyId}
@@ -94,16 +88,16 @@ const CareerManager:React.FC = () => {
 				onChange={e=>setDescription(e.target.value)}
 			/>
 
-			 <FormSelect
-   label="Modo académico (opcional)"
-   value={mode}
-   onChange={v=>setMode(v as any)}
-   options={[
-     {value:'year', label:'Anual'},
-     {value:'semester', label:'Semestral'},
-     {value:'trimester', label:'Trimestral'},
-   ]}
- />
+			<FormSelect
+				label="Modo académico (opcional)"
+				value={mode}
+				onChange={v=>setMode(v as any)}
+				options={[
+					{value:'year', label:'Anual'},
+					{value:'semester', label:'Semestral'},
+					{value:'trimester', label:'Trimestral'},
+				]}
+			/>
 
 			<Button onClick={handleSave}>
 				{selected ? 'Actualizar carrera' : 'Crear carrera'}
@@ -138,12 +132,6 @@ const CareerManager:React.FC = () => {
 					</CareerItem>
 				))}
 			</CareerList>
-
-			<FacultyManager/>
-			<CycleManager/>
-			<SubjectManager/>
-			<UnitManager/>
-			<AccessPolicyManager/>
 		</Container>
 	);
 };

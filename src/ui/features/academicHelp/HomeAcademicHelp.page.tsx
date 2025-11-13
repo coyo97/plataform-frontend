@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Snackbar, Alert, Box } from '@mui/material';
+import { Snackbar, Alert, Box, SwipeableDrawer, Button, Dialog, Fab } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useLocation, useSearchParams } from 'react-router-dom';
 
@@ -8,11 +8,13 @@ import CreateHelpSidebar from './organisms/CreateHelpSidebar';
 import HelpFilterSidebar from './organisms/HelpFilterSidebar';
 import { useHelpFeed } from './hook/useHelpFeed';
 import { AcademicHelp } from '../../../types/academicHelp';
+import AddIcon from '@mui/icons-material/Add';
 
 import Loader from '../../shared/atoms/feedback/loader/Loader';
 import { styles } from './homeAcademicHelp.styles';
 import IconButton from '../../shared/atoms/buttons/iconButton/IconButton';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import TuneIcon from '@mui/icons-material/Tune';
 
 import GridContainer from '../../shared/atoms/grid/GridContainer';
@@ -105,135 +107,151 @@ const onlyMine = (filters as any)?.owner === 'me';
 
 
 	return (
-		<>
-			<Header
-				logoSrc={Logo}
-				variant='gradient'
-				navLinks={visibleLinks}
-				userRole={hasAdmin ? 'admi' : 'student'}
-				onLogout={() => console.log('Logout')}
-				onNotificationsClick={() => console.log('Abrir notificaciones')}
-				onAvatarClick={() => console.log('Abrir menú usuario')}
-				SearchComponent={
-					<SearchOverlay onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)} />
-				}
-			/>
+<>
+  <Header
+    logoSrc={Logo}
+    variant="gradient"
+    navLinks={visibleLinks}
+    userRole={hasAdmin ? 'admi' : 'student'}
+    onLogout={() => console.log('Logout')}
+    onNotificationsClick={() => console.log('Abrir notificaciones')}
+    onAvatarClick={() => console.log('Abrir menú usuario')}
+    SearchComponent={
+      <SearchOverlay
+        onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)}
+      />
+    }
+  />
 
-			<GridContainer
-				variant="desktopFixed"
-				style={{ paddingTop: overlayOpen ? 0 : 'calc(var(--header-h) + 4px)' }}
-				columns={{ xs: 4, sm: 6, md: 12 }}
-			>
-				{/* Mobile actions */}
-				{isMobile && (
-					<GridColumn span={12}>
-						<Box sx={styles.mobileActions}>
-							<IconButton onClick={openCreateSidebar} ariaLabel="Abrir creador de ayuda">
-								<AddCircleIcon />
-							</IconButton>
-							<IconButton onClick={openFilterSidebar} ariaLabel="Abrir filtros de ayuda">
-								<TuneIcon />
-							</IconButton>
-						</Box>
-					</GridColumn>
-				)}
+  <GridContainer
+    variant="desktopFluid"
+    style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}
+    columns={{ xs: 4, sm: 8, md: 12 }}
+  >
+    {/* ① CREATE – LEFT SIDEBAR */}
+    {isMobile ? (
+      <>
+        <Fab
+          color="secondary"
+          sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
+          onClick={() => setCreateOpen(true)}
+        >
+          <AddIcon />
+        </Fab>
 
-				{/* Col 1 ─ Crear ayuda + botones “Mis ayudas/Todo” (+ edición en el mismo dialog) */}
-				{isMobile ? (
-					<GridColumn span={12}>
-						<CreateHelpSidebar
-							open={createOpen}
-							onClose={() => setCreateOpen(false)}
-							onNew={handleNew}
-							onShowMyHelps={showMyHelps}
-							onShowAll={showAllHelps}
-							editHelp={editing}
-							editingOpen={!!editing}
-							onEditingClose={() => setEditing(null)}
-							onUpdated={onUpdated}
-							onlyMine={onlyMine}
-						/>
-					</GridColumn>
-				) : (
-					<GridColumn span={3}>
-						<CreateHelpSidebar
-							open={createOpen}
-							onClose={() => setCreateOpen(false)}
-							onNew={handleNew}
-							onShowMyHelps={showMyHelps}
-							onShowAll={showAllHelps}
-							editHelp={editing}
-							editingOpen={!!editing}
-							onEditingClose={() => setEditing(null)}
-							onUpdated={onUpdated}
-							onlyMine={onlyMine}
-						/>
-					</GridColumn>
-				)}
+        <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
+          <CreateHelpSidebar
+            open={true}
+            onClose={() => setCreateOpen(false)}
+            onNew={handleNew}
+            onShowMyHelps={showMyHelps}
+            onShowAll={showAllHelps}
+            editHelp={editing}
+            editingOpen={!!editing}
+            onEditingClose={() => setEditing(null)}
+            onUpdated={onUpdated}
+            onlyMine={onlyMine}
+          />
+        </Dialog>
+      </>
+    ) : (
+      <GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
+        <CreateHelpSidebar
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onNew={handleNew}
+          onShowMyHelps={showMyHelps}
+          onShowAll={showAllHelps}
+          editHelp={editing}
+          editingOpen={!!editing}
+          onEditingClose={() => setEditing(null)}
+          onUpdated={onUpdated}
+          onlyMine={onlyMine}
+        />
+      </GridColumn>
+    )}
 
-				{/* Col 2 ─ Feed */}
-				<GridColumn span={isMobile ? 12 : 6}>
-					{loading ? (
-						<Loader />
-					) : (
-						<HelpFeed
-							list={helps}
-							onDeleted={onDeleted}
-							onEditRequested={onEditRequested}
-						/>
-					)}
-				</GridColumn>
+    {/* ② FEED (siempre) */}
+    <GridColumn span={{ xs: 4, sm: 4, md: 6 }}>
+      {loading ? (
+        <Loader />
+      ) : (
+        <HelpFeed
+          list={helps}
+          onDeleted={onDeleted}
+          onEditRequested={onEditRequested}
+        />
+      )}
+    </GridColumn>
 
-				{/* Col 3 ─ Filtros */}
-				{isMobile ? (
-					<GridColumn span={12}>
-						<HelpFilterSidebar
-							open={filterOpen}
-							current={filters ?? {}}
-							onApply={(f) => {
-								setFilters(f);
-								writeFiltersToUrl(f as any);
-								setFilterOpen(false);
-							}}
-							onClear={() => {
-								setFilters({});
-								writeFiltersToUrl({});
-							}}
-							onClose={() => setFilterOpen(false)}
-						/>
-					</GridColumn>
-				) : (
-					<GridColumn span={3}>
-						<HelpFilterSidebar
-							open={filterOpen}
-							current={filters ?? {}}
-							onApply={(f) => {
-								setFilters(f);
-								writeFiltersToUrl(f as any);
-								setFilterOpen(false);
-							}}
-							onClear={() => {
-								setFilters({});
-								writeFiltersToUrl({});
-							}}
-							onClose={() => setFilterOpen(false)}
-						/>
-					</GridColumn>
-				)}
-			</GridContainer>
+    {/* ③ FILTER – RIGHT SIDEBAR */}
+    {isMobile ? (
+      <>
+        <Button
+          variant="outlined"
+          startIcon={<FilterListIcon />}
+          onClick={() => setFilterOpen(true)}
+          sx={{ position: 'fixed', top: 72, right: 16, zIndex: 1100 }}
+        >
+          Filtros
+        </Button>
 
-			{/* Snackbar de confirmación */}
-			<Snackbar
-				open={snack}
-				autoHideDuration={3000}
-				onClose={() => setSnack(false)}
-				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-			>
-				<Alert severity="success" variant="filled">
-					¡Ayuda publicada con éxito!
-				</Alert>
-			</Snackbar>
-		</>
+        <SwipeableDrawer
+          anchor="right"
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          onOpen={() => {}}
+          PaperProps={{ sx: { width: '0%' } }} 
+        >
+          <HelpFilterSidebar
+            open
+            current={filters ?? {}}
+            onApply={(f) => {
+              setFilters(f);
+              writeFiltersToUrl(f as any);
+              setFilterOpen(false);
+            }}
+            onClear={() => {
+              setFilters({});
+              writeFiltersToUrl({});
+            }}
+            onClose={() => setFilterOpen(false)}
+          />
+        </SwipeableDrawer>
+      </>
+    ) : (
+      <GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
+        <HelpFilterSidebar
+          open={filterOpen}
+          current={filters ?? {}}
+          onApply={(f) => {
+            setFilters(f);
+            writeFiltersToUrl(f as any);
+            setFilterOpen(false);
+          }}
+          onClear={() => {
+            setFilters({});
+            writeFiltersToUrl({});
+          }}
+          onClose={() => setFilterOpen(false)}
+        />
+      </GridColumn>
+    )}
+  </GridContainer>
+
+  {/* Snackbar de confirmación */}
+  <Snackbar
+    open={snack}
+    autoHideDuration={3000}
+    onClose={() => setSnack(false)}
+    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+  >
+    <Alert severity="success" variant="filled">
+      ¡Ayuda publicada con éxito!
+    </Alert>
+  </Snackbar>
+</>
+
 	);
 
 };

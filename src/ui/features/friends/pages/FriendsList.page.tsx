@@ -13,8 +13,16 @@ import {
 	ProfileImage,
 } from '../friendsListStyles.styles';
 
+import getEnvVariables from '../../../../config/configEnvs';
+import { resolveProfileImg, pickProfilePicture, DEFAULT_AVATAR } from '../../../shared/utils/avatarUrl';
+
 const FriendsListPage: React.FC = () => {
 	const { list, msg, remove, block } = useFriendsList();
+	const { HOST } = getEnvVariables();
+
+	const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+		(e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR;
+	};
 
 	return (
 		<FriendsListContainer>
@@ -22,27 +30,29 @@ const FriendsListPage: React.FC = () => {
 			{msg && <Text colorKey="error.500">{msg}</Text>}
 
 			<FriendsListItems>
-				{list.map((friend) => (
-					<FriendItem key={friend._id}>
-						<ProfileImage
-							src={
-								friend.profile?.profilePicture
-									? `/uploads/${friend.profile.profilePicture}`
-									: '/assets/default-avatar.png'
-							}
-							alt={`${friend.username}'s avatar`}
-						/>
-						<FriendName>{friend.username}</FriendName>
-						<div>
-							<FilledButton onClick={() => remove(friend._id)} colorType="error" btnVariant="outline">
-								Eliminar
-							</FilledButton>
-							<FilledButton onClick={() => block(friend._id)} colorType="warning">
-								Bloquear
-							</FilledButton>
-						</div>
-					</FriendItem>
-				))}
+				{list.map((friend) => {
+					const rel = pickProfilePicture(friend);
+					const src = resolveProfileImg(HOST, rel);
+
+					return (
+						<FriendItem key={friend._id}>
+							<ProfileImage
+								src={src}
+								alt={`${friend.username}'s avatar`}
+								onError={onImgError as any}
+							/>
+							<FriendName>{friend.username}</FriendName>
+							<div style={{ display: 'flex', gap: 8 }}>
+								<FilledButton onClick={() => remove(friend._id)} colorType="error" btnVariant="outline">
+									Eliminar
+								</FilledButton>
+								<FilledButton onClick={() => block(friend._id)} colorType="warning">
+									Bloquear
+								</FilledButton>
+							</div>
+						</FriendItem>
+					);
+				})}
 			</FriendsListItems>
 		</FriendsListContainer>
 	);

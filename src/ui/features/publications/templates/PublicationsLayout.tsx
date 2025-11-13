@@ -8,10 +8,8 @@ const PublicationsLayout: React.FC<{ children: React.ReactNode }> = ({ children 
       height: t => `calc(100vh - ${t.mixins.toolbar.minHeight}px)`,
       overflowX: 'hidden',
 
-      // ✅ Use grid from small screens upward
       display: { xs: 'block', sm: 'grid' },
 
-      // ✅ Responsive columns
       gridTemplateColumns: {
         xs: '1fr',                 // mobile → only feed
         sm: '200px 1fr',           // small → left sidebar + feed

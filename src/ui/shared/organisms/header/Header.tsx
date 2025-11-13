@@ -1,21 +1,9 @@
 // src/ui/shared/organisms/header/Header.tsx
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
-	Toolbar,
-	Box,
-	IconButton,
-	Drawer,
-	List,
-	ListItem,
-	ListItemIcon,
-	ListItemText,
-	Avatar,
-	Menu,
-	MenuItem,
-	Badge,
-	Snackbar,
-	Tooltip,
+	Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText,
+	Avatar, Menu, MenuItem, Badge, Snackbar, Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -26,66 +14,120 @@ import Notifications from '../../../features/centerAlert/Notifications';
 import { logout } from '../../../../utils/auth/getUserId';
 
 import { HeaderProps } from './header.types';
-import {
-	HeaderContainer,
-	NavSection,
-	ActionsSection,
-	Logo,
-	HeaderVariant,
-	HamburgerButton,
-	LeftSlot,
-} from './header.styles';
-import mq from '../../../../config/mq';
+import { HeaderContainer, NavSection, ActionsSection, Logo, HeaderVariant, HamburgerButton, LeftSlot, } from './header.styles';
 
-// 🔐 permisos server-truth
 import { getMyPermissions } from '../../../../async/services/permissionService';
+import { getModuleFromNav, canAccessModule, BYPASS_MODULES, normalizePermList } from '../../permissions/modules';
+import getEnvVariables from '../../../../config/configEnvs';
+import { fetchMyProfile } from '../../../../async/services/userProfileService';
+import type { UserProfile } from '../../../../types/profile';
+
 
 const Header: React.FC<HeaderProps> = ({
-	logoSrc,
-	navLinks,
-	userRole,
-	onLogout,
-	onNotificationsClick,
-	onAvatarClick,
-	variant = 'surface',
-	SearchComponent,
+	logoSrc, navLinks, userRole, onLogout,
+	onNotificationsClick, onAvatarClick, item,profile,
+	variant = 'surface', SearchComponent,
 }) => {
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
 	const [userAnchor, setUserAnchor] = useState<null | HTMLElement>(null);
+	const [deniedMsg, setDeniedMsg] = useState<string | null>(null);
+	const { HOST } = getEnvVariables();
+	const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(null);
+
 	const ref = useRef<HTMLDivElement>(null);
 	const theme = useTheme();
 	const navigate = useNavigate();
 
-	// ===== permisos (verdad del servidor) =====
+	useEffect(() => {
+		if (item || profile) return; 
+		let alive = true;
+		(async () => {
+			try {
+				const p = await fetchMyProfile();
+				if (alive) setFetchedProfile(p ?? null);
+			} catch {
+				if (alive) setFetchedProfile(null);
+			}
+		})();
+		return () => {
+			alive = false;
+		};
+	}, [item, profile]);
+
+	const DEFAULT_AVATAR = 'https://ptetutorials.com/images/user-profile.png';
+
+	const resolveProfileImg = (host: string, rel?: string): string => {
+		const val = rel ?? '';
+		if (!val) return DEFAULT_AVATAR;
+		if (/^https?:\/\//i.test(val)) return val;
+				const h = host.replace(/\/+$/, '');
+			const p = val.replace(/^\/+/, '');
+		return `${h}/${p}`.replace(/([^:]\/)\/+/g, '$1');
+	};
+
+	const effectiveProfilePicture =
+		item?.profile?.profilePicture ??
+		item?.profilePicture ??
+		profile?.profilePicture ??
+		fetchedProfile?.profilePicture ??
+		'';
+
+	const imgUrl = useMemo<string>(
+		() => resolveProfileImg(HOST, effectiveProfilePicture),
+		[HOST, effectiveProfilePicture]
+	);
+
+	const alt = useMemo(() => {
+		const p = profile ?? fetchedProfile;
+		if (p) {
+			const full = `${p.username ?? ''} ${p.apellidoPaterno ?? ''} ${p.apellidoMaterno ?? ''}`.trim();
+			return full || p.username || 'Foto de perfil';
+		}
+		return item?.username || 'Foto de perfil';
+	}, [profile, fetchedProfile, item?.username]);
+
+	const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+		(e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR;
+	};
+
 	const [perms, setPerms] = useState<string[] | null>(null);
 	useEffect(() => {
 		let alive = true;
 		(async () => {
 			try {
 				const p = await getMyPermissions();
-				if (alive) setPerms(p);
+				const normalized = normalizePermList(p);
+				if (alive) setPerms(normalized);
+				// console.log('[PERMS] raw=', p);
+				// console.log('[PERMS] normalized=', normalized);
 			} catch {
 				if (alive) setPerms([]);
 			}
 		})();
-		return () => {
-			alive = false;
-		};
+		return () => { alive = false; };
 	}, []);
+	/*
+	   useEffect(() => {
+	   console.group('[Header RBAC]');
+	   console.log('perms (server-truth):', perms);
+	   if (Array.isArray(navLinks)) {
+	   const dump = navLinks.map(({ label, to }: any) => {
+	   const mod = getModuleFromNav(to, label);
+	   const hasRead = mod ? canAccessModule(perms, mod) : '(sin módulo)';
+	   return { label, to, module: mod, canRead: hasRead };
+	   });
+	   console.table(dump);
+	   }
+	   console.groupEnd();
+	   }, [perms, navLinks]); */
 
-	// Helper permiso
-	const has = (m: string, a: string) => (perms ?? []).includes(`${m}:${a}`.toLowerCase());
-	// Política para “acceso al módulo Perfil”: al menos poder leer
-	const canAccessProfile = has('profile', 'read'); // o usa OR con create/update/delete si quieres
-
-	// Mensaje cuando está bloqueado pero el usuario hace clic
-	const [deniedMsg, setDeniedMsg] = useState<string | null>(null);
-	const showDenied = (msg = 'No tienes acceso a este módulo. Solicita permisos al administrador.') =>
+	const showDenied = (msg = 'Módulo bloqueado. Solicita acceso al administrador.') =>
 		setDeniedMsg(msg);
 
 	const toggleDrawer = () => setDrawerOpen((p) => !p);
 	const closeDrawer = () => setDrawerOpen(false);
+
 
 	useLayoutEffect(() => {
 		if (!ref.current) return;
@@ -99,31 +141,20 @@ const Header: React.FC<HeaderProps> = ({
 		return () => ro.disconnect();
 	}, []);
 
-	// Identificar si un link es de “Perfil”
-	const isProfileLink = (to: string, label?: string) => {
-		const t = (to || '').toLowerCase();
-		const l = (label || '').toLowerCase();
-		return t.startsWith('/profile') || l.includes('perfil');
-	};
-
-	// Render de un link del header con bloqueo visual+funcional si es Perfil sin permiso
 	const renderTopNavLink = ({ label, to, icon: Icon, adminOnly }: any) => {
-		const blocked = isProfileLink(to, label) && !canAccessProfile;
 		if (adminOnly && userRole !== 'admi') return null;
+
+		const moduleName = getModuleFromNav(to, label); // ej. '/publications' -> 'publication'
+		const skipRBAC = adminOnly || (moduleName && BYPASS_MODULES.has(moduleName));
+		const blocked = !skipRBAC && moduleName ? !canAccessModule(perms, moduleName) : false;
 
 		if (blocked) {
 			return (
 				<Tooltip key={label} title="Módulo bloqueado. Solicita acceso.">
 					<Box
 						sx={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: 1,
-							px: 1,
-							py: 0.5,
-							opacity: 0.5,
-							cursor: 'not-allowed',
-							userSelect: 'none',
+							display: 'inline-flex', alignItems: 'center', gap: 1, px: 1, py: 0.5,
+							opacity: 0.5, cursor: 'not-allowed', userSelect: 'none',
 						}}
 						onClick={() => showDenied()}
 					>
@@ -142,9 +173,12 @@ const Header: React.FC<HeaderProps> = ({
 		);
 	};
 
-	// Render de un item del drawer con bloqueo (opaco + click muestra aviso)
-	const renderDrawerItem = ({ label, to, icon }: any) => {
-		const blocked = isProfileLink(to, label) && !canAccessProfile;
+	const renderDrawerItem = ({ label, to, icon, adminOnly }: any) => {
+		if (adminOnly && userRole !== 'admi') return null;
+
+		const moduleName = getModuleFromNav(to, label);
+		const skipRBAC = adminOnly || (moduleName && BYPASS_MODULES.has(moduleName));
+		const blocked = !skipRBAC && moduleName ? !canAccessModule(perms, moduleName) : false;
 
 		if (blocked) {
 			return (
@@ -155,9 +189,7 @@ const Header: React.FC<HeaderProps> = ({
 						sx={{
 							opacity: 0.5,
 							cursor: 'not-allowed',
-							'& .MuiListItemIcon-root, & .MuiListItemText-root': {
-								color: 'text.disabled',
-						},
+							'& .MuiListItemIcon-root, & .MuiListItemText-root': { color: 'text.disabled' },
 						}}
 					>
 						<ListItemIcon>{React.createElement(icon)}</ListItemIcon>
@@ -177,16 +209,10 @@ const Header: React.FC<HeaderProps> = ({
 
 	return (
 		<>
-			<HeaderContainer variant={variant as HeaderVariant} ref={ref} className="AppHeader">
-				{/* IZQUIERDA: Hamburguesa + Logo */}
+			<HeaderContainer variant='surface' ref={ref} className="AppHeader">
 				<LeftSlot>
 					<HamburgerButton>
-						<IconButton
-							edge="start"
-							color="inherit"
-							aria-label="Abrir menú"
-							onClick={toggleDrawer}
-						>
+						<IconButton edge="start" color="inherit" aria-label="Abrir menú" onClick={toggleDrawer}>
 							<MenuIcon />
 						</IconButton>
 					</HamburgerButton>
@@ -196,30 +222,24 @@ const Header: React.FC<HeaderProps> = ({
 					</Box>
 				</LeftSlot>
 
-				{/* CENTRO: Links */}
 				<NavSection>
 					{navLinks.map(renderTopNavLink)}
 					{SearchComponent && <Box sx={{ flexGrow: 1, maxWidth: 400 }}>{SearchComponent}</Box>}
 				</NavSection>
 
-				{/* DERECHA: Notificaciones + Avatar + Logout */}
 				<ActionsSection>
-					<IconButton
-						color="inherit"
-						aria-label="Ver notificaciones"
-						onClick={(e) => setNotifAnchor(e.currentTarget)}
-					>
+					<IconButton color="inherit" aria-label="Ver notificaciones" onClick={(e) => setNotifAnchor(e.currentTarget)}>
 						<Badge color="error" variant="dot">
 							<NotificationsIcon />
 						</Badge>
 					</IconButton>
 
-					<IconButton
-						color="inherit"
-						aria-label="Opciones de cuenta"
-						onClick={(e) => setUserAnchor(e.currentTarget)}
-					>
-						<Avatar sx={{ width: 32, height: 32 }}>A</Avatar>
+					<IconButton color="inherit" aria-label="Opciones de cuenta" onClick={(e) => setUserAnchor(e.currentTarget)}>
+						<Avatar
+							sx={{ width: 32, height: 32 }}
+							src={imgUrl}      
+							alt={alt}
+						/>
 					</IconButton>
 
 					{onLogout && (
@@ -230,7 +250,6 @@ const Header: React.FC<HeaderProps> = ({
 				</ActionsSection>
 			</HeaderContainer>
 
-			{/* Drawer lateral */}
 			<Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
 				<Box sx={{ mt: 8 }}>
 					<List>
@@ -238,16 +257,13 @@ const Header: React.FC<HeaderProps> = ({
 							.filter((link) => !link.adminOnly || userRole === 'admi')
 							.map(renderDrawerItem)}
 						<ListItem button onClick={logout}>
-							<ListItemIcon>
-								<LogoutIcon />
-							</ListItemIcon>
+							<ListItemIcon><LogoutIcon /></ListItemIcon>
 							<ListItemText primary="Cerrar sesión" />
 						</ListItem>
 					</List>
 				</Box>
 			</Drawer>
 
-			{/* Menú de notificaciones */}
 			<Menu
 				anchorEl={notifAnchor}
 				open={Boolean(notifAnchor)}
@@ -257,17 +273,13 @@ const Header: React.FC<HeaderProps> = ({
 				<Notifications />
 			</Menu>
 
-			{/* Menú de usuario */}
 			<Menu anchorEl={userAnchor} open={Boolean(userAnchor)} onClose={() => setUserAnchor(null)}>
-				{/* Si quieres, aquí también puedes poner “Perfil”: si no hay permiso, lo muestras opaco */}
-				{/* <MenuItem .../> */}
 				<MenuItem onClick={logout}>
 					<LogoutIcon fontSize="small" sx={{ mr: 1 }} />
 					Cerrar sesión
 				</MenuItem>
 			</Menu>
 
-			{/* Aviso al intentar entrar a un módulo bloqueado */}
 			<Snackbar
 				open={!!deniedMsg}
 				autoHideDuration={3500}

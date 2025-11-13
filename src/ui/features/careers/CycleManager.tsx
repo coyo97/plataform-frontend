@@ -6,6 +6,7 @@ import {
 	Container, Title, Button, Input, Select, Option,
 	List, Item, ActionButton
 } from './careerManagerStyles';
+import Text from '../../shared/atoms/typography/Text';
 
 interface Cycle { _id:string; type:'semester'|'trimester'|'year'; year:number; number?:number }
 
@@ -39,7 +40,7 @@ const CycleManager:React.FC=()=>{
 
 	return(
 		<Container>
-			<Title>Ciclos académicos</Title>
+			<Text align='center' headingLevel='h3'>Ciclos académicos</Text>
 
 			<Select value={type} onChange={e=>setType(e.target.value as any)}>
 				<Option value="year">Anual</Option>

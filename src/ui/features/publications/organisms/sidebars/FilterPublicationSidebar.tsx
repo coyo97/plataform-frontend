@@ -35,7 +35,7 @@ const FilterPublicationSidebar: React.FC<Props> = ({
 		//header={<SectionTitle>Filtrar publicaciones</SectionTitle>}
 		open={open}
 		onClose={onClose}
-		variant="primary"
+		variant="flat"
 	>
 		<SmartBox column style={{ gap: '12px' }}>
 			{/* ── Filtrado por carrera ─────────────────────────── */}
@@ -47,7 +47,7 @@ const FilterPublicationSidebar: React.FC<Props> = ({
 					setCareer(id);
 					setFilter('career');
 				}}
-				dropdownMode="inline" // ✅ aquí es donde se usa, no en Sidebar
+				dropdownMode="inline" 
 				// Opcionales
 				// Deshabilita label porque ya lo da el Accordion
 			/>

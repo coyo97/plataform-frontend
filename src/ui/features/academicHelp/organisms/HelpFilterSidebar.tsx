@@ -57,9 +57,8 @@ const HelpFilterSidebar: React.FC<Props> = ({
 		fetchSubjects(local.careerId).then(r => setSub(r.subjects));
 	}, [local?.careerId]);
 
-	/* ---------- UI ---------- */
 	return (
-		<Sidebar open={open} onClose={onClose} width={260} sticky variant="flat">
+		<Sidebar open={open} onClose={onClose} width={180} sticky variant="flat">
 			<SmartBox column gap="px12" p="px8">
 				{/* FACULTAD */}
 				<SearchSelect

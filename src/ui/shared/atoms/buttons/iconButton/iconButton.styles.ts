@@ -35,7 +35,7 @@ export const StyledIconButton = styled(IconButton, { shouldForwardProp })<{
 		height: size,
 		borderRadius: radius,
 		color: palette.contrastText,
-		backgroundColor: palette.main,
+		backgroundColor: palette.contrastText,
 		'&:hover': {
 			backgroundColor: palette.dark,
 		},

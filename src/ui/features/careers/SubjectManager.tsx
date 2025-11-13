@@ -1,16 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { listSubjects, createSubject, updateSubject, deleteSubject } from '../../../async/services/subjectService';
-import { fetchCareers } from '../../../async/services/careerService'; // ya lo usas en otros managers
-import {
-	Container, Title, Button, Input, Select, Option,
-	List, Item, ActionButton
-} from '../careers/careerManagerStyles';
+import { fetchCareers } from '../../../async/services/careerService'; 
+import { Container, Title, Button, Input, Select, Option, List, Item, ActionButton } from '../careers/careerManagerStyles';
+import Text from '../../shared/atoms/typography/Text';
 
 type Career = { _id: string; name: string };
 type Subject = {
 	_id: string; name: string; code: string;
 	careerIds: string[]; level?: number; credits?: number;
-	isFundamental?: boolean; // opcional si existe en BE
+	isFundamental?: boolean; 
 };
 
 const SubjectManager: React.FC = () => {
@@ -19,7 +17,6 @@ const SubjectManager: React.FC = () => {
 	const [subjects, setSubjects] = useState<Subject[]>([]);
 	const [sel, setSel] = useState<Subject | null>(null);
 
-	// form
 	const [name, setName] = useState('');
 	const [code, setCode] = useState('');
 	const [careerIds, setCareerIds] = useState<string[]>([]);
@@ -28,7 +25,7 @@ const SubjectManager: React.FC = () => {
 	const [isFundamental, setIsFundamental] = useState<boolean>(false);
 
 const loadCareers = async () => {
-  const careers = await fetchCareers();   // ya devuelve un array
+  const careers = await fetchCareers();   
   setCareers(careers || []);
 };
 
@@ -82,7 +79,7 @@ const loadCareers = async () => {
 
 	return (
 		<Container>
-			<Title>Gestión de Materias</Title>
+			<Text align='center' headingLevel='h3'>Gestión de Materias</Text>
 
 			{/* Filtro por carrera (opcional) */}
 			<Select value={filterCareer} onChange={e => setFilterCareer(e.target.value)}>

@@ -103,7 +103,6 @@ const AdminSidebarMenu: React.FC<Props> = ({ open, onClose }) => {
 					width={230}
 					position="left"
 					sticky
-					header={<Text as="h2" size="md" weight="bold">Admin Panel</Text>}
 					footer={
 						<div style={{ textAlign: 'center', padding: '1rem 0' }}>
 							<img

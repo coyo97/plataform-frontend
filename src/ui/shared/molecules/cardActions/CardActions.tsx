@@ -50,7 +50,7 @@ const CardActions: React.FC<CardActionsProps> = ({
 		<ActionsWrapper role="group" aria-label="Acciones de la publicación">
 			{showLike && (
 				<>
-					<TooltipBubble title={liked ? 'Quitar Me gusta' : 'Me gusta'} placement="top" size="small" maxWidth={160}>
+					<TooltipBubble variant='dark' title={liked ? 'Quitar Me gusta' : 'Me gusta'} placement="top" size="small" maxWidth={160}>
 						<IconButton
 							ariaLabel={liked ? 'Quitar me gusta' : 'Dar me gusta'}
 							onClick={liked ? onUnlike : onLike}
@@ -93,7 +93,7 @@ const CardActions: React.FC<CardActionsProps> = ({
 			{showShare && (
 				<>
 
-					<TooltipBubble title="Compartir" placement="top" size="small" maxWidth={160}>
+					<TooltipBubble variant='light' title="Compartir" placement="top" size="small" maxWidth={160}>
 						<IconButton ariaLabel="Compartir" onClick={handleOpenShare}>
 							<ShareIcon />
 						</IconButton>

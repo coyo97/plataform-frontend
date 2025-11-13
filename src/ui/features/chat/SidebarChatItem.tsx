@@ -1,11 +1,7 @@
 // src/ui/components/chat/SidebarChatItem.tsx
 import React from 'react';
 import getEnvVariables from '../../../config/configEnvs';
-import {
-	ChatListItem,
-	ChatPeople,
-	ChatImage,
-	ChatInfo,
+import { ChatListItem, ChatPeople, ChatImage, ChatInfo,
 } from './sidebarChatItem.styles';
 
 interface User {

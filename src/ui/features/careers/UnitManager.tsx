@@ -6,6 +6,7 @@ import {
 	Container, Title, Button, Input, Select, Option,
 	List, Item, ActionButton
 } from '../careers/careerManagerStyles';
+import Text from '../../shared/atoms/typography/Text';
 
 /** Nota:
  *  Permitimos unidades solo para materias “fundamentales”.
@@ -74,7 +75,7 @@ const UnitManager: React.FC = () => {
 
 	return (
 		<Container>
-			<Title>Gestión de Unidades / Temas</Title>
+			<Text align='center' headingLevel='h3'>Gestión de Unidades / Temas</Text>
 
 			<Select value={careerId} onChange={e => setCareerId(e.target.value)}>
 				<Option value="">Selecciona carrera</Option>
