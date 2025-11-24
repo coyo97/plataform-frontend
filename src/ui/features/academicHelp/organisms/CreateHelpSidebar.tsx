@@ -9,6 +9,7 @@ import DialogContent from '@mui/material/DialogContent';
 import { fetchFaculties } from '../../../../async/services/careerService';
 import { AcademicHelp } from '../../../../types/academicHelp';
 import CreateHelpForm from './CreateHelpForm';
+import { getPermissionMessage } from '../../../shared/messages/permissionMessages';
 
 interface Props {
 	open: boolean;
@@ -23,11 +24,13 @@ interface Props {
 	editingOpen?: boolean;
 	onEditingClose?(): void;
 	onlyMine?: boolean;
+	  canCreate?: boolean;
+  onPermissionDenied?: (msg: string) => void;
 }
 
 const CreateHelpSidebar: React.FC<Props> = ({
 	open, onClose, onNew, onShowMyHelps, onShowAll,
-	editHelp, onUpdated, editingOpen, onEditingClose, onlyMine = false,
+	editHelp, onUpdated, editingOpen, onEditingClose, onlyMine = false,  canCreate = true, onPermissionDenied,
 }) => {
 	const [createOpen, setCreateOpen] = useState(false);
 
@@ -42,11 +45,18 @@ const CreateHelpSidebar: React.FC<Props> = ({
 			setCreateOpen(false);
 		}
 	};
+	  const handleCreateClick = () => {
+    if (!canCreate) {
+      onPermissionDenied?.(getPermissionMessage('createDenied'));
+      return;
+    }
+    setCreateOpen(true);
+  };
 
 	return (
 		<Sidebar sticky open={open} onClose={onClose} variant="primary">
 			<SmartBox column sx={{ gap: 1 }}>
-				<FilledButton colorType="warning" fullWidth onClick={() => setCreateOpen(true)}>
+				<FilledButton colorType="warning" fullWidth onClick={handleCreateClick}aria-disabled={!canCreate}disabled={!canCreate}sx={!canCreate ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}>
 					Pedir ayuda
 				</FilledButton>
 

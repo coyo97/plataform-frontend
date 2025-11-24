@@ -10,62 +10,131 @@ import { Box, Typography, LinearProgress, Button, Avatar } from '@mui/material';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import type { Career, Publication } from '../../../../../types/publication';
 
+import {
+	validatePublicationTitle,
+	validatePublicationBody,
+	validatePublicationTags,
+} from '../../../../shared/utils/validation/validators';
+
+import ModerationAlert from '../../../../shared/molecules/moderation/ModerationAlert';
+import { resolveErrorMessage } from '../../../../shared/utils/validation/moderationError';
+
 interface Props {
 	careers  : Career[];
 	onSubmit : (fd: FormData) => Promise<Publication>;
 	onCreated: (p: Publication) => void;
 
-	/** OPCIONALES: para modo edición (compatibles con el flujo actual) */
 	mode?: 'create' | 'edit';
 	publicationId?: string;
 	initial?: Partial<Publication>;
 	onUpdated?: (p: Publication) => void;
 }
 
+interface PublicationFormErrors {
+	title?: string;
+	content?: string;
+	tags?: string;
+	// careerId?: string; // la dejamos por si luego quieres volver a usarla
+	careerId?: string;
+}
+
 const CreatePublicationForm: React.FC<Props> = ({
-	careers, onSubmit, onCreated,
+	careers,
+	onSubmit,
+	onCreated,
 	mode = 'create',
 	publicationId,
 	initial,
 	onUpdated,
 }) => {
-	const [title, setTitle]     = useState('');
+	const [title, setTitle] = useState('');
 	const [content, setContent] = useState('');
-	const [tags, setTags]       = useState('');
-	const [file, setFile]       = useState<File | null>(null);
+	const [tags, setTags] = useState('');
+	const [file, setFile] = useState<File | null>(null);
 	const [careerId, setCareer] = useState('');
 
 	const [preview, setPreview] = useState<string>('');
 	const [uploading, setUploading] = useState(false);
 
-	/* Prefill cuando hay initial (modo edición) */
+	const [errorMsg, setErrorMsg] = useState<string | null>(null);
+	const [fieldErrors, setFieldErrors] = useState<PublicationFormErrors>({});
+
 	useEffect(() => {
 		if (!initial) return;
 		setTitle(initial.title ?? '');
 		setContent(initial.content ?? '');
 		setTags((initial.tags ?? []).join(', '));
-		// si tu modelo guarda careerId dentro de publication, úsalo:
 		const cId = (initial as any)?.careerId ?? '';
 		setCareer(typeof cId === 'string' ? cId : (cId?._id ?? ''));
 	}, [initial]);
 
-	/* preview del archivo */
 	useEffect(() => {
-		if (!file) { setPreview(''); return; }
+		if (!file) {
+			setPreview('');
+			return;
+		}
 		const url = URL.createObjectURL(file);
 		setPreview(url);
 		return () => URL.revokeObjectURL(url);
 	}, [file]);
 
+	// Handlers que limpian error al escribir
+	const handleTitleChange = (value: string) => {
+		setTitle(value);
+		setFieldErrors((prev) => ({ ...prev, title: undefined }));
+	};
+
+	const handleContentChange = (value: string) => {
+		setContent(value);
+		setFieldErrors((prev) => ({ ...prev, content: undefined }));
+	};
+
+	const handleTagsChange = (value: string) => {
+		setTags(value);
+		setFieldErrors((prev) => ({ ...prev, tags: undefined }));
+	};
+
+	const handleCareerChange = (value: string) => {
+		setCareer(value);
+		// por ahora no mostramos error de carrera
+		setFieldErrors((prev) => ({ ...prev, careerId: undefined }));
+	};
+
 	const handle = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (uploading) return;
+
+		setErrorMsg(null);
+
+		const errors: PublicationFormErrors = {
+			title: validatePublicationTitle(title),
+			content: validatePublicationBody(content),
+			tags: validatePublicationTags(tags),
+			// ya no obligamos a seleccionar carrera
+			// careerId: careerId ? undefined : 'Selecciona una carrera para esta publicación.',
+		};
+
+		const hasErrors = Object.values(errors).some((err) => !!err);
+
+		if (hasErrors) {
+			setFieldErrors(errors);
+			return;
+		}
 
 		const fd = new FormData();
 		fd.append('title', title);
 		fd.append('content', content);
 		if (file) fd.append('file', file);
-		fd.append('tags', JSON.stringify(tags.split(',').map(t => t.trim()).filter(Boolean)));
+		fd.append(
+			'tags',
+			JSON.stringify(
+				tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean)
+			)
+		);
+		// solo enviamos careerId si está seteado
 		if (careerId) fd.append('careerId', careerId);
 
 		try {
@@ -73,22 +142,30 @@ const CreatePublicationForm: React.FC<Props> = ({
 			const result = await onSubmit(fd);
 
 			if (mode === 'edit' && publicationId && onUpdated) {
-				// el onSubmit del sidebar ya decide create/update; aquí solo notificamos
 				onUpdated(result);
 			} else {
 				onCreated(result);
 			}
 
-			// reset SOLO si es creación; en edición cerramos desde el dialog padre
 			if (mode === 'create') {
 				setTitle('');
 				setContent('');
 				setTags('');
 				setFile(null);
 				setCareer('');
+				setFieldErrors({});
 			}
-		} catch (err) {
+		} catch (err: any) {
 			console.error('Error al enviar publicación:', err);
+
+			const userMsg = resolveErrorMessage(err, {
+				generic   : 'No se pudo publicar el material. Inténtalo nuevamente.',
+				moderation: 'El contenido fue bloqueado por moderación. Revisa que el título, el texto y el archivo (imagen/video) cumplan las políticas.',
+				fileType  : 'Tipo de archivo no permitido para publicaciones. Revisa las extensiones soportadas.',
+				fileSize  : 'El archivo que intentas subir es demasiado grande para las publicaciones.',
+			});
+
+			setErrorMsg(userMsg);
 		} finally {
 			setUploading(false);
 		}
@@ -96,40 +173,59 @@ const CreatePublicationForm: React.FC<Props> = ({
 
 	return (
 		<form onSubmit={handle}>
+			<ModerationAlert
+				message={errorMsg}
+				onClose={() => setErrorMsg(null)}
+			/>
+
 			<PublicationFormBody>
 				<MainInput
 					label="Título"
 					value={title}
-					onChange={setTitle}
+					onChange={handleTitleChange}
 					placeholder="Ej: Apuntes de cálculo diferencial"
-					error={title.length === 0 ? 'El título es requerido' : undefined}
+					error={fieldErrors.title}
 				/>
 
 				<MainInput
 					label="Contenido"
 					value={content}
-					onChange={setContent}
+					onChange={handleContentChange}
 					placeholder="Describe brevemente el contenido del material…"
 					multiline
 					rows={4}
-					error={content.length === 0 ? 'El contenido no puede estar vacío' : undefined}
+					error={fieldErrors.content}
 				/>
 
 				<MainInput
 					label="Etiquetas"
 					value={tags}
-					onChange={setTags}
+					onChange={handleTagsChange}
 					placeholder="Ej: física, integración, ejercicios"
-					hint="Separar por comas"
+					hint="Separar por comas (1 a 5 etiquetas)"
+					error={fieldErrors.tags}
 				/>
 
-				<FileButton onChange={e => e.target.files && setFile(e.target.files[0])} />
+				<FileButton
+					onChange={(e) => e.target.files && setFile(e.target.files[0])}
+				/>
 
 				{preview && file && (
 					file.type.startsWith('image/') ? (
-						<Avatar variant="rounded" src={preview} sx={{ width: 80, height: 80, mb: 1 }} />
+						<Avatar
+							variant="rounded"
+							src={preview}
+							sx={{ width: 80, height: 80, mb: 1 }}
+						/>
 					) : (
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+						<Box
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 1,
+								mb: 1,
+							}}
+						>
 							<InsertDriveFileIcon color="action" />
 							<Typography>{file.name}</Typography>
 						</Box>
@@ -147,23 +243,36 @@ const CreatePublicationForm: React.FC<Props> = ({
 					label="Carrera"
 					careers={careers}
 					value={careerId}
-					onChange={setCareer}
-					required
+					onChange={handleCareerChange}
+					// required  // ❌ por ahora no obligatorio
 				/>
 			</PublicationFormBody>
 
 			<PublicationFormActions>
-				<FilledButton variant="ghost" colorType="secondary" type="reset" disabled={uploading}>
+				{/*			<FilledButton
+					variant="ghost"
+					colorType="secondary"
+					type="reset"
+					disabled={uploading}
+				>
 					Cancelar
 				</FilledButton>
+				  */
+				}
 				<Button />
 				<FilledButton
 					variant="solid"
 					colorType="primary"
 					type="submit"
-					disabled={uploading || !title || !content}
+					disabled={uploading}
 				>
-					{mode === 'edit' ? (uploading ? 'Guardando…' : 'Guardar cambios') : (uploading ? 'Verificando…' : 'Publicar')}
+					{mode === 'edit'
+						? uploading
+							? 'Guardando…'
+							: 'Guardar cambios'
+						: uploading
+							? 'Verificando…'
+							: 'Publicar'}
 				</FilledButton>
 			</PublicationFormActions>
 		</form>

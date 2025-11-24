@@ -14,9 +14,7 @@ type HelpQuery = {
 	subjectId?  : string;
 	requestType?: 'concept_question' | 'need_notes' | 'need_exam' | 'need_assignment';
 	status?     : 'open' | 'resolved';
-	/** Front-only: si pones 'me', el hook llamará a fetchMyHelpRequests() */
 	owner?      : 'me' | 'all';
-	/** Front-only: búsqueda por autor por nombre (legacy) */
 	author?     : string;
 };
 
@@ -56,31 +54,43 @@ export const updateMyHelp = async (id: string, fd: FormData) => {
 	const { help } = await put<{ help: AcademicHelp }>(url(R.HELP_UPDATE(id)), fd, true);
 	return help; // <- devuelve AcademicHelp directo
 };
-/** Eliminar (SOLO autor) */
 export const deleteMyHelp = (id: string) =>
 	del<{ message: string }>(url(R.HELP_DELETE(id)));
 
-	/** Resolver (SOLO autor) */
-	export const resolveHelp = (id: string) =>
-		put<{ message: string; help: AcademicHelp }>(url(R.HELP_RESOLVE(id)), {});
+export const resolveHelp = (id: string) =>
+	put<{ message: string; help: AcademicHelp }>(url(R.HELP_RESOLVE(id)), {});
 
-		/* ---- Hilo foro ---- */
-		export const fetchThread = (helpId: string) =>
-			get<{ thread: HelpThread }>(url(R.THREAD(helpId)));
+export const fetchThread = (helpId: string) =>
+	get<{ thread: HelpThread }>(url(R.THREAD(helpId)));
 
-		export const postMessage = async (helpId: string, payload: { content: string; file?: File }) => {
-			if (payload.file) {
-				const fd = new FormData();
-				fd.append('content', payload.content);
-				fd.append('file', payload.file);
-				return post(url(R.THREAD(helpId)), fd, true);
-			}
-			return post(url(R.THREAD(helpId)), { content: payload.content });
-		};
+export const postMessage = async (helpId: string, payload: { content: string; file?: File }) => {
+	if (payload.file) {
+		const fd = new FormData();
+		fd.append('content', payload.content);
+		fd.append('file', payload.file);
+		return post(url(R.THREAD(helpId)), fd, true);
+	}
+	return post(url(R.THREAD(helpId)), { content: payload.content });
+};
 
-		export const voteMessage = (threadId: string, msgId: string) =>
-			put(url(R.THREAD_VOTE(threadId, msgId)), {});
+export const voteMessage = (threadId: string, msgId: string) =>
+	put(url(R.THREAD_VOTE(threadId, msgId)), {});
 
-		export const markSolution = (threadId: string, msgId: string) =>
-			put(url(R.THREAD_SOLVE(threadId, msgId)), {});
+export const markSolution = (threadId: string, msgId: string) =>
+	put(url(R.THREAD_SOLVE(threadId, msgId)), {});
+
+export const updateMessage = async (
+	helpId: string,
+	msgId: string,
+	fd: FormData
+) => {
+	return put(url(R.THREAD_UPDATE(helpId, msgId)), fd, true);
+};
+
+export const deleteMessage = async (
+	helpId: string,
+	msgId: string
+) => {
+	return del(url(R.THREAD_DELETE(helpId, msgId)));
+};
 

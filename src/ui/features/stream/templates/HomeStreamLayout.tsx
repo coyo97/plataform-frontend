@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+// src/ui/features/stream/templates/HomeStreamLayout.tsx
+import React, { useState, useEffect } from 'react';
 import {
 	useTheme,
 	useMediaQuery,
 	Box,
-	Tabs, Tab,
-	Fab, Drawer
+	Tabs,
+	Tab,
+	Fab,
+	Drawer,
+	Snackbar,
+	Alert,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+
 import SectionTitle from '../../../shared/atoms/titles/SectionTitle';
 import StreamCreateForm from '../organisms/StreamCreateForm';
 import StreamList from '../organisms/StreamList';
@@ -18,6 +24,13 @@ import { navLinks } from '../../../../config/navLinks';
 import Logo from '../../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
 import SearchOverlay from '../../../shared/organisms/SearchOverlay/SearchOverlay';
 import { userHasAdminRole } from '../../../../utils/auth/getUserId';
+import type { GridVariant } from '../../../shared/atoms/grid/grid.types';
+import { getMyPermissions } from '../../../../async/services/permissionService';
+import { getPermissionMessage } from '../../../shared/messages/permissionMessages';
+import StreamCreateSidebar from '../organisms/sidebars/StreamCreateSidebar';
+
+import ChatDisclosure from './ChatDisclosure';
+import ChatPanel from './ChatPanel';
 
 type StreamTab = 'live' | 'scheduled' | 'ended' | 'mine';
 
@@ -42,12 +55,16 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 
 	const hasChild = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
 	const containerVariant = hasChild ? 'desktopFluid' : 'desktopFixed';
+	const gridVariant: GridVariant = isMobile ? 'mobile' : containerVariant;
+
 	const [tab, setTab] = useState<StreamTab>('live');
+
 	const listTypeFor = (t: StreamTab): 'live' | 'ended' | 'all' => {
 		if (t === 'live') return 'live';
 		if (t === 'ended') return 'ended';
 		return 'all';
 	};
+
 	const filtersFor = (t: StreamTab) => ({
 		scheduled: t === 'scheduled' || undefined,
 		mine: t === 'mine' || undefined,
@@ -60,8 +77,40 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 		setActiveStream(stream ?? null);
 		setSelectedStreamId(id);
 		setAccessCode(access);
-		onStreamCreated?.(id, access, stream); // por si el padre navega al detalle
+		onStreamCreated?.(id, access, stream);
 	};
+
+	const [serverPerms, setServerPerms] = useState<string[] | null>(null);
+	const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
+	const [permMsg, setPermMsg] = useState<string | null>(null);
+
+	useEffect(() => {
+		let alive = true;
+		(async () => {
+			try {
+				const perms = await getMyPermissions();
+				if (alive) setServerPerms(perms);
+			} catch {
+				if (alive) setServerPerms([]);
+			} finally {
+				if (alive) setLoadingPerms(false);
+			}
+		})();
+		return () => { alive = false; };
+	}, []);
+
+	const canCreateStream =
+		!loadingPerms &&
+		(!!serverPerms?.includes('stream:create') ||
+		 !!serverPerms?.includes('streams:create'));
+
+	const [chatOpen, setChatOpen] = useState(false);
+
+	const currentStreamId =
+		selectedStreamId || (activeStream as any)?._id || null;
+
+	const currentViewers =
+		((activeStream as any)?.viewers as { _id: string; username: string }[]) || [];
 
 	return (
 		<>
@@ -74,29 +123,43 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 				onNotificationsClick={() => console.log('Abrir notificaciones')}
 				onAvatarClick={() => console.log('Abrir menú usuario')}
 				SearchComponent={
-					<SearchOverlay onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)} />
+					<SearchOverlay
+						onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)}
+					/>
 				}
 			/>
 
-			{/* FAB móvil para abrir el formulario como Drawer */}
-			{isMobile && (
+			{isMobile && !hasChild && (
 				<Fab
 					aria-label="Crear stream"
-					onClick={() => setOpenDrawer(true)}
+					onClick={() => {
+						if (!canCreateStream) {
+							setPermMsg(getPermissionMessage('createDenied'));
+							return;
+						}
+						setOpenDrawer(true);
+					}}
 					sx={{
 						position: 'fixed',
 						right: 16,
 						bottom: 16,
 						zIndex: (t) => t.zIndex.modal + 1,
 						boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+						...(!canCreateStream
+							? {
+								opacity: 0.55,
+								cursor: 'not-allowed',
+								pointerEvents: 'auto',
+							}
+							: {}),
 					}}
 					color="primary"
+					aria-disabled={!canCreateStream}
 				>
 					<MenuIcon />
 				</Fab>
 			)}
 
-			{/* Drawer con formulario en móvil */}
 			<Drawer
 				anchor="bottom"
 				open={isMobile && openDrawer}
@@ -107,7 +170,7 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 						borderTopRightRadius: 16,
 						maxHeight: '85dvh',
 						p: 2,
-				},
+					},
 				}}
 				keepMounted
 			>
@@ -116,41 +179,31 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 					<StreamCreateForm
 						onStreamCreated={(id, access, stream) => {
 							setOpenDrawer(false);
-							handleStreamCreated(id, access, stream); // usa el handler local + propaga
+							handleStreamCreated(id, access, stream);
 						}}
+						canCreate={canCreateStream}
+						onPermissionDenied={(msg) => setPermMsg(msg)}
 					/>
 				</Box>
 			</Drawer>
+
 			<GridContainer
-				variant={containerVariant}
+				variant={gridVariant}
 				style={{ paddingTop: 'calc(var(--header-h) + 12px)' }}
 				columns={{ xxs: 4, sm: 6, md: 12 }}
 			>
-				{/* Columna izquierda: Form (solo desktop y cuando NO hay detalle) */}
+				{/* Columna izquierda: Sidebar solo desktop y NO detalle */}
 				{!isMobile && !hasChild && (
 					<GridColumn span={{ xxs: 12, md: 5, lg: 5, xl: 5 }}>
-						<Box
-							sx={{
-								position: 'sticky',
-								top: 'calc(var(--header-h) + 20px)',
-								alignSelf: 'start',
-								maxHeight: 'calc(100dvh - var(--header-h) - 32px)',
-								overflow: 'auto',
-								contain: 'layout paint',
-								width: '100%',
-								scrollbarWidth: 'none',
-								'&::-webkit-scrollbar': { display: 'none' },
+						<StreamCreateSidebar
+							open
+							onClose={() => {}}
+							canCreate={canCreateStream}
+							onStreamCreated={(id, access, stream) => {
+								handleStreamCreated(id, access, stream);
 							}}
-						>
-							<SectionTitle>Crear nuevo stream</SectionTitle>
-							<Box sx={{ mt: 2 }}>
-								<StreamCreateForm
-									onStreamCreated={(id, access, stream) => {
-										handleStreamCreated(id, access, stream);
-									}}
-								/>
-							</Box>
-						</Box>
+							onPermissionDenied={(msg) => setPermMsg(msg)}
+						/>
 					</GridColumn>
 				)}
 
@@ -158,12 +211,27 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 				<GridColumn
 					span={
 						hasChild
-							? { xxs: 12, md: 12, lg: 12, xl: 12 } 
-							: { xxs: 12, md: 7,  lg: 7,  xl: 7 }  // layout de lista normal
+							? { xxs: 12, md: 12, lg: 12, xl: 12 }
+							: { xxs: 12, md: 7, lg: 7, xl: 7 }
 					}
 				>
 					{hasChild ? (
-						children
+						<>
+							{children}
+
+							{currentStreamId && (
+								<ChatDisclosure
+									open={chatOpen}
+									onOpen={() => setChatOpen(true)}
+									onClose={() => setChatOpen(false)}
+								>
+									<ChatPanel
+										streamId={currentStreamId}
+										viewers={currentViewers}
+									/>
+								</ChatDisclosure>
+							)}
+						</>
 					) : (
 						<>
 							<Box sx={{ mb: 2 }}>
@@ -185,13 +253,35 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 								key={tab}
 								type={listTypeFor(tab)}
 								filters={filtersFor(tab)}
-								onSelect={onStreamSelected}
+								onSelect={(s) => {
+									onStreamSelected(s);
+
+									setActiveStream(s);
+									setSelectedStreamId((s as any)?._id || null);
+									setAccessCode((s as any)?.accessCode);
+								}}
 							/>
 						</>
 					)}
 				</GridColumn>
 			</GridContainer>
 
+			{/* Snackbar de permisos */}
+			<Snackbar
+				open={!!permMsg}
+				autoHideDuration={4000}
+				onClose={() => setPermMsg(null)}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+			>
+				<Alert
+					severity="warning"
+					variant="filled"
+					onClose={() => setPermMsg(null)}
+					sx={{ width: '100%' }}
+				>
+					{permMsg}
+				</Alert>
+			</Snackbar>
 		</>
 	);
 };

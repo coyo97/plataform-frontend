@@ -25,6 +25,7 @@ import SearchOverlay from '../../shared/organisms/SearchOverlay/SearchOverlay';
 import Logo from '../../../assets/images/Escudo_Universidad_Autónoma_Tomás_Frías.png';
 import { navLinks } from '../../../config/navLinks';
 import { userHasAdminRole } from '../../../utils/auth/getUserId';
+import { getMyPermissions } from '../../../async/services/permissionService';
 
 const HomeAcademicHelp = () => {
 	const { helps, setHelps, loading, setFilters, filters } = useHelpFeed();
@@ -42,7 +43,50 @@ const HomeAcademicHelp = () => {
 
 	const [sp] = useSearchParams();
 	const [editing, setEditing] = useState<AcademicHelp | null>(null);
-const onlyMine = (filters as any)?.owner === 'me';
+	const onlyMine = (filters as any)?.owner === 'me';
+
+	const [permMsg, setPermMsg] = useState<string | null>(null);
+	  const [serverPerms, setServerPerms] = useState<string[] | null>(null);
+  const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
+
+   useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const perms = await getMyPermissions();
+        if (alive) setServerPerms(perms);
+      } catch {
+        if (alive) setServerPerms([]);
+      } finally {
+        if (alive) setLoadingPerms(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const canCreateHelp =
+    !loadingPerms &&
+    !!(
+      serverPerms?.includes('academic-help:create') ||
+      serverPerms?.includes('academic-helps:create')
+    );
+
+  const canEditHelp =
+    !loadingPerms &&
+    !!(
+      serverPerms?.includes('academic-help:update') ||
+      serverPerms?.includes('academic-helps:update')
+    );
+
+  const canDeleteHelp =
+    !loadingPerms &&
+    !!(
+      serverPerms?.includes('academic-help:delete') ||
+      serverPerms?.includes('academic-helps:delete')
+    );
+
 	useEffect(() => {
 		const careerId  = sp.get('careerId')  || '';
 		const subjectId = sp.get('subjectId') || '';
@@ -107,150 +151,167 @@ const onlyMine = (filters as any)?.owner === 'me';
 
 
 	return (
-<>
-  <Header
-    logoSrc={Logo}
-    variant="gradient"
-    navLinks={visibleLinks}
-    userRole={hasAdmin ? 'admi' : 'student'}
-    onLogout={() => console.log('Logout')}
-    onNotificationsClick={() => console.log('Abrir notificaciones')}
-    onAvatarClick={() => console.log('Abrir menú usuario')}
-    SearchComponent={
-      <SearchOverlay
-        onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)}
-      />
-    }
-  />
+		<>
+			<Header
+				logoSrc={Logo}
+				variant="gradient"
+				navLinks={visibleLinks}
+				userRole={hasAdmin ? 'admi' : 'student'}
+				onLogout={() => console.log('Logout')}
+				onNotificationsClick={() => console.log('Abrir notificaciones')}
+				onAvatarClick={() => console.log('Abrir menú usuario')}
+				SearchComponent={
+					<SearchOverlay
+						onSearch={(q, cat) => console.log(`Buscar "${q}" en categoría "${cat}"`)}
+					/>
+				}
+			/>
 
-  <GridContainer
-    variant="desktopFluid"
-    style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}
-    columns={{ xs: 4, sm: 8, md: 12 }}
-  >
-    {/* ① CREATE – LEFT SIDEBAR */}
-    {isMobile ? (
-      <>
-        <Fab
-          color="secondary"
-          sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
-          onClick={() => setCreateOpen(true)}
-        >
-          <AddIcon />
-        </Fab>
+			<GridContainer
+				variant="desktopFluid"
+				style={{ paddingTop: 'calc(var(--header-h) + 4px)' }}
+				columns={{ xs: 4, sm: 8, md: 12 }}
+			>
+				{/* ① CREATE – LEFT SIDEBAR */}
+				{isMobile ? (
+					<>
+						<Fab
+							color="secondary"
+							sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
+							onClick={() => setCreateOpen(true)}
+						>
+							<AddIcon />
+						</Fab>
 
-        <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
-          <CreateHelpSidebar
-            open={true}
-            onClose={() => setCreateOpen(false)}
-            onNew={handleNew}
-            onShowMyHelps={showMyHelps}
-            onShowAll={showAllHelps}
-            editHelp={editing}
-            editingOpen={!!editing}
-            onEditingClose={() => setEditing(null)}
-            onUpdated={onUpdated}
-            onlyMine={onlyMine}
-          />
-        </Dialog>
-      </>
-    ) : (
-      <GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
-        <CreateHelpSidebar
-          open={createOpen}
-          onClose={() => setCreateOpen(false)}
-          onNew={handleNew}
-          onShowMyHelps={showMyHelps}
-          onShowAll={showAllHelps}
-          editHelp={editing}
-          editingOpen={!!editing}
-          onEditingClose={() => setEditing(null)}
-          onUpdated={onUpdated}
-          onlyMine={onlyMine}
-        />
-      </GridColumn>
-    )}
+						<Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
+							<CreateHelpSidebar
+								open={true}
+								onClose={() => setCreateOpen(false)}
+								onNew={handleNew}
+								onShowMyHelps={showMyHelps}
+								onShowAll={showAllHelps}
+								editHelp={editing}
+								editingOpen={!!editing}
+								onEditingClose={() => setEditing(null)}
+								onUpdated={onUpdated}
+								onlyMine={onlyMine}
+								                canCreate={canCreateHelp}
+                onPermissionDenied={(msg) => setPermMsg(msg)}
+							/>
+						</Dialog>
+					</>
+				) : (
+					<GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
+						<CreateHelpSidebar
+							open={createOpen}
+							onClose={() => setCreateOpen(false)}
+							onNew={handleNew}
+							onShowMyHelps={showMyHelps}
+							onShowAll={showAllHelps}
+							editHelp={editing}
+							editingOpen={!!editing}
+							onEditingClose={() => setEditing(null)}
+							onUpdated={onUpdated}
+							onlyMine={onlyMine}
+							                canCreate={canCreateHelp}
+                onPermissionDenied={(msg) => setPermMsg(msg)}
+						/>
+					</GridColumn>
+				)}
 
-    {/* ② FEED (siempre) */}
-    <GridColumn span={{ xs: 4, sm: 4, md: 6 }}>
-      {loading ? (
-        <Loader />
-      ) : (
-        <HelpFeed
-          list={helps}
-          onDeleted={onDeleted}
-          onEditRequested={onEditRequested}
-        />
-      )}
-    </GridColumn>
+				{/* ② FEED (siempre) */}
+				<GridColumn span={{ xs: 4, sm: 4, md: 6 }}>
+					{loading ? (
+						<Loader />
+					) : (
+						<HelpFeed
+							list={helps}
+							onDeleted={onDeleted}
+							onEditRequested={onEditRequested}
+							             canEdit={canEditHelp}
+              canDelete={canDeleteHelp}
+              onPermissionDenied={(msg) => setPermMsg(msg)}
+						/>
+					)}
+				</GridColumn>
 
-    {/* ③ FILTER – RIGHT SIDEBAR */}
-    {isMobile ? (
-      <>
-        <Button
-          variant="outlined"
-          startIcon={<FilterListIcon />}
-          onClick={() => setFilterOpen(true)}
-          sx={{ position: 'fixed', top: 72, right: 16, zIndex: 1100 }}
-        >
-          Filtros
-        </Button>
+				{/* ③ FILTER – RIGHT SIDEBAR */}
+				{isMobile ? (
+					<>
+						<Button
+							variant="outlined"
+							startIcon={<FilterListIcon />}
+							onClick={() => setFilterOpen(true)}
+							sx={{ position: 'fixed', top: 72, right: 16, zIndex: 1100 }}
+						>
+							Filtros
+						</Button>
 
-        <SwipeableDrawer
-          anchor="right"
-          open={filterOpen}
-          onClose={() => setFilterOpen(false)}
-          onOpen={() => {}}
-          PaperProps={{ sx: { width: '0%' } }} 
-        >
-          <HelpFilterSidebar
-            open
-            current={filters ?? {}}
-            onApply={(f) => {
-              setFilters(f);
-              writeFiltersToUrl(f as any);
-              setFilterOpen(false);
-            }}
-            onClear={() => {
-              setFilters({});
-              writeFiltersToUrl({});
-            }}
-            onClose={() => setFilterOpen(false)}
-          />
-        </SwipeableDrawer>
-      </>
-    ) : (
-      <GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
-        <HelpFilterSidebar
-          open={filterOpen}
-          current={filters ?? {}}
-          onApply={(f) => {
-            setFilters(f);
-            writeFiltersToUrl(f as any);
-            setFilterOpen(false);
-          }}
-          onClear={() => {
-            setFilters({});
-            writeFiltersToUrl({});
-          }}
-          onClose={() => setFilterOpen(false)}
-        />
-      </GridColumn>
-    )}
-  </GridContainer>
+						<SwipeableDrawer
+							anchor="right"
+							open={filterOpen}
+							onClose={() => setFilterOpen(false)}
+							onOpen={() => {}}
+							PaperProps={{ sx: { width: '0%' } }} 
+						>
+							<HelpFilterSidebar
+								open
+								current={filters ?? {}}
+								onApply={(f) => {
+									setFilters(f);
+									writeFiltersToUrl(f as any);
+									setFilterOpen(false);
+								}}
+								onClear={() => {
+									setFilters({});
+									writeFiltersToUrl({});
+								}}
+								onClose={() => setFilterOpen(false)}
+							/>
+						</SwipeableDrawer>
+					</>
+				) : (
+					<GridColumn span={{ sm: 2, md: 3 }} self={'center'}>
+						<HelpFilterSidebar
+							open={filterOpen}
+							current={filters ?? {}}
+							onApply={(f) => {
+								setFilters(f);
+								writeFiltersToUrl(f as any);
+								setFilterOpen(false);
+							}}
+							onClear={() => {
+								setFilters({});
+								writeFiltersToUrl({});
+							}}
+							onClose={() => setFilterOpen(false)}
+						/>
+					</GridColumn>
+				)}
+			</GridContainer>
 
-  {/* Snackbar de confirmación */}
-  <Snackbar
-    open={snack}
-    autoHideDuration={3000}
-    onClose={() => setSnack(false)}
-    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-  >
-    <Alert severity="success" variant="filled">
-      ¡Ayuda publicada con éxito!
-    </Alert>
-  </Snackbar>
-</>
+			{/* Snackbar de confirmación */}
+			<Snackbar
+				open={snack}
+				autoHideDuration={3000}
+				onClose={() => setSnack(false)}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+			>
+				<Alert severity="success" variant="filled">
+					¡Ayuda publicada con éxito!
+				</Alert>
+			</Snackbar>
+			      <Snackbar
+        open={!!permMsg}
+        autoHideDuration={4000}
+        onClose={() => setPermMsg(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="warning" variant="filled" onClose={() => setPermMsg(null)}>
+          {permMsg}
+        </Alert>
+      </Snackbar>
+		</>
 
 	);
 

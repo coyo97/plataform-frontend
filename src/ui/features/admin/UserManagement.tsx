@@ -189,7 +189,6 @@ const UserManagement: React.FC = () => {
 		setFilteredUsers(filtered);
 	}, [list, searchQuery, selectedStatus, selectedFaculty, selectedCareerIds, careers]);
 
-	// ===== Handlers (misma lógica) =====
 	const handleDeactivate = useCallback(async (userId: string) => {
 		if (!window.confirm('¿Desactivar este usuario?')) return;
 		try {

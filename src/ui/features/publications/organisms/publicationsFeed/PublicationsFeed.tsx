@@ -17,14 +17,16 @@ interface Props{
 	onSearch   : (q:string)=>void;
 	onTagClick?: (tag:string)=>void;
 
-	// ⬇ NUEVO
 	onEditRequested?: (p: Publication) => void;
 	onDeleted?: (p: Publication) => void;
+	  canEditPublication?: boolean;
+  canDeletePublication?: boolean;
 }
 
 const PublicationsFeed:React.FC<Props>=({
 	HOST,list,lastRef,renderFile,onLike,onUnlike,onAuthor,onReport,onSearch,onTagClick,
-	onEditRequested, onDeleted,
+	onEditRequested, onDeleted,   canEditPublication,
+  canDeletePublication,
 })=>(
 	<FeedWrapper>
 		<div style={{ position: 'sticky', top: 0, background: 'white' }}>
@@ -44,6 +46,8 @@ const PublicationsFeed:React.FC<Props>=({
 					onTagClick={onTagClick}
 					onEdit={onEditRequested}
 					onDelete={onDeleted}
+					      canEditPublication={canEditPublication}
+          canDeletePublication={canDeletePublication}
 				/>
 			</div>
 		))}

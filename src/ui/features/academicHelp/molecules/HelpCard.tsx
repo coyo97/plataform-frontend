@@ -1,11 +1,13 @@
 import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
 	Dialog,
 	DialogTitle,
 	DialogContent,
 	DialogActions,
 	Button,
+	Chip as MuiChip,
+	Paper,
 } from '@mui/material';
 
 import IconButton from '@mui/material/IconButton';
@@ -20,36 +22,51 @@ import Loader from '../../../shared/atoms/feedback/loader/Loader';
 import HelpMessageCard from './HelpMessageCard';
 import HelpResponseForm from '../organisms/HelpResponseForm';
 import RenderFile from '../../../shared/organisms/renderFile/RenderFile';
-import { useSearchParams } from 'react-router-dom';
 
 import {
 	fetchThread,
 	postMessage,
 	voteMessage,
 	markSolution,
+	deleteMyHelp,
+	updateMessage,
+	deleteMessage,
 } from '../../../../async/services/academicHelpService';
-
-import { deleteMyHelp } from '../../../../async/services/academicHelpService';
 
 import type { AcademicHelp } from '../../../../types/academicHelp';
 import type { HelpThread } from '../../../../types/helpThread';
 
 import getEnvVariables from '../../../../config/configEnvs';
 import { getUserId } from '../../../../utils/auth/getUserId';
+import SmartBox from '../../../shared/atoms/box/SmartBox';
+import Text from '../../../shared/atoms/typography/Text';
+
 const { HOST } = getEnvVariables();
 
 type Props = {
 	help: AcademicHelp;
-	/** opcional: para que el padre remueva del feed sin recargar */
 	onDeleted?: (id: string) => void;
-	/** opcional: si prefieres manejar la edición arriba */
 	onEditRequested?: (help: AcademicHelp) => void;
+	canEdit?: boolean;
+	canDelete?: boolean;
+	onPermissionDenied?: (msg: string) => void;
 };
 
-const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
+const HelpCard: React.FC<Props> = ({
+	help,
+	onDeleted,
+	onEditRequested,
+	canEdit = true,
+	canDelete = true,
+	onPermissionDenied,
+}) => {
 	const [open, setOpen] = React.useState(false);
 	const [busy, setBusy] = React.useState(false);
 	const [thread, setThread] = React.useState<HelpThread | null>(null);
+
+	const [editingMsg, setEditingMsg] = React.useState<any | null>(null);
+	const [editContent, setEditContent] = React.useState('');
+	const [editFile, setEditFile] = React.useState<File | null>(null);
 
 	const uid = getUserId();
 	const isOwner = (help as any)?.user?._id === uid;
@@ -61,7 +78,6 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 		? `${HOST}/${help.user.profile.profilePicture}`
 		: undefined;
 
-		// -------- tags/contexto ----------
 		const tags: string[] = [];
 		const facName     = (help as any)?.facultyId?.name || (help as any)?.faculty;
 		const careerName  = (help as any)?.careerId?.name;
@@ -100,7 +116,10 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 			setOpen(true);
 		};
 
-		const handleClose = () => setOpen(false);
+		const handleClose = () => {
+			setOpen(false);
+			setEditingMsg(null);
+		};
 
 		const post = async (c: string, f?: File) => {
 			await postMessage(help._id as any, { content: c, file: f });
@@ -158,7 +177,6 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 			setSearchParams(next);
 		};
 
-		// ===== Menú ⋮ (More Actions) =====
 		const [menuOpen, setMenuOpen] = React.useState(false);
 		const openMenu  = () => setMenuOpen(true);
 		const closeMenu = () => setMenuOpen(false);
@@ -174,23 +192,50 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 			try {
 				await deleteMyHelp(help._id);
 				setConfirmOpen(false);
-				onDeleted?.(help._id);           // notifica al padre para remover del feed
+				onDeleted?.(help._id);
 			} catch (e) {
 				console.error(e);
 				setConfirmOpen(false);
-				// aquí podrías disparar un snackbar de error global si tienes
 			}
 		};
 
 		const handleEdit = () => {
 			closeMenu();
-
-			// para que abra el diálogo con los datos de esta ayuda
 			onEditRequested?.(help);
 		};
 
 		const handleSave = () => {
 			console.info('Guardar ayuda (TODO)');
+		};
+
+		const onEditMessage = (msg: any) => {
+			setEditingMsg(msg);
+			setEditContent(msg.content || '');
+			setEditFile(null);
+		};
+
+		const onDeleteMessageHandler = async (msg: any) => {
+			if (!window.confirm('¿Eliminar este mensaje?')) return;
+			await deleteMessage(help._id as any, msg._id);
+			await refresh();
+			setEditingMsg(null);
+		};
+
+		const onSaveEdit = async () => {
+			if (!editingMsg) return;
+
+			const fd = new FormData();
+			fd.append('content', editContent);
+
+			if (editFile) {
+				fd.append('file', editFile);
+			} else {
+				fd.append('removeAttachment', 'true');
+			}
+
+			await updateMessage(help._id as any, editingMsg._id, fd);
+			setEditingMsg(null);
+			await refresh();
 		};
 
 		return (
@@ -258,6 +303,9 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 									onReport={() => console.info('Reportar ayuda (TODO)')}
 									onSave={handleSave}
 									onClose={closeMenu}
+									canEdit={isOwner && canEdit}
+									canDelete={isOwner && canDelete}
+									onPermissionDenied={onPermissionDenied}
 								/>
 							)}
 						</>
@@ -269,28 +317,64 @@ const HelpCard: React.FC<Props> = ({ help, onDeleted, onEditRequested }) => {
 					<DialogTitle>Respuestas de la solicitud</DialogTitle>
 					<DialogContent dividers>
 						{busy && <Loader size="small" />}
-						{!busy &&
-							(thread && thread.messages.length ? (
-								thread.messages.map((m) => (
-									<HelpMessageCard
-										key={m._id}
-										message={m}
-										solved={thread.solvedMessage === m._id}
-										onVote={() => vote(thread._id, m._id)}
-										onSolve={() => solve(thread._id, m._id)}
-									/>
-								))
-						) : (
-							<p style={{ color: '#666' }}>Sin respuestas aún</p>
-						))}
-						{help.status === 'open' && <HelpResponseForm onSend={post} />}
+						{!busy && (
+							<>
+								{thread && thread.messages.length ? (
+									thread.messages.map((m) => (
+										<HelpMessageCard
+											key={m._id}
+											message={m}
+											solved={thread!.solvedMessage === m._id}
+											onVote={() => vote(thread!._id, m._id)}
+											onSolve={() => solve(thread!._id, m._id)}
+											onEdit={onEditMessage}
+											onDelete={onDeleteMessageHandler}
+										/>
+									))
+								) : (
+									<p style={{ color: '#666' }}>Sin respuestas aún</p>
+								)}
+
+								{editingMsg && (
+									<Paper elevation={1} sx={{ mt: 2, p: 2 }}>
+										<Text weight="bold" size="sm">
+											Editar respuesta
+										</Text>
+
+										<textarea
+											style={{
+												width: '100%',
+												marginTop: 8,
+												minHeight: 80,
+												resize: 'vertical',
+											}}
+											value={editContent}
+											onChange={(e) => setEditContent(e.target.value)}
+										/>
+
+										<input
+											type="file"
+											style={{ marginTop: 10 }}
+											onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+										/>
+
+										<SmartBox row gap="px4" mt="px4" justifyContent="flex-end">
+											<button onClick={() => setEditingMsg(null)}>Cancelar</button>
+											<button onClick={onSaveEdit}>Guardar cambios</button>
+										</SmartBox>
+									</Paper>
+								)}
+
+								{help.status === 'open' && <HelpResponseForm onSend={post} />}
+							</>
+						)}
 					</DialogContent>
 					<DialogActions>
 						<Button onClick={handleClose}>Cerrar</Button>
 					</DialogActions>
 				</Dialog>
 
-				{/* Confirmación eliminar */}
+				{/* Confirmación eliminar ayuda */}
 				<Dialog open={confirmOpen} onClose={cancelDelete} maxWidth="xs" fullWidth>
 					<DialogTitle>Eliminar ayuda</DialogTitle>
 					<DialogContent dividers>

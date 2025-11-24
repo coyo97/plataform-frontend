@@ -13,7 +13,6 @@ import {
 	NAME_REGEX,
 } from './rules';
 
-// Un error de campo es un string o undefined (sin error)
 export type FieldError = string | undefined;
 
 export type Validator<T> = (value: T) => FieldError;
@@ -21,56 +20,56 @@ export type Validator<T> = (value: T) => FieldError;
 export const combineValidators =
 	<T>(...validators: Validator<T>[]): Validator<T> =>
 	(value: T) => {
-		for (const v of validators) {
-			const error = v(value);
-			if (error) return error;
-		}
-		return undefined;
-	};
+	for (const v of validators) {
+		const error = v(value);
+		if (error) return error;
+	}
+	return undefined;
+};
 
 export const required =
 	(message: string = 'Este campo es obligatorio'): Validator<string> =>
 	(value) => {
-		if (value == null) return message;
-		if (String(value).trim() === '') return message;
-		return undefined;
-	};
+	if (value == null) return message;
+	if (String(value).trim() === '') return message;
+	return undefined;
+};
 
 export const minLength =
 	(min: number, message?: string): Validator<string> =>
 	(value) => {
-		if (!value) return undefined; // el required se maneja aparte
-		if (value.length < min) {
-			return message || `Debe tener al menos ${min} caracteres.`;
-		}
-		return undefined;
-	};
+	if (!value) return undefined; 
+	if (value.length < min) {
+		return message || `Debe tener al menos ${min} caracteres.`;
+	}
+	return undefined;
+};
 
 export const maxLength =
 	(max: number, message?: string): Validator<string> =>
 	(value) => {
-		if (!value) return undefined;
-		if (value.length > max) {
-			return message || `No debe superar los ${max} caracteres.`;
-		}
-		return undefined;
-	};
+	if (!value) return undefined;
+	if (value.length > max) {
+		return message || `No debe superar los ${max} caracteres.`;
+	}
+	return undefined;
+};
 
 export const matchesRegex =
 	(regex: RegExp, message: string): Validator<string> =>
 	(value) => {
-		if (!value) return undefined;
-		if (!regex.test(value)) return message;
-		return undefined;
-	};
+	if (!value) return undefined;
+	if (!regex.test(value)) return message;
+	return undefined;
+};
 
 export const notMatchesRegex =
 	(regex: RegExp, message: string): Validator<string> =>
 	(value) => {
-		if (!value) return undefined;
-		if (regex.test(value)) return message;
-		return undefined;
-	};
+	if (!value) return undefined;
+	if (regex.test(value)) return message;
+	return undefined;
+};
 
 export const validateUsername: Validator<string> = combineValidators(
 	required('El nombre de usuario es obligatorio.'),
@@ -128,12 +127,12 @@ export const validatePassword: Validator<string> = combineValidators(
 export const validatePasswordConfirm =
 	(password: string): Validator<string> =>
 	(confirmPassword) => {
-		if (!confirmPassword) return 'Confirma tu contraseña.';
-		if (password !== confirmPassword) {
-			return 'Las contraseñas no coinciden.';
-		}
-		return undefined;
-	};
+	if (!confirmPassword) return 'Confirma tu contraseña.';
+	if (password !== confirmPassword) {
+		return 'Las contraseñas no coinciden.';
+	}
+	return undefined;
+};
 
 type ValidatorMap<T> = {
 	[K in keyof T]?: Validator<T[K]>;
@@ -159,7 +158,6 @@ export function validateForm<T extends Record<string, any>>(
 	return { errors, isValid };
 }
 
-// ===== Validadores específicos para nombres ===== //
 
 export const createNameValidator = (label: string): Validator<string> =>
 	combineValidators(
@@ -180,24 +178,130 @@ export const createNameValidator = (label: string): Validator<string> =>
 			CONTROL_CHARS_REGEX,
 			`${label} contiene caracteres no válidos.`
 		)
-	);
+);
 
-// Para campos opcionales parecidos a nombre/colegio
 export const createOptionalNameLikeValidator =
 	(label: string, max: number = 100): Validator<string> =>
 	(value) => {
-		// ⬇⬇⬇ CAMBIO CLAVE: devolver undefined, no null
-		if (!value || !value.trim()) return undefined; // opcional
+	if (!value || !value.trim()) return undefined; // opcional
 
-		if (value.length < 2) {
-			return `${label} debe tener al menos 2 caracteres.`;
-		}
-		if (value.length > max) {
-			return `${label} no debe superar los ${max} caracteres.`;
-		}
-		if (CONTROL_CHARS_REGEX.test(value)) {
-			return `${label} contiene caracteres no válidos.`;
-		}
-		return undefined;
-	};
+	if (value.length < 2) {
+		return `${label} debe tener al menos 2 caracteres.`;
+	}
+	if (value.length > max) {
+		return `${label} no debe superar los ${max} caracteres.`;
+	}
+	if (CONTROL_CHARS_REGEX.test(value)) {
+		return `${label} contiene caracteres no válidos.`;
+	}
+	return undefined;
+};
 ;
+
+
+export const validatePublicationTitle: Validator<string> = combineValidators(
+	required('El título es obligatorio.'),
+	minLength(
+		8,
+		'El título debe tener al menos 8 caracteres. Intenta ser más descriptivo.'
+	),
+	maxLength(
+		100,
+		'El título no debe superar los 100 caracteres.'
+	),
+	notMatchesRegex(
+		CONTROL_CHARS_REGEX,
+		'El título contiene caracteres no válidos.'
+	)
+);
+
+export const validatePublicationBody: Validator<string> = combineValidators(
+	required('El contenido de la publicación es obligatorio.'),
+	minLength(
+		100,
+		'La descripción es muy corta. Agrega más detalle (mínimo ~800 caracteres).'
+	),
+	maxLength(
+		800,
+		'La descripción es demasiado larga. Intenta resumir el contenido.'
+	),
+	notMatchesRegex(
+		CONTROL_CHARS_REGEX,
+		'El contenido contiene caracteres no válidos.'
+	)
+);
+
+export const validatePublicationTags: Validator<string> = (value) => {
+	const raw = value || '';
+
+	const tags = raw
+	.split(',')
+	.map((t) => t.trim())
+	.filter(Boolean);
+
+	if (tags.length === 0) {
+		return 'Agrega al menos una etiqueta.';
+	}
+
+	if (tags.length > 5) {
+		return 'No puedes agregar más de 5 etiquetas.';
+	}
+
+	const TAG_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9\s_-]+$/;
+
+	for (const tag of tags) {
+		if (tag.length < 2) {
+			return 'Cada etiqueta debe tener al menos 2 caracteres.';
+		}
+		if (tag.length > 30) {
+			return 'Cada etiqueta no debe superar los 30 caracteres.';
+		}
+		if (CONTROL_CHARS_REGEX.test(tag) || !TAG_REGEX.test(tag)) {
+			return 'Las etiquetas solo pueden contener letras, números, espacios y guiones.';
+		}
+	}
+
+	const seen = new Set<string>();
+	for (const tag of tags) {
+		const key = tag.toLowerCase();
+		if (seen.has(key)) {
+			return 'No repitas etiquetas. Usa cada etiqueta solo una vez.';
+		}
+		seen.add(key);
+	}
+
+	return undefined;
+};
+
+export const validateHelpTitle: Validator<string> = combineValidators(
+	required('El título o tema es obligatorio.'),
+	minLength(
+		8,
+		'El título debe tener al menos 8 caracteres. Intenta ser más específico.'
+	),
+	maxLength(
+		100,
+		'El título no debe superar los 100 caracteres.'
+	),
+	notMatchesRegex(
+		CONTROL_CHARS_REGEX,
+		'El título contiene caracteres no válidos.'
+	)
+);
+
+export const validateHelpBody: Validator<string> = combineValidators(
+	required('Describe tu duda o lo que necesitas.'),
+	minLength(
+		100,
+		'La descripción es muy corta. Agrega más detalle para que otros puedan ayudarte (mínimo ~400 caracteres).'
+	),
+	maxLength(
+		800,
+		'La descripción es demasiado larga. Intenta resumir un poco tu problema.'
+	),
+	notMatchesRegex(
+		CONTROL_CHARS_REGEX,
+		'La descripción contiene caracteres no válidos.'
+	)
+);
+

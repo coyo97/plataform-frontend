@@ -9,10 +9,12 @@ export const HELP_RESOLVE      = (id: string) => `${BASE}/${id}/resolve`;   // P
 
 /* ---- Hilo “foro” ---- */
 export const THREAD           = (helpId: string) => `${BASE}/${helpId}/thread`;
-export const THREAD_VOTE      = (threadId: string, msgId: string) =>
-	`/thread/${threadId}/vote/${msgId}`;
-export const THREAD_SOLVE     = (threadId: string, msgId: string) =>
-	`/thread/${threadId}/solve/${msgId}`;
+export const THREAD_VOTE      = (threadId: string, msgId: string) => `/thread/${threadId}/vote/${msgId}`;
+export const THREAD_SOLVE     = (threadId: string, msgId: string) => `/thread/${threadId}/solve/${msgId}`;
+export const THREAD_UPDATE = (helpId: string, msgId: string) => `/academic-help/${helpId}/thread/${msgId}`;
+
+export const THREAD_DELETE = (helpId: string, msgId: string) => `/academic-help/${helpId}/thread/${msgId}`;
+
 
 
 /* NUEVOS catálogos */

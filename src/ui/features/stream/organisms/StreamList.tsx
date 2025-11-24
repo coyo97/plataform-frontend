@@ -1,4 +1,3 @@
-// src/ui/features/stream/organisms/StreamList.tsx
 import React from 'react';
 import GridContainer from '../../../shared/atoms/grid/GridContainer';
 import { useStreamsFeed } from '../hooks/useStreamsFeed';
@@ -14,14 +13,6 @@ export interface StreamListFilters {
 	currentUserId?: string;     // opcional
 }
 
-interface Props {
-	type?: StreamListType;
-	dense?: boolean;
-	onSelect?: (s: Stream) => void;
-	filters?: StreamListFilters; // NUEVO (opcional)
-}
-
-/** Helper runtime: intenta leer fecha de inicio desde distintas claves comunes */
 const getStartTimeMs = (s: Stream): number | null => {
 	const anyS = s as any;
 	const candidate =
@@ -35,6 +26,13 @@ const getStartTimeMs = (s: Stream): number | null => {
 	const ms = new Date(candidate as string).getTime();
 	return Number.isFinite(ms) ? ms : null;
 };
+
+interface Props {
+	type?: StreamListType;
+	dense?: boolean;
+	onSelect?: (s: Stream) => void;
+	filters?: StreamListFilters; // opcional
+}
 
 const StreamList: React.FC<Props> = ({
 	type = 'live',

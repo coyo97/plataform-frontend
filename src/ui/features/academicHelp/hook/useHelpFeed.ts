@@ -8,7 +8,6 @@ import { AcademicHelp } from '../../../../types/academicHelp';
 type RawFilters = Parameters<typeof fetchHelpRequests>[0];
 export type HelpFilters = NonNullable<RawFilters> & {
 	status?: 'open' | 'resolved';
-	/** 'me' para “Mis ayudas”, 'all' (o undefined) para todo */
 	owner?: 'me' | 'all';
 };
 
@@ -51,7 +50,6 @@ export const useHelpFeed = () => {
 		};
 	}, [filters]);
 
-	/** Forzar recarga con los mismos filtros */
 	const reload = () => setFilters({ ...filters });
 
 	return { helps, setHelps, loading, reload, setFilters, filters };

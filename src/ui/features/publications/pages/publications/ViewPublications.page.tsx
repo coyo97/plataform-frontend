@@ -31,9 +31,9 @@ import GridColumn from '../../../../shared/atoms/grid/GridColumn';
 import GridContainer from '../../../../shared/atoms/grid/GridContainer';
 import { Dialog as MuiDialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { getMyPermissions } from '../../../../../async/services/permissionService';
+
 type Filter = 'mostRecent' | 'mostLiked' | 'mostCommented' | 'career';
 
-// util simple para normalizar (opcional)
 const normalizeTag = (s: string) =>
 	s.normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
@@ -61,7 +61,6 @@ const normalizeTag = (s: string) =>
 		const [searchParams, setSearchParams] = useSearchParams();
 		const [onlyMine, setOnlyMine] = useState(false);
 
-			// ===== permisos desde el servidor =====
 		const [serverPerms, setServerPerms] = useState<string[] | null>(null);
 		const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
 
@@ -85,6 +84,15 @@ const normalizeTag = (s: string) =>
 			!loadingPerms &&
 			(!!serverPerms?.includes('publication:create') ||
 			 !!serverPerms?.includes('publications:create'));
+		const canEditPublication =
+			!loadingPerms &&
+			(!!serverPerms?.includes('publication:update') ||
+			 !!serverPerms?.includes('publications:update'));
+
+		const canDeletePublication =
+			!loadingPerms &&
+			(!!serverPerms?.includes('publication:delete') ||
+			 !!serverPerms?.includes('publications:delete'));
 
 		const activeTag = (() => {
 			const t = searchParams.get('tag') || '';
@@ -239,10 +247,22 @@ const normalizeTag = (s: string) =>
 						<>
 							<Fab
 								color="secondary"
-								sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
-															disabled={!canCreatePublication}
+								sx={{
+									position: 'fixed',
+									bottom: 16,
+									right: 16,
+									zIndex: 1200,
+									...( !canCreatePublication
+										? {
+											opacity: 0.6,
+											cursor: 'not-allowed',
+											pointerEvents: 'auto', 
+										}
+										: {}
+									   ),
+								}}
+								aria-disabled={!canCreatePublication}
 								onClick={() => {
-									if (!canCreatePublication) return;
 									setCreateOpen(true);
 								}}
 							>
@@ -314,6 +334,8 @@ const normalizeTag = (s: string) =>
 							onTagClick={handleTagClick}
 							onEditRequested={onEditRequested}
 							onDeleted={onDeleted}
+							canEditPublication={canEditPublication}
+							canDeletePublication={canDeletePublication}
 						/>
 					</GridColumn>
 

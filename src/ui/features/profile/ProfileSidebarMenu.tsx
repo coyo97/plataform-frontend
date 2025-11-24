@@ -1,9 +1,10 @@
 // ui/features/profile/ProfileSidebarMenu.tsx
 import React, { useEffect, useState } from 'react';
-import { useMediaQuery, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Alert, Box,
+import { useMediaQuery, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader,Badge, Box,
 } from '@mui/material';
 import { Person as PersonIcon, Edit as EditIcon, Group as GroupIcon, Search as SearchIcon, Block as BlockIcon, PersonAdd as MailOutlineIcon,
 } from '@mui/icons-material';
+import Alert from '../../shared/atoms/feedback/alert/Alert';
 
 import Sidebar from '../../shared/organisms/sidebar/Sidebar';
 import { breakPoints } from '../../../config/mq';
@@ -39,7 +40,7 @@ const ProfileSidebarMenu: React.FC<Props> = ({
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	// Escuchar eventos para reflejar cambios en caliente (por si 403 se dispara dentro del form)
-	useEffect(() => {
+	/*useEffect(() => {
 		const onForbidden = () => setEditForbidden(true);
 		const onAllowed = () => setEditForbidden(false);
 		const onStorage = (e: StorageEvent) => {
@@ -56,7 +57,7 @@ const ProfileSidebarMenu: React.FC<Props> = ({
 			window.removeEventListener('profile:update:allowed' as any, onAllowed);
 			window.removeEventListener('storage', onStorage);
 		};
-	}, []);
+		}, []); */
 
 	// Si desde props ya puede editar, levanta el bloqueo local
 	useEffect(() => {
@@ -92,11 +93,9 @@ const ProfileSidebarMenu: React.FC<Props> = ({
 			ariaLabel="Menú de perfil"
 		>
 			{errorMsg && (
-				<Box sx={{ px: 2, pt: 2 }}>
-					<Alert severity="warning" onClose={() => setErrorMsg(null)}>
+					<Alert onClose={() => setErrorMsg(null)}>
 						{errorMsg}
 					</Alert>
-				</Box>
 			)}
 
 			<List subheader={<ListSubheader component="div">Perfil</ListSubheader>} dense sx={{ pt: 0 }}>

@@ -1,20 +1,20 @@
 import { styled } from '@mui/material/styles';
-import { Paper, Box, TextField, Typography } from '@mui/material';
+import { Paper, Box, Typography } from '@mui/material';
 import { padding } from '../../../../Theme/tokens/padding';
 import { radius } from '../../../../Theme/tokens/radius';
-import { colors } from '../../../../Theme/tokens/colors';
 
 export const ChatContainer = styled(Paper)(({ theme }) => ({
 	display: 'flex',
 	flexDirection: 'column',
-	height: 'min(65vh, 480px)',        // móvil
-	[theme.breakpoints.up('md')]: {
-		height: 'min(70vh, 600px)',      // desktop
-	},
 	borderRadius: radius.sm4x,
+	borderLeft: `1px solid ${theme.palette.divider}`,
+	boxShadow: '-12px 0 32px rgba(0,0,0,0.35)',
+	backgroundColor: theme.palette.background.paper,
 }));
 
 export const Header = styled(Box)(({ theme }) => ({
+	display: 'flex',
+	alignItems: 'center',
 	padding: padding.px8,
 	borderBottom: `1px solid ${theme.palette.divider}`,
 }));
@@ -27,6 +27,8 @@ export const Messages = styled(Box)({
 	flex: 1,
 	overflowY: 'auto',
 	paddingInline: padding.px8,
+	paddingTop: padding.px4 ?? 4,
+	paddingBottom: padding.px4 ?? 4,
 });
 
 export const MessageRow = styled(Box)<{ isSelf?: boolean }>(({ isSelf }) => ({

@@ -8,9 +8,14 @@ type Props = {
 	list?: AcademicHelp[];
 	onDeleted?: (id: string) => void;
 	onEditRequested?: (h: AcademicHelp) => void;
+	  canEdit?: boolean;
+  canDelete?: boolean;
+  onPermissionDenied?: (msg: string) => void;
 };
 
-const HelpFeed: React.FC<Props> = ({ list = [], onDeleted, onEditRequested }) => (
+const HelpFeed: React.FC<Props> = ({ list = [], onDeleted, onEditRequested,   canEdit = true,
+  canDelete = true,
+  onPermissionDenied, }) => (
 	<SmartBox column gap={1}>
 		{list.map(help => (
 			<Paper
@@ -22,6 +27,9 @@ const HelpFeed: React.FC<Props> = ({ list = [], onDeleted, onEditRequested }) =>
 					help={help}
 					onDeleted={onDeleted}
 					onEditRequested={onEditRequested}
+					            canEdit={canEdit}
+            canDelete={canDelete}
+            onPermissionDenied={onPermissionDenied}
 				/>
 			</Paper>
 		))}

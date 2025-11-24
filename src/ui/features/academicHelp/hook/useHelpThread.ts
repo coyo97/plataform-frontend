@@ -39,6 +39,8 @@ export const useHelpThread = (helpId: string) => {
 		load();
 	};
 
-	return { help, thread, loading, vote, solve, post };
+	const reload = () => load();
+
+	return { help, thread, loading, vote, solve, post,reload };
 };
 

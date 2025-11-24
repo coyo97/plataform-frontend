@@ -6,15 +6,14 @@ import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledBu
 import CreatePublicationDialog from '../CreatePublicationDialog';
 import { fetchCareers, createPublication, updatePublication } from '../../../../../async/services/publicationService';
 import type { Career, Publication } from '../../../../../types/publication';
-import { useMediaQuery } from '@mui/material';
+import { Alert, useMediaQuery } from '@mui/material';
 import { breakPoints } from '../../../../../config/mq';
+import { getPermissionMessage } from '../../../../shared/messages/permissionMessages';
 
 interface Props {
 	onNew   : (pub: Publication) => void;
 	open    : boolean;
 	onClose : () => void;
-
-	// OPCIONALES para edición (compatibles)
 	editPublication?: Publication | null;
 	editingOpen?: boolean;
 	onEditingClose?: () => void;
@@ -31,9 +30,11 @@ const CreatePublicationSidebar: React.FC<Props> = ({
 }) => {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [careers, setCareers] = useState<Career[]>([]);
+	const [permissionMsg, setPermissionMsg] = useState<string | null>(null);
+
 	useEffect(() => { fetchCareers().then(setCareers).catch(console.error); }, []);
 
-		const isMobile = useMediaQuery(`(max-width:${breakPoints.values.sm - 1}px)`);
+	const isMobile = useMediaQuery(`(max-width:${breakPoints.values.sm - 1}px)`);
 
 
 
@@ -52,20 +53,41 @@ const CreatePublicationSidebar: React.FC<Props> = ({
 
 	const isEditing = !!editingOpen && !!editPublication;
 
+	const handleClickCreateButton = () => {
+		if (!canCreate) {
+			setPermissionMsg(getPermissionMessage('createDenied'));
+			return;
+		}
+		setDialogOpen(true);
+	};
+
 	return (
 		<Sidebar sticky open={open} variant="flat" onClose={onClose} width={isMobile ? 180: 180}>
 			<SmartBox>
+				{permissionMsg && (
+					<Alert
+						severity="warning"
+						onClose={() => setPermissionMsg(null)}
+						sx={{ mb: 1 }}
+					>
+						{permissionMsg}
+					</Alert>
+				)}
 				<FilledButton
 					colorType="primary"
 					btnVariant="default"
 					fullWidth
-										onClick={() => {
-						if (!canCreate) return;
-						setDialogOpen(true);
-					}}
+					onClick={handleClickCreateButton}
 					aria-disabled={!canCreate}
-					disabled={!canCreate}
-					sx={!canCreate ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+					sx={
+						!canCreate
+							? {
+								opacity: 0.55,
+								cursor: 'not-allowed',
+								pointerEvents: 'auto',
+							}
+							: undefined
+					}
 				>
 					Publicar
 				</FilledButton>
@@ -81,7 +103,7 @@ const CreatePublicationSidebar: React.FC<Props> = ({
 			</SmartBox>
 
 			<CreatePublicationDialog
-								open={canCreate ? (isEditing ? true : dialogOpen) : false}
+				open={canCreate ? (isEditing ? true : dialogOpen) : false}
 				onClose={() => (isEditing ? onEditingClose?.() : setDialogOpen(false))}
 				careers={careers}
 				onNew={onNew}

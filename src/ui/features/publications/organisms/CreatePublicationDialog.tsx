@@ -12,7 +12,6 @@ interface Props {
 	onNew    : (pub: Publication) => void;
 	fullScreen?: boolean;
 
-	// OPCIONALES para edición:
 	mode?: 'create' | 'edit';
 	publication?: Publication;
 	onUpdated?: (p: Publication) => void;
@@ -40,7 +39,7 @@ const CreatePublicationDialog: React.FC<Props> = ({
 
 	{!fullScreen && (
 		<DialogActions>
-			<Button onClick={onClose}>Salir</Button>
+			{/*		<Button onClick={onClose}>Salir</Button>*/}
 		</DialogActions>
 	)}
 	</Dialog>

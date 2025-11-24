@@ -124,6 +124,7 @@ const FormLogin: React.FC = () => {
 				userId: res.userId,
 				roles: res.roles,
 				username: res.username,
+				accountType: res.accountType,
 			});
 
 			navigate('/plataform');
