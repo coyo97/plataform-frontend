@@ -1,18 +1,40 @@
-// providers/SocketProvider.tsx  (NUEVO)
-import React, { createContext, useContext, useMemo } from 'react';
-import { Socket } from 'socket.io-client';
-import getSocket from '../../utils/socket/getSocket';
+// src/ui/features/providers/SocketProvider.tsx
+import React, {
+	createContext,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
+import type { Socket } from "socket.io-client";
+import { createOrUpdateSocket } from "../../utils/socket/getSocket";
 
 const SocketCtx = createContext<Socket | null>(null);
 
-export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	const socket = useMemo(() => getSocket(), []);   // se crea UNA sola vez
-	return <SocketCtx.Provider value={socket}>{children}</SocketCtx.Provider>;
+type Props = {
+	children: React.ReactNode;
+	token: string | null;
 };
 
-export const useSocket = () => {
+export const SocketProvider: React.FC<Props> = ({ children, token }) => {
+	const [socket, setSocket] = useState<Socket>(() =>
+		createOrUpdateSocket(token),
+	);
+
+	useEffect(() => {
+		const s = createOrUpdateSocket(token);
+		setSocket(s);
+	}, [token]);
+
+	return (
+		<SocketCtx.Provider value={socket}>{children}</SocketCtx.Provider>
+	);
+};
+
+export const useSocket = (): Socket => {
 	const sock = useContext(SocketCtx);
-	if (!sock) throw new Error('useSocket debe usarse dentro de <SocketProvider>');
+	if (!sock) {
+		throw new Error("useSocket debe usarse dentro de <SocketProvider>");
+	}
 	return sock;
 };
 

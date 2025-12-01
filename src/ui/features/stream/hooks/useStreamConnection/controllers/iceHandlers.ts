@@ -32,7 +32,7 @@ export function setupIceHandlers(ctx: Ctx) {
 
   // De-dup para no aplicar el mismo ICE dos veces
   const seenCamIce = new Set<string>();
-  const seenScreenIce: Record<string, Set<string>> = {};
+  const seenScreenIce = new Set<string>();
 
   const iceKey = (c: RTCIceCandidateInit) =>
     `${c.sdpMid ?? ''}|${c.sdpMLineIndex ?? ''}|${c.candidate ?? ''}`;
@@ -43,7 +43,7 @@ export function setupIceHandlers(ctx: Ctx) {
       ? storeRef.current.perViewer?.[from]
       : storeRef.current.perStreamer?.[from];
 
-    if (!pc) {
+    if (!pc || pc.signalingState === 'closed') {
       console.log('[[ICE]] cam ICE sin PC objetivo from=%s (race)', from);
       return;
     }
@@ -60,45 +60,43 @@ export function setupIceHandlers(ctx: Ctx) {
     }
   });
 
-  // === ICE de screen-share (usa clave compuesta `from:origin`) ===
+  // === ICE de screen-share ===
   const offScreenIce = signaling.onScreenIce(async ({ candidate, from, origin }) => {
     if (!from) return;
 
     const keyStr = iceKey(candidate);
-    const ownerKey = `${from}:${origin ?? 'host'}`;
-    if (!seenScreenIce[ownerKey]) seenScreenIce[ownerKey] = new Set<string>();
-    if (seenScreenIce[ownerKey].has(keyStr)) return;
-    seenScreenIce[ownerKey].add(keyStr);
+    if (seenScreenIce.has(keyStr)) return;
+    seenScreenIce.add(keyStr);
 
-    // 1) Caso normal: host empuja pantalla a viewer con key `ownerKey`
-    let pc = screenPCsRef.current[ownerKey];
+    // 1) Caso normal: hay un PC en screenPCsRef indexado por el socketId remoto
+    let pc = screenPCsRef.current[from];
 
     // 2) Fallback: viewer enviando pantalla hacia el owner
+    //    Si estamos del lado viewer, y todavía no mapeamos el PC en screenPCsRef,
+    //    intentamos usar viewerOutScreenPcRef cuando coincide el owner.
     if (!pc && !isStreamer && viewerOutScreenPcRef?.current) {
       const ownerId = ownerSocketIdRef?.current;
-      const matchesOwner = !ownerId || ownerId === from; // si desconocemos owner, asumimos que 'from' es el owner
-      if (matchesOwner) {
-        console.log('[[ICE][VIEWER→OWNER]] usando viewerOutScreenPcRef para ownerKey=%s', ownerKey);
+      const matchesOwner = !ownerId || ownerId === from;
+      if (matchesOwner && viewerOutScreenPcRef.current.signalingState !== 'closed') {
+        console.log('[[ICE][VIEWER→OWNER]] usando viewerOutScreenPcRef for from=%s', from);
         pc = viewerOutScreenPcRef.current;
-        if (pc && pc.signalingState !== 'closed') {
-          // mapeo para futuros ICE
-          screenPCsRef.current[ownerKey] = pc;
-        }
+        // Mapeamos para siguientes ICE
+        screenPCsRef.current[from] = pc!;
       }
     }
 
-    if (!pc) {
-      console.log('[[ICE]] screen ICE sin PC (ownerKey=%s) → buffer', ownerKey);
-      (pendingScreenCandidatesRef.current[ownerKey] ||= []).push(candidate);
+    if (!pc || pc.signalingState === 'closed') {
+      console.log('[[ICE]] screen ICE sin PC (from=%s) → buffer', from);
+      (pendingScreenCandidatesRef.current[from] ||= []).push(candidate);
       return;
     }
 
     try {
       await safeAddIce(pc, candidate);
-      console.log('[[ICE]] screen add OK ownerKey=%s', ownerKey);
+      console.log('[[ICE]] screen add OK from=%s (origin=%s)', from, origin ?? 'unknown');
     } catch (e) {
-      console.warn('[[ICE]] screen add FAIL ownerKey=%s', ownerKey, e);
-      (pendingScreenCandidatesRef.current[ownerKey] ||= []).push(candidate);
+      console.warn('[[ICE]] screen add FAIL from=%s', from, e);
+      (pendingScreenCandidatesRef.current[from] ||= []).push(candidate);
     }
   });
 

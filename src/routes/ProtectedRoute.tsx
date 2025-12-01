@@ -4,6 +4,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { getMyPermissions } from '../async/services/permissionService';
 import Loader from '../ui/shared/atoms/feedback/loader/Loader';
 
+import { normalizePermList, permKey } from '../ui/shared/permissions/modules';
+
 function isTokenValid(): boolean {
 	const t = localStorage.getItem('token');
 	if (!t) return false;
@@ -39,15 +41,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 			}
 
 			if (!requiredModule || !requiredAction) {
-				setAllowed(true); // no requiere permiso específico
+				setAllowed(true);
 				return;
 			}
 
 			try {
-				const perms = await getMyPermissions();
-				const has = perms.some(
-					(p) => p.toLowerCase() === `${requiredModule}:${requiredAction}`.toLowerCase()
-				);
+				const permsRaw = await getMyPermissions();
+				const perms = normalizePermList(permsRaw);   
+
+				const key = permKey(requiredModule, requiredAction as any); 
+				const has = perms.includes(key);
+
 				setAllowed(has);
 			} catch {
 				setAllowed(false);
@@ -66,10 +70,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 			<Navigate
 				to="/"
 				replace
-				state={{
-					from: location,
-					reason: 'forbidden',
-				}}
+				state={{ from: location, reason: 'forbidden' }}
 			/>
 		);
 	}

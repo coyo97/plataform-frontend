@@ -142,28 +142,16 @@ const Header: React.FC<HeaderProps> = ({
 	}, []);
 
 	const renderTopNavLink = ({ label, to, icon: Icon, adminOnly }: any) => {
+		//  adminOnly: si no es admin, ni aparece
 		if (adminOnly && userRole !== 'admi') return null;
 
-		const moduleName = getModuleFromNav(to, label); // ej. '/publications' -> 'publication'
+		//  RBAC normal
+		const moduleName = getModuleFromNav(to, label);
 		const skipRBAC = adminOnly || (moduleName && BYPASS_MODULES.has(moduleName));
-		const blocked = !skipRBAC && moduleName ? !canAccessModule(perms, moduleName) : false;
+		const blocked =
+			!skipRBAC && moduleName ? !canAccessModule(perms, moduleName) : false;
 
-		if (blocked) {
-			return (
-				<Tooltip key={label} title="Módulo bloqueado. Solicita acceso.">
-					<Box
-						sx={{
-							display: 'inline-flex', alignItems: 'center', gap: 1, px: 1, py: 0.5,
-							opacity: 0.5, cursor: 'not-allowed', userSelect: 'none',
-						}}
-						onClick={() => showDenied()}
-					>
-						<Icon />
-						<Box component="span">{label}</Box>
-					</Box>
-				</Tooltip>
-			);
-		}
+		if (blocked) return null;
 
 		return (
 			<Box key={label} component={RouterLink} to={to}>
@@ -173,31 +161,16 @@ const Header: React.FC<HeaderProps> = ({
 		);
 	};
 
+
 	const renderDrawerItem = ({ label, to, icon, adminOnly }: any) => {
 		if (adminOnly && userRole !== 'admi') return null;
 
 		const moduleName = getModuleFromNav(to, label);
 		const skipRBAC = adminOnly || (moduleName && BYPASS_MODULES.has(moduleName));
-		const blocked = !skipRBAC && moduleName ? !canAccessModule(perms, moduleName) : false;
+		const blocked =
+			!skipRBAC && moduleName ? !canAccessModule(perms, moduleName) : false;
 
-		if (blocked) {
-			return (
-				<Tooltip key={label} title="Módulo bloqueado. Solicita acceso.">
-					<ListItem
-						button
-						onClick={() => showDenied()}
-						sx={{
-							opacity: 0.5,
-							cursor: 'not-allowed',
-							'& .MuiListItemIcon-root, & .MuiListItemText-root': { color: 'text.disabled' },
-						}}
-					>
-						<ListItemIcon>{React.createElement(icon)}</ListItemIcon>
-						<ListItemText primary={label} />
-					</ListItem>
-				</Tooltip>
-			);
-		}
+		if (blocked) return null;
 
 		return (
 			<ListItem button key={label} component={RouterLink} to={to} onClick={closeDrawer}>

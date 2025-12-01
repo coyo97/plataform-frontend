@@ -24,22 +24,23 @@ const Notifications: React.FC = () => {
 	const socket = useSocket();
 	const navigate = useNavigate();
 
-	/* ===== Carga inicial ===== */
 	useEffect(() => {
 		listNotifications()
 		.then(setNotifications)
 		.catch(console.error);
 	}, []);
 
-	/* ===== Tiempo real (Socket) ===== */
-	useEffect(() => {
-		registerNotificationEvents(socket, (n) => {
-			setNotifications((prev) => [n, ...prev]);
-			showPush("Nueva notificación", { body: n.message });
-		});
-	}, [socket]);
+useEffect(() => {
+  if (!socket) return;
 
-	/* ===== Handlers ===== */
+  const cleanup = registerNotificationEvents(socket, (n) => {
+    setNotifications((prev) => [n, ...prev]);
+    showPush("Nueva notificación", { body: n.message });
+  });
+
+  return cleanup;
+}, [socket]);
+
 	const handleDelete = async (id: string) => {
 		try {
 			await deleteNotification(id);
@@ -62,9 +63,15 @@ const Notifications: React.FC = () => {
 						} else if (n.type === "report_alert" && n.data?.publicationId) {
 							navigate(`/publications/${n.data.publicationId}`);
 						}
+						else if (n.type === "group_added" && n.data?.groupId) {
+							navigate(`/message?chat=${n.data.groupId}&type=group`);
+						}
+						else if (n.type === "publication_liked" && n.data?.publicationId) {
+							navigate(`/publications/${n.data.publicationId}`);
+						}
+
 	};
 
-	/* ===== Render ===== */
 	return (
 		<NotificationContainer>
 			<NotificationList>

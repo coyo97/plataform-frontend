@@ -1,0 +1,12 @@
+ERROR in src/ui/features/stream/hooks/useStreamConnection/useStreamConnection.ts:250:4
+TS2345: Argument of type '{ isStreamer: boolean; signaling: { emitIce: (c: RTCIceCandidateInit, to: string) => void; emitOffer: (o: RTCSessionDescriptionInit, to: string) => void; ... 21 more ...; offAll: () => unknown; }; ... 6 more ...; ownerSocketIdRef: React.MutableRefObject<...>; }' is not assignable to parameter of type 'Ctx'.
+  Object literal may only specify known properties, and 'lastOfferPcRef' does not exist in type 'Ctx'.
+    248 | 			signaling: sig,
+    249 | 			storeRef,
+  > 250 | 			lastOfferPcRef,
+        | 			^^^^^^^^^^^^^^
+    251 | 			screenPCsRef,
+    252 | 			pendingScreenCandidatesRef,
+    253 | 			safeAddIce,
+
+

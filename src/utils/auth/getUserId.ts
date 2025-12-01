@@ -16,12 +16,12 @@ function normalizeRoleNames(input: any): string[] {
 
 	if (Array.isArray(input)) {
 		return input
-		.map((r) => {
-			if (typeof r === 'string') return lower(r);
-			if (r && typeof r === 'object') return lower((r as any).name ?? (r as any).role);
-			return '';
-		})
-		.filter(Boolean);
+			.map((r) => {
+				if (typeof r === 'string') return lower(r);
+				if (r && typeof r === 'object') return lower((r as any).name ?? (r as any).role);
+				return '';
+			})
+			.filter(Boolean);
 	}
 
 	if (typeof input === 'object') {
@@ -43,11 +43,23 @@ export const getUserRole = (): string =>
 export const getUsername = (): string =>
 	localStorage.getItem('username') ?? '';
 
+const notifyTokenChange = (token: string | null) => {
+	if (typeof window !== 'undefined') {
+		window.dispatchEvent(
+			new CustomEvent('auth-token-changed', { detail: { token } }),
+		);
+	}
+};
+
 export const logout = (): void => {
 	localStorage.removeItem('token');
 	localStorage.removeItem('userId');
 	localStorage.removeItem('roles');
 	localStorage.removeItem('username');
+
+	// notificar a la App que ya no hay token
+	notifyTokenChange(null);
+
 	window.location.href = '/';
 };
 
@@ -72,11 +84,14 @@ export const saveSession = ({
 		const roleNames = normalizeRoleNames(roles); 
 		localStorage.setItem('roles', JSON.stringify(roleNames)); 
 	}
-		if (accountType) {
+
+	if (accountType) {
 		localStorage.setItem('accountType', accountType);
 	} else {
 		localStorage.setItem('accountType', 'guest');
 	}
+
+	notifyTokenChange(token);
 };
 
 export const getAccountType = (): 'guest' | 'university' => {
@@ -94,6 +109,7 @@ export interface LoginResponse {
 	username?: string;
 	accountType?: 'guest' | 'university';
 }
+
 export function userHasAdminRole(): boolean {
 	const raw = localStorage.getItem('roles');
 	if (!raw) return false;
@@ -105,3 +121,4 @@ export function userHasAdminRole(): boolean {
 	} catch {}
 	return false;
 }
+

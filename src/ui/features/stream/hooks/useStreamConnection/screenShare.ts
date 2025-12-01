@@ -21,36 +21,40 @@ export const createScreenShare = (deps: {
 			iceServers: STUN_SERVERS ?? [{ urls: 'stun:stun.l.google.com:19302' }],
 		});
 
+		// Este PC es solo el "publisher" local de pantalla,
+		// la negociación real con viewers se hace con sendDirectScreenOfferTo (deps.ts)
 		pc.onicecandidate = (e) => {
-			if (e.candidate) sock.emit('screen-share-ice', { streamId, candidate: e.candidate });
+			if (e.candidate) {
+				// Si quieres, aquí incluso podrías no emitir nada,
+				// porque este PC no tiene peer remoto.
+				sock.emit('screen-share-ice', { streamId, candidate: e.candidate });
+			}
 		};
 
 		pc.addTrack(screenTrack, scrStream);
 		setScrPC(pc);
 		setIsScreenSharing(true);
 
-		// Mostrar localmente (opcional)
+		// Mostrar localmente (preview del host)
 		const el = document.getElementById('screenVideo') as HTMLVideoElement | null;
 		if (el) {
 			el.srcObject = scrStream;
 			el.style.display = 'block';
 		}
 
-		// Broadcast inicial para los que YA están dentro
-		const offer = await pc.createOffer();
-		await pc.setLocalDescription(offer);
-		sock.emit('screen-share-offer', { streamId, offer }); // ← broadcast sin 'to'
+		// const offer = await pc.createOffer();
+		// await pc.setLocalDescription(offer);
+		// sock.emit('screen-share-offer', { streamId, offer });
 
 		// Si el usuario detiene compartir desde el navegador
 		screenTrack.onended = stopScreenShare;
 	};
 
-	//  NUEVO: oferta dirigida para late-joiners
 	const sendScreenOfferTo = async (viewerSocketId: string) => {
 		const pc = getScrPC();
-		if (!pc) return;                            // aún no se comparte pantalla
-		if (pc.signalingState !== 'stable') return; // espera a estado estable
-		if (pc.getSenders().length === 0) return;   // sin pistas, nada que ofrecer
+		if (!pc) return;                            
+		if (pc.signalingState !== 'stable') return;
+		if (pc.getSenders().length === 0) return; 
 
 		const offer = await pc.createOffer();
 		await pc.setLocalDescription(offer);

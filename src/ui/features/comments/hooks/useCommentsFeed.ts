@@ -30,7 +30,7 @@ export const useCommentsFeed = (publicationId: string) => {
 	const del    = (id:string)=> api.remove(id);
 	useEffect(() => {
 		if (!socket) return;
-		socket.emit('join-room', publicationId); // 💡 debes manejar esto en tu servidor
+		socket.emit('join-room', publicationId); 
 		return () => { socket.emit('leave-room', publicationId); };
 	}, [socket, publicationId]);
 

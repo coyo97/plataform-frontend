@@ -39,7 +39,7 @@ interface Props {
 	stopRec: () => void;
 	kickViewer: (id: string) => void;
 	leave: () => void;
-	endStream: () => void;    // NUEVO: finalizar transmisión (host)
+	endStream: () => void;    
 	fullscreen: () => void;
 	isFullscreen: boolean;
 }

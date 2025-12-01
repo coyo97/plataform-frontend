@@ -45,7 +45,6 @@ const ViewerControls: React.FC<Props> = ({
 		row
 		between
 		style={{
-			// ✅ en focus: flotante tipo Meet
 			position: focusMode ? 'fixed' : 'relative',
 			left: focusMode ? '50%' : undefined,
 			bottom: focusMode ? 16 : undefined,

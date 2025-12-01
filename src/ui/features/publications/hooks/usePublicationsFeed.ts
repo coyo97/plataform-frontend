@@ -10,7 +10,6 @@ interface UseFeedArgs {
 	filter: Filter;
 	careerId: string;
 	query: string;
-	/** opcional: filtro por tag (lo puedes pasar desde la página vía URLSearchParams) */
 	tag?: string;
 }
 
@@ -20,7 +19,6 @@ export const usePublicationsFeed = ({ filter, careerId, query, tag }: UseFeedArg
 	const [more, setMore] = useState(true);
 	const [busy, setBusy] = useState(false);
 
-	// devolvemos la ruta base; los params van aparte
 	const pathFor = useCallback((): string => {
 		if (query.trim()) return R.PUB_SEARCH_BASE;           // '/publications/search'
 		if (filter === 'mostLiked') return R.PUBS_MOST_LIKED; // '/publications/most-liked'

@@ -39,9 +39,12 @@ import AuthorProfile from './ui/features/profile/AuthorProfile';
 import { useMediaQuery, useTheme } from '@mui/material';
 import AcademicCatalogTabs from './ui/features/careers/AcademicCatalogTabs';
 
+const getInitialToken = () => localStorage.getItem('token');
+
+const queryClient = new QueryClient();
 function App() {
-	const queryClient = new QueryClient();
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+	const [token, setToken] = useState<string | null>(getInitialToken);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -63,13 +66,24 @@ function App() {
 		};
 	}, []);
 
+	useEffect(() => {
+		const handler = (event: Event) => {
+			const detail = (event as CustomEvent).detail;
+			setToken(detail?.token ?? null);
+		};
+
+		window.addEventListener('auth-token-changed', handler);
+		return () => {
+			window.removeEventListener('auth-token-changed', handler);
+		};
+	}, []);
 	  const theme = useTheme();
 const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 
 	return (
 		<Theme>
 			<QueryClientProvider client={queryClient}>
-				<SocketProvider>
+				<SocketProvider token={token}>
 					<Router>
 						<Routes>
 							<Route path="/" element={<Welcome />} />
@@ -79,8 +93,8 @@ const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 							<Route path="/reset-password/:token" element={<ResetPassword />} />
 
 							<Route path="/plataform" element={<ProtectedRoute element={<Plataform />} />} />
-							<Route path="/stream-academi" element={<ProtectedRoute element={<HomeStreamPage />} />} />
-							<Route path="/academic-help" element={<ProtectedRoute element={<HomeAcademicHelp />} />} />
+							<Route path="/stream-academi" element={<ProtectedRoute element={<HomeStreamPage />} requiredModule="stream" requiredAction="read"/>} />
+							<Route path="/academic-help" element={<ProtectedRoute element={<HomeAcademicHelp />} requiredModule="academic-help" requiredAction="read"/>} />
 							<Route path="/academic-help/:helpId" element={<ProtectedRoute element={<AcademicHelpDetailPage />} />} />
 							<Route path="/test" element={<HomeTest/>}/>
 
@@ -91,7 +105,7 @@ const isDesktop = useMediaQuery(theme.breakpoints.up('md')); // md ≈ 900px
 							<Route path="/profile" element={<ProtectedRoute element={<HomeProfilePage />} requiredModule="profile" requiredAction="read"/>} />
 
 							<Route path="/material-user" element={<ProtectedRoute element={<UserMaterials />} />} />
-							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} />} />
+							<Route path="/message" element={<ProtectedRoute element={<HomeChat />} requiredModule="message" requiredAction="read"/>} />
 							<Route path="/plataform/search" element={<HomeOverlay/>} />
 
 							<Route

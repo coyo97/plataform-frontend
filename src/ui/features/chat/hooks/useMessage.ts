@@ -25,10 +25,10 @@ export function useMessages(chatId: string, isGroup: boolean) {
   }, [chatId, isGroup]);
 
   /* Socket listeners */
-  useEffect(
-    () => registerMessageEvents(socket, setMessages, chatIdRef),
-    [socket],
-  );
+useEffect(() => {
+
+  return registerMessageEvents(socket, setMessages, chatIdRef);
+}, [socket]);
 
   const load = async (initial = false) => {
     if (!chatId || loading || !hasMore) return;

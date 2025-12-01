@@ -44,9 +44,8 @@ const Chat: React.FC<ChatProps> = ({ userId, isFloating = false }) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [onlineSet, setOnlineSet] = useState<Set<string>>(new Set());
 	useEffect(() => {
-		if (!socket) return;
-
 		// pedir snapshot inicial (lista de userIds online)
+		if (!socket) return;
 		socket.emit('presence:list', (ids: string[]) => {
 			setOnlineSet(new Set(ids));
 		});

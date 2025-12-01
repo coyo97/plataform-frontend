@@ -27,7 +27,6 @@ const StreamMainView: React.FC<Props> = ({
 	viewerScreenOn,
 	focusMode = false,
 }) => {
-	/* ✅ focusMode rellena alto total y quita aspect ratio */
 	const shellStyle: React.CSSProperties = focusMode
 		? {
 			position: 'relative',

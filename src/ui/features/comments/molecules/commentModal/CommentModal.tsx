@@ -12,7 +12,6 @@ interface Props {
 	title: string;
 	initial?: string;
 	onClose: () => void;
-	/** Debe devolver void | Promise<void> */
 	onSave: (text: string) => void | Promise<void>;
 }
 
@@ -21,7 +20,7 @@ const CommentModal: React.FC<Props> = ({
 	onClose, onSave,
 }) => {
 	const [text, setText] = useState(initial);
-	const showModerationAlert = useModerationAlert();   // ← aquí
+	const showModerationAlert = useModerationAlert();   
 
 	const handleSave = async () => {
 		if (!text.trim()) return;
@@ -31,8 +30,8 @@ const CommentModal: React.FC<Props> = ({
 			setText('');
 			onClose();
 		} catch (err) {
-			if (showModerationAlert(err)) return;           // ← alerta de moderación
-			alert('No se pudo guardar el comentario');      // error genérico
+			if (showModerationAlert(err)) return;           
+			alert('No se pudo guardar el comentario');     
 			console.error(err);
 		}
 	};

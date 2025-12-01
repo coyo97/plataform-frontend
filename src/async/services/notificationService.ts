@@ -3,7 +3,6 @@ import getEnvVariables from "../../config/configEnvs";
 import * as R from "../routes/notificationRoutes";
 import { Notification } from "../../types/notification";
 import type { Socket } from "socket.io-client";
-import getSocket from "../../utils/socket/getSocket";
 
 const { HOST, SERVICE } = getEnvVariables();
 const url = (p: string) => `${HOST}${SERVICE}${p}`;
@@ -35,5 +34,4 @@ export const registerNotificationEvents = (
 	return () => socket.off(WS_EVENT, handler);
 };
 
-export const getNotificationSocket = () => getSocket();
 

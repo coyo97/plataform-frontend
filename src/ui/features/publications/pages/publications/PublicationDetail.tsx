@@ -17,7 +17,6 @@ const PublicationDetail: React.FC = () => {
 
 	const { HOST } = getEnvVariables();
 
-	/* ------------ cargar la publicación ------------ */
 	useEffect(() => {
 		if (!publicationId) return;
 
@@ -28,7 +27,6 @@ const PublicationDetail: React.FC = () => {
 
 	if (!publication) return <p>Cargando publicación…</p>;
 
-	/* ------------ adjuntos ------------ */
 	const renderFile = () => {
 		if (!publication.filePath || !publication.fileType) return null;
 		const url = `${HOST}/${publication.filePath}`;
@@ -57,7 +55,6 @@ const PublicationDetail: React.FC = () => {
 
 	const handleShare = () => `${window.location.origin}/publications/${publicationId}`;
 
-	/* ------------ UI ------------ */
 	return (
 		<>
 			<Card

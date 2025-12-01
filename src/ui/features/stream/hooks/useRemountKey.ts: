@@ -1,0 +1,13 @@
+// src/ui/features/stream/hooks/useRemountKey.ts
+import { useState } from 'react';
+
+export function useRemountKey() {
+  const [remountKey, setRemountKey] = useState(0);
+
+  const forceRemount = () => {
+    setRemountKey(k => k + 1);
+  };
+
+  return { remountKey, forceRemount };
+}
+

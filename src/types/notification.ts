@@ -6,7 +6,11 @@ export interface Notification {
 	message: string;
 	isRead: boolean;
 	createdAt: string;
-	data?: { publicationId?: string; commentId?: string };
+	data?: {
+		publicationId?: string;
+		commentId?: string;
+		groupId?: string; 
+	};
+	group?: { _id?: string; name?: string };
 }
-
 
