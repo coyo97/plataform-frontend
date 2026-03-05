@@ -116,29 +116,49 @@ export const useStreamConnection = ({
 	const getViewerSocketId = (v: Viewer): string =>
 		v.socketId ?? '';
 
-	const startScreenShare = async () => {
+const startScreenShare = async () => {
+	try {
 		await baseStartScreenShare();
+	} catch (err: any) {
+		const name = err?.name;
+		const msg = String(err?.message ?? '').toLowerCase();
 
-		if (!isStreamer) return;
-
-		const targets = (viewers || [])
-			.map(getViewerSocketId)
-			.filter((sid): sid is string => Boolean(sid));
-
-		console.log(
-			'[[OWNER]] startScreenShare() → enviar pantalla inicial a %d viewers',
-			targets.length
-		);
-
-		for (const sid of targets) {
-			try {
-				console.log('[[OWNER]] screen-offer inicial → viewer=%s', sid);
-				await sendDirectScreenOfferTo(sid);
-			} catch (e) {
-				console.warn('[[OWNER]] error al mandar screen inicial a %s', sid, e);
-			}
+		if (
+			name === 'NotAllowedError' ||
+			name === 'AbortError' ||
+			msg.includes('permission denied') ||
+			msg.includes('denied') ||
+			msg.includes('permis')
+		) {
+			console.warn('[[SCREEN]] compartir pantalla cancelado por el usuario');
+			return;
 		}
-	};
+
+		console.error('[[SCREEN]] error inesperado en startScreenShare', err);
+		return;
+	}
+
+	if (!isStreamer) return;
+
+	const targets = (viewers || [])
+		.map(getViewerSocketId)
+		.filter((sid): sid is string => Boolean(sid));
+
+	console.log(
+		'[[OWNER]] startScreenShare() → enviar pantalla inicial a %d viewers',
+		targets.length
+	);
+
+	for (const sid of targets) {
+		try {
+			console.log('[[OWNER]] screen-offer inicial → viewer=%s', sid);
+			await sendDirectScreenOfferTo(sid);
+		} catch (e) {
+			console.warn('[[OWNER]] error al mandar screen inicial a %s', sid, e);
+		}
+	}
+};
+
 
 	useEffect(() => {
 		console.log('[[CLT]] joinStream streamId=%s isStreamer=%s', streamId, isStreamer);
@@ -227,7 +247,6 @@ export const useStreamConnection = ({
 			console.log('[[RELAY]] emit screen-offer (from=%s → to=%s)', from, to);
 		};
 
-		// Controladores base (cámara/mic por-viewer):
 		const publisherCleanup = setupPublisherCam({
 			isStreamer,
 			signaling: sig,
@@ -272,7 +291,6 @@ export const useStreamConnection = ({
 			sendDirectScreenOfferTo,
 		});
 
-		// Host recibe pantallas de viewers → re-publica a todos (relay SFU ligero)
 		const screenRoleCleanup = isStreamer
 			? setupScreenFromViewer({
 					isStreamer: true,

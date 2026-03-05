@@ -1,4 +1,3 @@
-// src/ui/features/groups/GroupUser.page.tsx
 import React from 'react';
 import Text from '../../shared/atoms/typography/Text';
 import Loader from '../../shared/atoms/feedback/loader/Loader';
@@ -18,20 +17,14 @@ import { useGroupUser } from './hooks/useGroupUser';
 
 const GroupUser: React.FC = () => {
 	const {
-		// datos
 		groups, users, members, selectedGroup,
-		// ids
 		groupId, setGroupId,
 		userToAdd, setUserToAdd,
 		userToRemove, setUserToRemove,
 		adminTarget, setAdminTarget,
-		// estado
 		loading, error, setError, message, setMessage,
-		// permisos
 		canManageMembers, canManageAdmins,
-		// helpers
 		isMemberCreator, isMemberAdmin, getUserOptionLabel, renderUserOption,
-		// acciones
 		handleSelectGroup,
 		handleAdd, handleRemove, handleGrantAdmin, handleRevokeAdmin,
 		handleQuickRemove, handleQuickGrant, handleQuickRevoke,
@@ -88,13 +81,12 @@ const GroupUser: React.FC = () => {
 							<AccordionSection title="Acciones de miembros">
 								<SmartBox column sx={{ gap: 2 }}>
 									<AddUserForm
-										users={users}
+										users={users} // 🔹 ahora son SOLO tus amigos no miembros
 										userToAdd={userToAdd}
 										setUserToAdd={setUserToAdd}
 										getUserOptionLabel={getUserOptionLabel}
 										renderUserOption={renderUserOption}
 										onSubmit={handleAdd}
-										// loading opcional si usas búsqueda remota
 									/>
 									<RemoveUserForm
 										members={members}

@@ -7,11 +7,11 @@ import {
 	TimeDate,
 } from './outgoingMessage.styles';
 import { Message } from '../../../types/types';
+import RenderFile from '../../shared/organisms/renderFile/RenderFile';
 
 interface MessageProps {
 	message: Message;
 	onDeleteMessage: (messageId: string) => void;
-	/** opcional: reintentar envío si falló (optimista) */
 	onResend?: (msg: Message) => void;
 }
 
@@ -27,56 +27,77 @@ export const OutgoingMessage: React.FC<MessageProps> = ({
 		? 'Fecha Inválida'
 		: messageDate.toLocaleString();
 
-		const renderMessageContent = () => {
-			if (message.filePath && message.fileType) {
-				const fileUrl = `${HOST}/${message.filePath}`;
-				if (message.fileType.startsWith('image/')) {
-					return <img src={fileUrl} alt="Imagen" style={{ maxWidth: '100%' }} />;
-				} else {
-					return (
-						<a href={fileUrl} target="_blank" rel="noopener noreferrer">
-							Descargar archivo
-						</a>
-					);
-				}
-			} else {
-				return <p>{message.content}</p>;
-			}
-		};
+	const renderMessageContent = () => {
+		if (message.filePath && message.fileType) {
+			return (
+				<RenderFile
+					filePath={message.filePath}
+					fileType={message.fileType}
+					baseUrl={HOST}
+					title={message.content}
+					authorName={(message as any).sender?.username}
+					elevation={1}
+					enableZoom={true}
+					maxFeedHeight="min(260px, 40vh)"
+					previewVariant="contain"
+				/>
+			);
+		}
 
-		// soporta bandera de estado optimista si la agregaste (sending/failed)
-		const uiStatus = (message as any).uiStatus as 'sending' | 'failed' | undefined;
+		return <p>{message.content}</p>;
+	};
 
-		return (
-			<OutgoingMsgContainer>
-				<SentMsg>
-					{renderMessageContent()}
+	// Tomamos primero status (lo que pones en el optimista y en el ACK)
+	// y si no existe, caemos a uiStatus por compatibilidad.
+	const rawStatus =
+		((message as any).status as 'sending' | 'failed' | 'sent' | undefined) ??
+		((message as any).uiStatus as 'sending' | 'failed' | 'sent' | undefined);
 
-					<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-						<TimeDate>{formattedDate}</TimeDate>
+	const uiStatus: 'sending' | 'failed' | undefined =
+		rawStatus === 'sending'
+			? 'sending'
+			: rawStatus === 'failed'
+			? 'failed'
+			: undefined;
 
-						{/* Indicadores de estado (opcionales) */}
-						{uiStatus === 'sending' && (
-							<span style={{ fontSize: 12, opacity: 0.7 }}>Enviando…</span>
-						)}
-						{uiStatus === 'failed' && (
-							<>
-								<span style={{ fontSize: 12, color: '#e74c3c' }}>Falló</span>
-								{onResend && (
-									<button
-										style={{ marginLeft: 6 }}
-										onClick={() => onResend(message)}  
-									>
-										Reintentar
-									</button>
-								)}
-							</>
-						)}
-					</div>
+	return (
+		<OutgoingMsgContainer>
+			<SentMsg>
+				{renderMessageContent()}
 
-					<button onClick={() => onDeleteMessage(message._id)}>Eliminar</button>
-				</SentMsg>
-			</OutgoingMsgContainer>
-		);
+				<div
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: 6,
+						marginTop: 4,
+					}}
+				>
+					<TimeDate>{formattedDate}</TimeDate>
+
+					{/* Indicadores de estado */}
+					{uiStatus === 'sending' && (
+						<span style={{ fontSize: 12, opacity: 0.7 }}>Enviando…</span>
+					)}
+
+					{uiStatus === 'failed' && (
+						<>
+							<span style={{ fontSize: 12, color: '#e74c3c' }}>Falló</span>
+							{onResend && (
+								<button
+									style={{ marginLeft: 6, fontSize: 12 }}
+									onClick={() => onResend(message)}
+								>
+									Reintentar
+								</button>
+							)}
+						</>
+					)}
+				</div>
+
+				<button onClick={() => onDeleteMessage(message._id)}>Eliminar</button>
+			</SentMsg>
+		</OutgoingMsgContainer>
+	);
 };
-
+;

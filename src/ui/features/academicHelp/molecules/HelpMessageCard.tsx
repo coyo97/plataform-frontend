@@ -1,19 +1,14 @@
+// ui/features/academicHelp/molecules/HelpMessageCard.tsx
 import React from 'react';
-import SmartBox from '../../../shared/atoms/box/SmartBox';
-import AvatarX from '../../../shared/atoms/avatar/AvatarX';
-import FilledButton from '../../../shared/atoms/buttons/filledButton/FilledButton';
-import { ThumbUp, CheckCircle, Edit, Delete } from '@mui/icons-material';
-import Text from '../../../shared/atoms/typography/Text';
-import Paper from '@mui/material/Paper';
-import DateTimeInfo from '../../../shared/atoms/dateTime/DateTimeInfo';
-import IconButton from '../../../shared/atoms/buttons/iconButton/IconButton';
-import { Chip } from '@mui/material';
+import CommentCard from '../../../shared/organisms/commentCard/CommentCard';
 
 import ImagePreview from '../../../shared/atoms/filePreview/ImagePreview';
 import VideoPreview from '../../../shared/atoms/filePreview/VideoPreview';
 import RenderFile from '../../../shared/organisms/renderFile/RenderFile';
 
 import getEnvVariables from '../../../../config/configEnvs';
+import { getUserId } from '../../../../utils/auth/getUserId';
+
 const { HOST } = getEnvVariables();
 
 interface Props {
@@ -24,6 +19,7 @@ interface Props {
 
 	onEdit?(message: any): void;
 	onDelete?(message: any): void;
+	canSolve?: boolean;
 }
 
 const HelpMessageCard: React.FC<Props> = ({
@@ -33,113 +29,50 @@ const HelpMessageCard: React.FC<Props> = ({
 	onSolve,
 	onEdit,
 	onDelete,
+	canSolve = false,
 }) => {
-	const rawPath: string | undefined =
-		(message.attachments && message.attachments[0]) ||
-		(message.fileUrl as string | undefined);
+	const currentUserId = getUserId();
 
-	const hasFile = Boolean(rawPath);
-	const fileUrl = rawPath ? `${HOST}/${rawPath}` : null;
+	const author = message.author;
+	const messageAuthorId =
+		typeof author === 'string'
+			? author
+			: author?._id || author?.id || author?.userId;
 
-	const isImage = rawPath ? /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i.test(rawPath) : false;
-	const isVideo = rawPath ? /\.(mp4|webm|ogg|mov|m4v)$/i.test(rawPath) : false;
-	const isPdf   = rawPath ? /\.pdf$/i.test(rawPath) : false;
+			const isOwner =
+				currentUserId &&
+				messageAuthorId &&
+				String(currentUserId) === String(messageAuthorId);
 
-	const rawFileType =
-		isImage ? 'image/*' :
-		isVideo ? 'video/*' :
-		isPdf   ? 'application/pdf' :
-		'application/octet-stream';
+			// -------------------------------
+			// Adjuntos
+			// -------------------------------
+			const rawPath: string | undefined =
+				(message.attachments && message.attachments[0]) ||
+				(message.fileUrl as string | undefined);
 
-	return (
-		<Paper elevation={0} sx={{ p: 2, mb: 2 }}>
-			{/* HEADER */}
-			<SmartBox row gap={1} alignItems="center">
-				<AvatarX src={message.author?.profilePicture} size="sm" />
-				<Text size="sm" weight="bold">
-					{message.author?.username}
-				</Text>
-				<DateTimeInfo
-					timestamp={message.created_at}
-					size="small"
-					variant="compact"
-				/>
+			let attachmentNode: React.ReactNode = null;
 
-				{/* Botones Editar / Eliminar SIEMPRE visibles,
-				    solo ejecutan si hay handler */}
-				<SmartBox row gap="px2" alignItems="center">
-					<IconButton
-						ariaLabel="Editar respuesta"
-						onClick={() => onEdit?.(message)}
-					>
-						<Edit fontSize="small" />
-					</IconButton>
+			if (rawPath) {
+				const fileUrl = `${HOST}/${rawPath}`;
 
-					<IconButton
-						ariaLabel="Eliminar respuesta"
-						onClick={() => onDelete?.(message)}
-					>
-						<Delete fontSize="small" color="error" />
-					</IconButton>
-				</SmartBox>
-			</SmartBox>
+				const isImage = /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i.test(rawPath);
+				const isVideo = /\.(mp4|webm|ogg|mov|m4v)$/i.test(rawPath);
+				const isPdf   = /\.pdf$/i.test(rawPath);
 
-			{/* BOTÓN / BADGE DE SOLUCIÓN */}
-			{solved ? (
-				<Chip
-					icon={<CheckCircle />}
-					label="Solución"
-					color="success"
-					size="small"
-					sx={{ mt: 1 }}
-				/>
-			) : (
-				<FilledButton
-					variant="ghost"
-					size="small"
-					sx={{ mt: 1 }}
-					onClick={onSolve}
-				>
-					Marcar como solución
-				</FilledButton>
-			)}
-
-			{/* VOTOS */}
-			<SmartBox row gap="px4" mt="px2" alignItems="center">
-				<IconButton ariaLabel="Me gusta" onClick={onVote}>
-					<ThumbUp fontSize="small" />
-				</IconButton>
-				<Text size="sm">{message.votes}</Text>
-			</SmartBox>
-
-			{/* TEXTO */}
-			{message.content && (
-				<Text size="sm" sx={{ mt: 1 }}>
-					{message.content}
-				</Text>
-			)}
-
-			{/* ARCHIVO */}
-			{hasFile && fileUrl && (
-				<SmartBox sx={{ mt: 2 }}>
-					{isImage && (
-						<ImagePreview
-							src={fileUrl}
-							alt="Imagen adjunta"
-						/>
-					)}
-
-					{isVideo && (
-						<VideoPreview
-							src={fileUrl}
-							type="video/mp4"
-						/>
-					)}
-
-					{!isImage && !isVideo && (
+				if (isImage) {
+					attachmentNode = <ImagePreview src={fileUrl} alt="Imagen adjunta" />;
+				} else if (isVideo) {
+					attachmentNode = <VideoPreview src={fileUrl} type="video/mp4" />;
+				} else {
+					attachmentNode = (
 						<RenderFile
-							filePath={rawPath!}
-							fileType={rawFileType}
+							filePath={rawPath}
+							fileType={
+								isPdf
+									? 'application/pdf'
+									: 'application/octet-stream'
+							}
 							baseUrl={HOST}
 							title={message.content || 'Archivo adjunto'}
 							enableZoom={!isPdf}
@@ -150,11 +83,29 @@ const HelpMessageCard: React.FC<Props> = ({
 								download: 'Descargar archivo',
 							}}
 						/>
-					)}
-				</SmartBox>
-			)}
-		</Paper>
-	);
+					);
+				}
+			}
+
+			return (
+				<CommentCard
+					author={{
+						name: message.author?.username,
+						avatarUrl: message.author?.profilePicture,
+					}}
+					date={message.created_at}
+					content={message.content}
+					attachment={attachmentNode}
+					solved={solved}
+					canSolve={canSolve}
+					onSolve={onSolve}
+					votes={message.votes}
+					onVote={onVote}
+					isOwner={isOwner}
+					onEdit={() => onEdit?.(message)}
+					onDelete={() => onDelete?.(message)}
+				/>
+			);
 };
 
 export default HelpMessageCard;

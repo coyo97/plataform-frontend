@@ -13,6 +13,7 @@ import {
 import FilledButton from '../../../shared/atoms/buttons/filledButton/FilledButton';
 import FileButton   from '../../../shared/atoms/buttons/fileButton/FileButton';
 import MainInput    from '../../../shared/atoms/inputs/MainInput';
+import TextEditor   from '../../../shared/atoms/inputs/TextEditor';
 import SmartBox     from '../../../shared/atoms/box/SmartBox';
 import CascadingSelector from '../../../shared/molecules/CascadingSelector/CascadingSelector';
 import ModerationAlert from '../../../shared/molecules/moderation/ModerationAlert';
@@ -20,6 +21,7 @@ import { resolveErrorMessage } from '../../../shared/utils/validation/moderation
 import Text from '../../../shared/atoms/typography/Text';
 
 import { createHelpRequest, updateMyHelp } from '../../../../async/services/academicHelpService';
+import { fetchMyCareers } from '../../../../async/services/careerService';
 import type { AcademicHelp } from '../../../../types/academicHelp';
 
 import { validateHelpTitle, validateHelpBody } from '../../../shared/utils/validation/validators';
@@ -58,11 +60,11 @@ const CreateHelpForm: React.FC<Props> = ({
 	initial,
 	onUpdated
 }) => {
-	const accountType = getAccountType(); 
+	const accountType = getAccountType();
 	const isUniversity = accountType === 'university';
 
 	const [requestType, setType] = useState<RequestType>('concept_question');
-	const [scope, setScope] = useState<HelpScope>('career'); 
+	const [scope, setScope] = useState<HelpScope>('career');
 
 	const [meta, setMeta] = useState<MetaSelection>({});
 	const [topic, setTopic] = useState('');
@@ -75,12 +77,16 @@ const CreateHelpForm: React.FC<Props> = ({
 
 	const [advancedMode, setAdvancedMode] = useState(false);
 
+	const [myDefaultMetaLoaded, setMyDefaultMetaLoaded] = useState(false);
+	const [primaryCareerId, setPrimaryCareerId] = useState<string | null>(null); 
+
 	useEffect(() => {
 		if (!isUniversity) {
-			setScope('general');  
+			setScope('general');
 			setAdvancedMode(false);
+			setMeta({});
 		} else {
-			setScope('career');  
+			setScope('career');
 		}
 	}, [isUniversity]);
 
@@ -118,6 +124,76 @@ const CreateHelpForm: React.FC<Props> = ({
 		}
 	}, [mode, initial]);
 
+	useEffect(() => {
+		if (!isUniversity) return;
+		if (!advancedMode) return;
+		if (scope !== 'career') return;
+		if (mode === 'edit') return;
+		if (myDefaultMetaLoaded) return;
+		if (meta.careerId || meta.facultyId) return;
+
+		let cancelled = false;
+
+		const loadDefaultMeta = async () => {
+			try {
+				const careers = await fetchMyCareers().catch(() => []) as any[];
+				if (!Array.isArray(careers) || careers.length === 0) return;
+
+				const primary = careers[0];
+				const careerId = String(primary._id);
+				let facultyId: string | undefined;
+
+				const f = primary.facultyId;
+				if (typeof f === 'string') facultyId = f;
+				else if (f && typeof f === 'object' && f._id) facultyId = f._id;
+
+				if (!cancelled) {
+					setMeta(prev => ({
+						...prev,
+						facultyId: facultyId ?? prev.facultyId,
+						careerId : careerId  ?? prev.careerId,
+					}));
+					setPrimaryCareerId(careerId);       
+					setMyDefaultMetaLoaded(true);
+				}
+			} catch (e) {
+				console.error('No se pudo cargar la carrera por defecto para ayuda académica', e);
+			}
+		};
+
+		loadDefaultMeta();
+		return () => { cancelled = true; };
+	}, [isUniversity, advancedMode, scope, mode, myDefaultMetaLoaded, meta.careerId, meta.facultyId]);
+
+	useEffect(() => {
+		if (!primaryCareerId && meta.careerId && isUniversity && mode === 'create') {
+			setPrimaryCareerId(meta.careerId);
+		}
+	}, [primaryCareerId, meta.careerId, isUniversity, mode]);
+
+	const isOtherCareerSelected =
+		isUniversity &&
+		scope === 'career' &&
+		advancedMode &&
+		!!meta.careerId &&
+		!!primaryCareerId &&
+		meta.careerId !== primaryCareerId;
+
+	const handleScopeChange = (_: React.ChangeEvent<HTMLInputElement>, value: string) => {
+		const nextScope = value as HelpScope;
+		setScope(nextScope);
+
+		if (nextScope === 'general') {
+			setAdvancedMode(false);
+			setMeta({});
+			setErrors(prev => ({ ...prev, meta: undefined }));
+		}
+
+		if (nextScope === 'career') {
+			setErrors(prev => ({ ...prev, meta: undefined }));
+		}
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (loading) return;
@@ -146,10 +222,16 @@ const CreateHelpForm: React.FC<Props> = ({
 		fd.append('requestType', requestType);
 		fd.append('topic', topic);
 		fd.append('description', description);
-		fd.append('scope', scope); 
+		fd.append('scope', scope);
 
 		if (scope === 'career') {
-			Object.entries(meta).forEach(([k, v]) => v && fd.append(k, v as string));
+			if (advancedMode) {
+				Object.entries(meta).forEach(([k, v]) => {
+					if (v && String(v).trim()) {
+						fd.append(k, v as string);
+					}
+				});
+			}
 		}
 
 		if (file) fd.append('file', file);
@@ -172,6 +254,16 @@ const CreateHelpForm: React.FC<Props> = ({
 				setTopic('');
 				setDesc('');
 				setFile(null);
+				setMyDefaultMetaLoaded(false);
+				setPrimaryCareerId(null);
+
+				if (!isUniversity) {
+					setScope('general');
+					setAdvancedMode(false);
+				} else {
+					setScope('career');
+					setAdvancedMode(false);
+				}
 			}
 		} catch (err: any) {
 			console.error('Error al enviar solicitud de ayuda:', err);
@@ -180,9 +272,7 @@ const CreateHelpForm: React.FC<Props> = ({
 				err?.response?.data?.message ||
 				err?.message;
 
-			// Caso especial: el backend no pudo determinar la carrera
 			if (backendMsg && backendMsg.includes('No se pudo determinar la carrera')) {
-				// Forzamos alcance por carrera y activamos modo avanzado
 				setScope('career');
 				setAdvancedMode(true);
 
@@ -256,17 +346,36 @@ const CreateHelpForm: React.FC<Props> = ({
 
 					{isUniversity ? (
 						<>
-							<Typography variant="body2">
-								Como estudiante UATF, tus solicitudes pueden vincularse a tu <strong>carrera y materias</strong> para que tus compañeros de la misma área las vean primero.
-							</Typography>
-							<Typography variant="body2">
-								Puedes usar las opciones avanzadas para elegir facultad, carrera, materia y unidad.
-							</Typography>
+							{!isOtherCareerSelected ? (
+								<>
+									<Typography variant="body2">
+										Como estudiante UATF, tus solicitudes se publican por defecto en tu{' '}
+										<strong>carrera principal</strong>. Puedes usar las opciones avanzadas para
+										elegir otra carrera o materia.
+									</Typography>
+									<Typography variant="body2">
+										Si necesitas publicar para otra carrera (por ejemplo Matemáticas), activa las
+										opciones avanzadas y selecciona la carrera y materia correspondientes.
+									</Typography>
+								</>
+							) : (
+								<>
+									<Typography variant="body2">
+										Esta solicitud se publicará en la <strong>carrera seleccionada en las opciones avanzadas</strong>,
+										no necesariamente en tu carrera principal.
+									</Typography>
+									<Typography variant="body2">
+										Siempre puedes volver a tu carrera principal deshaciendo el cambio en la carrera
+										seleccionada o usando el modo general.
+									</Typography>
+								</>
+							)}
 						</>
 					) : (
 						<>
 							<Typography variant="body2">
-								Como invitado o estudiante de colegio, tus ayudas se publican en modo <strong>general</strong>, sin necesidad de elegir facultad ni carrera.
+								Como invitado o estudiante de colegio, tus ayudas se publican en modo <strong>general</strong>,
+								sin necesidad de elegir facultad ni carrera.
 							</Typography>
 							<Typography variant="body2">
 								Solo describe bien tu duda para que otros puedan ayudarte.
@@ -283,13 +392,14 @@ const CreateHelpForm: React.FC<Props> = ({
 						</Typography>
 						<RadioGroup
 							value={scope}
-							onChange={(_, v) => setScope(v as HelpScope)}
+							onChange={handleScopeChange}
 							row
 						>
 							<FormControlLabel
 								value="career"
 								control={<Radio size="small" />}
-								label="En mi carrera"
+								// 👇 cambiamos el label según si usa su carrera o otra
+								label={isOtherCareerSelected ? 'En una carrera específica' : 'En mi carrera'}
 							/>
 							<FormControlLabel
 								value="general"
@@ -351,13 +461,20 @@ const CreateHelpForm: React.FC<Props> = ({
 					error={errors.topic}
 				/>
 
-				<MainInput
+				<TextEditor
 					label="Descripción"
-					placeholder="Describe brevemente tu duda o lo que buscas…"
-					multiline
-					rows={4}
+					placeholder="Describe brevemente tu duda, qué has intentado y qué necesitas…"
 					value={description}
 					onChange={handleDescChange}
+					hint="Puedes usar negritas, cursivas y listas para organizar mejor la explicación."
+					minHeight={140}
+					toolbarOptions={{
+						bold: true,
+						italic: true,
+						underline: true,
+						bulletList: true,
+						orderedList: true,
+					}}
 					error={errors.description}
 				/>
 

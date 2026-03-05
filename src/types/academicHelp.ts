@@ -22,6 +22,8 @@ export interface AcademicHelp {
 
 	created_at: string;
 	updated_at: string;
+	  messagesCount?: number;
+  votesCount?: number;
 
 	user?: {
 		_id: string;

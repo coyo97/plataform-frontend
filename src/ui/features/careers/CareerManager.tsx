@@ -11,11 +11,6 @@ import {
 
 import FormSelect from '../../shared/atoms/form/FormSelect';
 import Loader     from '../../shared/atoms/feedback/loader/Loader';
-import FacultyManager from './FacultyManager';
-import CycleManager from './CycleManager';
-import UnitManager from './UnitManager';
-import SubjectManager from './SubjectManager';
-import AccessPolicyManager from '../roles/AccessPolicyManager';
 import Text from '../../shared/atoms/typography/Text';
 
 interface Faculty { _id:string; name:string }

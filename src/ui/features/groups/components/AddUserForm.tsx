@@ -1,4 +1,3 @@
-// src/ui/features/groups/components/AddUserForm.tsx
 import React from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
@@ -13,7 +12,10 @@ type Props = {
 	userToAdd: string;
 	setUserToAdd: (id: string) => void;
 	getUserOptionLabel: (u: User | null) => string;
-	renderUserOption: (props: React.HTMLAttributes<HTMLLIElement>, u: User) => { props: any; u: User; creator: boolean; admin: boolean };
+	renderUserOption: (
+		props: React.HTMLAttributes<HTMLLIElement>,
+		u: User
+	) => { props: any; u: User; creator: boolean; admin: boolean };
 	onSubmit: (e: React.FormEvent) => void;
 	loading?: boolean;
 };
@@ -39,7 +41,11 @@ const AddUserForm: React.FC<Props> = ({
 					isOptionEqualToValue={(o, v) => o._id === v._id}
 					renderOption={(props, u) => {
 						const { props: liProps, u: user } = renderUserOption(props, u);
-						return <li {...liProps}>{user.username} — {user.email}</li>;
+						return (
+							<li {...liProps}>
+								{user.username} — {user.email}
+							</li>
+						);
 					}}
 					noOptionsText="Sin resultados"
 					loading={!!loading && users.length === 0}
@@ -54,7 +60,7 @@ const AddUserForm: React.FC<Props> = ({
 					disablePortal={false}
 					slotProps={{
 						popper: { sx: (t) => ({ zIndex: t.zIndex.modal + 1 }) },
-					paper:  { sx: { maxHeight: 320, overflow: 'auto' } },
+						paper:  { sx: { maxHeight: 320, overflow: 'auto' } },
 					}}
 					sx={{ flex: 1 }}
 				/>

@@ -7,8 +7,8 @@ export interface CardAuthor {
 }
 
 export interface CardProps {
-	  title?: ReactNode;         // <- acepta JSX o string
-  description?: ReactNode;   // <- acepta JSX o string
+	  title?: ReactNode;         
+  description?: ReactNode;   
 	author?: CardAuthor;
 	date?: string | Date;
 	tags?: string[];

@@ -10,6 +10,10 @@ import {
 	Drawer,
 	Snackbar,
 	Alert,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 
@@ -32,7 +36,11 @@ import StreamCreateSidebar from '../organisms/sidebars/StreamCreateSidebar';
 import ChatDisclosure from './ChatDisclosure';
 import ChatPanel from './ChatPanel';
 
+import { fetchMyCareers } from '../../../../async/services/careerService'; // NUEVO
+
 type StreamTab = 'live' | 'scheduled' | 'ended' | 'mine';
+
+type CareerFilterMode = 'my' | 'all' | 'specific';
 
 interface LayoutProps {
 	children?: React.ReactNode;
@@ -59,6 +67,57 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 
 	const [tab, setTab] = useState<StreamTab>('live');
 
+
+	const [careerFilterMode, setCareerFilterMode] =
+		useState<CareerFilterMode>('my');
+	const [selectedCareerId, setSelectedCareerId] = useState<string>('');
+	const [myCareers, setMyCareers] = useState<any[]>([]);
+	const [loadingCareers, setLoadingCareers] = useState<boolean>(true);
+
+	useEffect(() => {
+		let alive = true;
+		(async () => {
+			try {
+				const careers = await fetchMyCareers();
+				if (!alive) return;
+
+				setMyCareers(careers || []);
+
+				if (careers && careers.length === 1) {
+					const c = careers[0];
+					const id = c._id || c.id || c.careerId || '';
+					setSelectedCareerId(id);
+				}
+			} catch (err) {
+				if (alive) {
+					setMyCareers([]);
+				}
+			} finally {
+				if (alive) setLoadingCareers(false);
+			}
+		})();
+		return () => {
+			alive = false;
+		};
+	}, []);
+
+	const resolveCareerIds = (): string[] | undefined => {
+		if (careerFilterMode === 'all') {
+			return undefined; // sin filtro por carrera
+		}
+
+		if (careerFilterMode === 'specific' && selectedCareerId) {
+			return [selectedCareerId];
+		}
+
+		const ids =
+			myCareers
+				?.map((c: any) => c._id || c.id || c.careerId)
+				.filter(Boolean) ?? [];
+
+		return ids.length ? ids : undefined;
+	};
+
 	const listTypeFor = (t: StreamTab): 'live' | 'ended' | 'all' => {
 		if (t === 'live') return 'live';
 		if (t === 'ended') return 'ended';
@@ -68,6 +127,7 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 	const filtersFor = (t: StreamTab) => ({
 		scheduled: t === 'scheduled' || undefined,
 		mine: t === 'mine' || undefined,
+		careerIds: resolveCareerIds(), // NUEVO: se inyecta el filtro de carreras
 	});
 
 	const hasAdmin = userHasAdminRole();
@@ -129,32 +189,19 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 				}
 			/>
 
-			{isMobile && !hasChild && (
+			{/* FAB solo si puede crear streams (mobile) */}
+			{isMobile && !hasChild && canCreateStream && (
 				<Fab
 					aria-label="Crear stream"
-					onClick={() => {
-						if (!canCreateStream) {
-							setPermMsg(getPermissionMessage('createDenied'));
-							return;
-						}
-						setOpenDrawer(true);
-					}}
+					onClick={() => setOpenDrawer(true)}
 					sx={{
 						position: 'fixed',
 						right: 16,
 						bottom: 16,
 						zIndex: (t) => t.zIndex.modal + 1,
 						boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
-						...(!canCreateStream
-							? {
-								opacity: 0.55,
-								cursor: 'not-allowed',
-								pointerEvents: 'auto',
-							}
-							: {}),
 					}}
 					color="primary"
-					aria-disabled={!canCreateStream}
 				>
 					<MenuIcon />
 				</Fab>
@@ -170,7 +217,7 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 						borderTopRightRadius: 16,
 						maxHeight: '85dvh',
 						p: 2,
-					},
+				},
 				}}
 				keepMounted
 			>
@@ -192,8 +239,8 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 				style={{ paddingTop: 'calc(var(--header-h) + 12px)' }}
 				columns={{ xxs: 4, sm: 6, md: 12 }}
 			>
-				{/* Columna izquierda: Sidebar solo desktop y NO detalle */}
-				{!isMobile && !hasChild && (
+				{/* Columna izquierda: Sidebar solo desktop, sin detalle y SOLO si puede crear */}
+				{!isMobile && !hasChild && canCreateStream && (
 					<GridColumn span={{ xxs: 12, md: 5, lg: 5, xl: 5 }}>
 						<StreamCreateSidebar
 							open
@@ -234,7 +281,72 @@ const HomeStreamLayout: React.FC<LayoutProps> = ({
 						</>
 					) : (
 						<>
-							<Box sx={{ mb: 2 }}>
+							{/* Fila de filtros: carrera + tabs */}
+							<Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+								<Box
+									sx={{
+										display: 'flex',
+										flexWrap: 'wrap',
+										gap: 1,
+										alignItems: 'center',
+										justifyContent: 'space-between',
+									}}
+								>
+									<SectionTitle>
+										Streams
+									</SectionTitle>
+
+									<FormControl
+										size="small"
+										sx={{ minWidth: 220 }}
+										disabled={loadingCareers}
+									>
+										<InputLabel id="stream-career-filter-label">
+											Carrera
+										</InputLabel>
+										<Select
+											labelId="stream-career-filter-label"
+											label="Carrera"
+											value={
+												careerFilterMode === 'all'
+													? 'all'
+													: careerFilterMode === 'my'
+													? 'my'
+													: selectedCareerId || 'my'
+											}
+											onChange={(e) => {
+												const value = e.target.value as string;
+												if (value === 'all') {
+													setCareerFilterMode('all');
+												} else if (value === 'my') {
+													setCareerFilterMode('my');
+												} else {
+													setCareerFilterMode('specific');
+													setSelectedCareerId(value);
+												}
+											}}
+										>
+											<MenuItem value="my">Mis carreras</MenuItem>
+											<MenuItem value="all">Todas las carreras</MenuItem>
+
+											{myCareers && myCareers.length > 0 && (
+												<MenuItem disabled>
+													────────────────
+												</MenuItem>
+											)}
+
+											{myCareers?.map((c: any) => {
+												const id = c._id || c.id || c.careerId;
+												return (
+													<MenuItem key={id} value={id}>
+														{c.name}
+													</MenuItem>
+												);
+											})}
+										</Select>
+									</FormControl>
+								</Box>
+
 								<Tabs
 									value={tab}
 									onChange={(_, v) => setTab(v)}

@@ -19,21 +19,38 @@ interface Props{
 
 	onEditRequested?: (p: Publication) => void;
 	onDeleted?: (p: Publication) => void;
-	  canEditPublication?: boolean;
-  canDeletePublication?: boolean;
+	canEditPublication?: boolean;
+	canDeletePublication?: boolean;
 }
 
-const PublicationsFeed:React.FC<Props>=({
-	HOST,list,lastRef,renderFile,onLike,onUnlike,onAuthor,onReport,onSearch,onTagClick,
-	onEditRequested, onDeleted,   canEditPublication,
-  canDeletePublication,
-})=>(
+const PublicationsFeed: React.FC<Props> = ({
+	HOST, list, lastRef, renderFile, onLike, onUnlike, onAuthor, onReport, onSearch,
+	onTagClick, onEditRequested, onDeleted, canEditPublication, canDeletePublication,
+}) => (
 	<FeedWrapper>
-		<div style={{ position: 'sticky', top: 0, background: 'white' }}>
+		{/* SEARCH BAR */}
+		<div style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
 			<SearchInput onSearch={onSearch} />
 		</div>
-		{list.map((p,idx)=>(
-			<div key={p._id} ref={idx===list.length-1?lastRef:null} role='article'>
+
+		{/* MENSAJE SI NO HAY PUBLICACIONES */}
+		{list.length === 0 && (
+			<div
+				style={{
+					textAlign: 'center',
+					padding: '32px 0',
+					opacity: 0.6,
+					fontSize: '14px',
+					fontFamily: 'Inter, sans-serif',
+				}}
+			>
+				Aún no hay publicaciones
+			</div>
+		)}
+
+		{/* LISTA DE PUBLICACIONES */}
+		{list.map((p, idx) => (
+			<div key={p._id} ref={idx === list.length - 1 ? lastRef : null} role="article">
 				<PublicationCard
 					HOST={HOST}
 					publication={p}
@@ -46,8 +63,8 @@ const PublicationsFeed:React.FC<Props>=({
 					onTagClick={onTagClick}
 					onEdit={onEditRequested}
 					onDelete={onDeleted}
-					      canEditPublication={canEditPublication}
-          canDeletePublication={canDeletePublication}
+					canEditPublication={canEditPublication}
+					canDeletePublication={canDeletePublication}
 				/>
 			</div>
 		))}

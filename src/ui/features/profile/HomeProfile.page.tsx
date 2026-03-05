@@ -18,7 +18,6 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useSearchParams } from 'react-router-dom';
 import { userHasAdminRole } from '../../../utils/auth/getUserId';
 
-// permisos desde el servidor
 import { getMyPermissions } from '../../../async/services/permissionService';
 
 const HomeProfilePage: React.FC = () => {
@@ -28,7 +27,6 @@ const HomeProfilePage: React.FC = () => {
 
 	const isMobile = useMediaQuery(`(max-width:${breakPoints.values.sm - 1}px)`);
 
-	// ===== Obtener permisos efectivos del usuario (verdad del servidor) =====
 	const [serverPerms, setServerPerms] = useState<string[] | null>(null);
 	const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
 
@@ -49,10 +47,41 @@ const HomeProfilePage: React.FC = () => {
 		};
 	}, []);
 
-	// ===== Calcular permiso “profile:update” =====
-	const canEditProfile = !loadingPerms && !!serverPerms?.includes('profile:update');
+	const canEditProfile =
+		!loadingPerms && !!serverPerms?.includes('profile:update');
 
-	// Si ya puede editar, limpia flag persistente de 403 y notifica
+	// Permiso para ver "Solicitudes de amistad"
+	const canViewFriendRequests =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('user:read') ||
+			serverPerms?.includes('users:read')
+		);
+
+	// Permiso para ver "Lista de amigos"
+	const canViewFriendsList =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('user:read') ||
+			serverPerms?.includes('users:read')
+		);
+
+	// Permiso para "Buscar usuarios"
+	const canSearchUsers =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('user:read') ||
+			serverPerms?.includes('users:read')
+		);
+
+	// Permiso para "Usuarios bloqueados"
+	const canViewBlockedUsers =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('user:read') ||
+			serverPerms?.includes('users:read')
+		);
+
 	useEffect(() => {
 		if (canEditProfile) {
 			try {
@@ -62,7 +91,10 @@ const HomeProfilePage: React.FC = () => {
 		}
 	}, [canEditProfile]);
 
-	const sectionToTab: Record<string, 'solicitudes' | 'amigos' | 'buscar' | 'bloqueados' | undefined> = {
+	const sectionToTab: Record<
+		string,
+		'solicitudes' | 'amigos' | 'buscar' | 'bloqueados' | undefined
+	> = {
 		friendRequests: 'solicitudes',
 		friendsList: 'amigos',
 		userSearch: 'buscar',
@@ -70,6 +102,12 @@ const HomeProfilePage: React.FC = () => {
 	};
 
 	const handleSelect = (section: string) => {
+		// Refuerzo: si no hay permiso, no cambiamos sección
+		if (section === 'friendRequests' && !canViewFriendRequests) return;
+		if (section === 'friendsList' && !canViewFriendsList) return;
+		if (section === 'userSearch' && !canSearchUsers) return;
+		if (section === 'blockedUsersList' && !canViewBlockedUsers) return;
+
 		const tab = sectionToTab[section];
 		if (tab) {
 			params.set('tab', tab);
@@ -93,8 +131,15 @@ const HomeProfilePage: React.FC = () => {
 			case 'updateProfile':
 				return <UpdateProfilePage />;
 			case 'viewProfile':
-				default:
-				return <ViewProfilePage />;
+			default:
+				return (
+					<ViewProfilePage
+						canViewFriendRequests={canViewFriendRequests}
+						canViewFriendsList={canViewFriendsList}
+						canSearchUsers={canSearchUsers}
+						canViewBlockedUsers={canViewBlockedUsers}
+					/>
+				);
 		}
 	};
 
@@ -105,7 +150,7 @@ const HomeProfilePage: React.FC = () => {
 		<>
 			<Header
 				logoSrc={Logo}
-				variant='gradient'
+				variant="gradient"
 				navLinks={visibleLinks}
 				userRole={hasAdmin ? 'admi' : 'student'}
 				onLogout={() => console.log('Logout')}
@@ -153,6 +198,10 @@ const HomeProfilePage: React.FC = () => {
 								onSelect={handleSelect}
 								selectedSection={selectedSection}
 								canEditProfile={canEditProfile}
+								canViewFriendRequests={canViewFriendRequests}
+								canViewFriendsList={canViewFriendsList}
+								canSearchUsers={canSearchUsers}
+								canViewBlockedUsers={canViewBlockedUsers}
 							/>
 						</Paper>
 					</GridColumn>
@@ -178,6 +227,10 @@ const HomeProfilePage: React.FC = () => {
 					onSelect={handleSelect}
 					selectedSection={selectedSection}
 					canEditProfile={canEditProfile}
+					canViewFriendRequests={canViewFriendRequests}
+					canViewFriendsList={canViewFriendsList}
+					canSearchUsers={canSearchUsers}
+					canViewBlockedUsers={canViewBlockedUsers}
 				/>
 			)}
 
@@ -190,14 +243,14 @@ const HomeProfilePage: React.FC = () => {
 					bottom: 16,
 					right: 16,
 					display: { xs: 'flex', sm: 'none' },
-				zIndex: 1400,
-				bgcolor: 'primary.main',
-				color: 'primary.contrastText',
-				boxShadow: 6,
-				'&:hover': { bgcolor: 'primary.dark' },
-				width: 56,
-				height: 56,
-				borderRadius: '50%',
+					zIndex: 1400,
+					bgcolor: 'primary.main',
+					color: 'primary.contrastText',
+					boxShadow: 6,
+					width: 56,
+					height: 56,
+					borderRadius: '50%',
+					'&:hover': { bgcolor: 'primary.dark' },
 				}}
 			>
 				<AccountCircleIcon />

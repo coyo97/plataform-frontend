@@ -1,3 +1,4 @@
+// src/ui/shared/organisms/card/Card.tsx (o similar)
 import React from 'react';
 import {
 	CardRoot,
@@ -14,6 +15,7 @@ import Badge from '../../atoms/badges/Badge';
 import TooltipBubble from '../../atoms/tooltips/tooltipBubble/TooltipBubble';
 import DateTimeInfo from '../../atoms/dateTime/DateTimeInfo';
 import Text from '../../atoms/typography/Text';
+import RichText from '../../atoms/typography/RichText'; //
 
 const Card: React.FC<CardProps> = ({
 	title,
@@ -28,8 +30,34 @@ const Card: React.FC<CardProps> = ({
 	onClickAuthor,
 	onTagClick,
 	headerActions,
-	children
+	children,
 }) => {
+	let descriptionNode: React.ReactNode = null;
+
+	if (description) {
+		if (typeof description === 'string') {
+			const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(description);
+
+			if (looksLikeHtml) {
+				descriptionNode = (
+					<RichText
+						as="div"
+						html={description}
+						sx={{ mt: 0.5 }}
+					/>
+				);
+			} else {
+				descriptionNode = (
+					<Text size="md">
+						{description}
+					</Text>
+				);
+			}
+		} else {
+			descriptionNode = description;
+		}
+	}
+
 	return (
 		<CardRoot>
 			{/* Header */}
@@ -61,18 +89,23 @@ const Card: React.FC<CardProps> = ({
 						</AuthorInfo>
 					)}
 
-					{/* Derecha del header: fecha + menú ⋮ */}
 					<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 						{date && <DateTimeInfo timestamp={date} />}
-						{headerActions /* ⬅ AQUÍ VA EL MENÚ “⋮” */}
+						{headerActions}
 					</div>
 				</Header>
 			)}
 
 			{/* Content */}
 			<Content>
-				{title && <Text headingLevel="h3" weight="bold">{title}</Text>}
-				{description && <Text size="md">{description}</Text>}
+				{title && (
+					<Text headingLevel="h3" weight="bold">
+						{title}
+					</Text>
+				)}
+
+				{descriptionNode}
+
 				{tags && tags.length > 0 && (
 					<TagsWrapper>
 						{tags.map((tag) => {
@@ -92,7 +125,7 @@ const Card: React.FC<CardProps> = ({
 										color="primary"
 										size="sm"
 										shape="rounded"
-										interactive={interactive}                          
+										interactive={interactive}
 										ariaLabel={interactive ? `Filtrar por ${tag}` : undefined}
 										onClick={interactive ? () => onTagClick?.(tag) : undefined}
 									>
@@ -104,16 +137,11 @@ const Card: React.FC<CardProps> = ({
 					</TagsWrapper>
 				)}
 
-
-
 				{media && <MediaWrapper>{media}</MediaWrapper>}
-				  {children}
+				{children}
 			</Content>
 
-			{/* Actions */}
 			{actions}
-
-			{/* Footer */}
 			{footer && <Footer>{footer}</Footer>}
 		</CardRoot>
 	);

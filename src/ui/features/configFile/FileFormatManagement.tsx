@@ -13,7 +13,12 @@ import {
 
 import Text from '../../shared/atoms/typography/Text';
 import TableView from '../../shared/organisms/table/TableView';
-import type { ColumnDef, RowAction } from '../../shared/organisms/table/tableView.types';
+import type {
+	ColumnDef,
+	RowAction,
+} from '../../shared/organisms/table/tableView.types';
+
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
 interface FileFormat {
 	_id: string;
@@ -28,10 +33,15 @@ const FileFormatManagement: React.FC = () => {
 
 	const { HOST, SERVICE } = getEnvVariables();
 
-	const [newFormat, setNewFormat] = useState<{ mimeType: string; description: string }>({
+	const [newFormat, setNewFormat] = useState<{
+		mimeType: string;
+		description: string;
+	}>({
 		mimeType: '',
 		description: '',
 	});
+
+	const [helpOpen, setHelpOpen] = useState(false);
 
 	const fetchFormats = async () => {
 		try {
@@ -55,6 +65,8 @@ const FileFormatManagement: React.FC = () => {
 	}, []);
 
 	const handleCreateFormat = async () => {
+		if (!newFormat.mimeType.trim()) return;
+
 		try {
 			const token = localStorage.getItem('token');
 			await axios.post(`${HOST}${SERVICE}/file-formats`, newFormat, {
@@ -82,7 +94,8 @@ const FileFormatManagement: React.FC = () => {
 	};
 
 	const handleDeleteFormat = async (id: string) => {
-		if (!window.confirm('¿Estás seguro de que deseas eliminar este formato?')) return;
+		if (!window.confirm('¿Estás seguro de que deseas eliminar este formato?'))
+			return;
 		try {
 			const token = localStorage.getItem('token');
 			await axios.delete(`${HOST}${SERVICE}/file-formats/${id}`, {
@@ -95,80 +108,162 @@ const FileFormatManagement: React.FC = () => {
 	};
 
 	// columnas para TableView
-	const columns: ColumnDef<FileFormat>[] = useMemo(() => ([
-		{
-			id: 'mimeType',
-			header: 'Tipo MIME',
-			accessor: 'mimeType',
-			minWidth: 200,
-			truncate: true,
-		},
-		{
-			id: 'description',
-			header: 'Descripción',
-			minWidth: 280,
-			truncate: true,
-			hiddenAt: ['xs'], // opcional: ahorra espacio en móvil
-			renderCell: (f) => (
-				<Text as="span" size="sm" colorKey="text.secondary">
-					{f.description || 'Sin descripción'}
-				</Text>
-			),
-		},
-		{
-			id: 'enabled',
-			header: 'Estado',
-			minWidth: 140,
-			renderCell: (f) =>
-				f.enabled ? (
-					<Text as="span" size="sm" colorKey="success.main">Habilitado</Text>
-			) : (
-				<Text as="span" size="sm" colorKey="text.disabled">Deshabilitado</Text>
-			),
-		},
-	]), []);
+	const columns: ColumnDef<FileFormat>[] = useMemo(
+		() => [
+			{
+				id: 'mimeType',
+				header: 'Tipo MIME',
+				accessor: 'mimeType',
+				minWidth: 200,
+				truncate: true,
+			},
+			{
+				id: 'description',
+				header: 'Descripción',
+				minWidth: 280,
+				truncate: true,
+				hiddenAt: ['xs'],
+				renderCell: (f) => (
+					<Text as="span" size="sm" colorKey="text.secondary">
+						{f.description || 'Sin descripción'}
+					</Text>
+				),
+			},
+			{
+				id: 'enabled',
+				header: 'Estado',
+				minWidth: 140,
+				renderCell: (f) =>
+					f.enabled ? (
+						<Text as="span" size="sm" colorKey="success.main">
+							Habilitado
+						</Text>
+					) : (
+						<Text as="span" size="sm" colorKey="text.disabled">
+							Deshabilitado
+						</Text>
+					),
+			},
+		],
+		[]
+	);
 
 	// acciones por fila
-	const rowActions: RowAction<FileFormat>[] = useMemo(() => ([
-		{
-			label: 'Habilitar',
-			color: 'success',
-			visible: (f) => !f.enabled,
-			onClick: (f) => handleToggleEnabled(f._id, f.enabled),
-		},
-		{
-			label: 'Deshabilitar',
-			color: 'warning',
-			visible: (f) => f.enabled,
-			onClick: (f) => handleToggleEnabled(f._id, f.enabled),
-		},
-		{
-			label: 'Eliminar',
-			color: 'secondary',
-			variant: 'outline',
-			onClick: (f) => handleDeleteFormat(f._id),
-		},
-	]), []);
+	const rowActions: RowAction<FileFormat>[] = useMemo(
+		() => [
+			{
+				label: 'Habilitar',
+				color: 'success',
+				visible: (f) => !f.enabled,
+				onClick: (f) => handleToggleEnabled(f._id, f.enabled),
+			},
+			{
+				label: 'Deshabilitar',
+				color: 'warning',
+				visible: (f) => f.enabled,
+				onClick: (f) => handleToggleEnabled(f._id, f.enabled),
+			},
+			{
+				label: 'Eliminar',
+				color: 'secondary',
+				variant: 'outline',
+				onClick: (f) => handleDeleteFormat(f._id),
+			},
+		],
+		[]
+	);
 
 	return (
 		<Container>
-			<Title>Gestión de Formatos de Archivo</Title>
+			{/* TÍTULO + BOTÓN DE AYUDA */}
+			<div
+				style={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					gap: '0.75rem',
+					marginBottom: '0.75rem',
+				}}
+			>
+				<Title>Gestión de Formatos de Archivo</Title>
+				<Button type="button" onClick={() => setHelpOpen(true)}>
+					Ver ayuda
+				</Button>
+			</div>
+
+			{/* DIALOGO DE AYUDA */}
+			<Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>¿Cómo configurar los formatos?</DialogTitle>
+				<DialogContent dividers>
+					<Text size="sm" colorKey="text.secondary">
+						El sistema valida los archivos usando el <strong>tipo MIME</strong>, no
+						la extensión. Usa siempre el nombre oficial del tipo MIME.
+					</Text>
+
+					<ul style={{ marginTop: '0.75rem', paddingLeft: '1.25rem' }}>
+						<li>
+							<Text size="sm" colorKey="text.secondary">
+								<strong>Imágenes (perfiles, publicaciones):</strong>{' '}
+								<code>image/jpeg</code>, <code>image/png</code>,{' '}
+								<code>image/webp</code>.
+							</Text>
+						</li>
+						<li>
+							<Text size="sm" colorKey="text.secondary">
+								<strong>Documentos (material de estudio):</strong>{' '}
+								<code>application/pdf</code>,{' '}
+								<code>application/vnd.openxmlformats-officedocument.wordprocessingml.document</code>{' '}
+								(DOCX).
+							</Text>
+						</li>
+						<li>
+							<Text size="sm" colorKey="text.secondary">
+								<strong>Videos:</strong> <code>video/mp4</code>,{' '}
+								<code>video/webm</code>.
+							</Text>
+						</li>
+						<li>
+							<Text size="sm" colorKey="text.secondary">
+								Configura solo los tipos que realmente quieres permitir según el
+								módulo: Perfiles, Publicaciones, Ayuda Académica, Chat, Streams, etc.
+							</Text>
+						</li>
+					</ul>
+
+					<Text size="xs" colorKey="text.disabled">
+						Ejemplo rápido: si solo quieres permitir fotos JPG para las imágenes de
+						perfil, agrega <code>image/jpeg</code> con la descripción
+						&quot;Imágenes JPG para fotos de perfil&quot; y déjalo habilitado.
+					</Text>
+				</DialogContent>
+				<DialogActions>
+					<Button type="button" onClick={() => setHelpOpen(false)}>
+						Cerrar
+					</Button>
+				</DialogActions>
+			</Dialog>
 
 			<div>
 				<SubTitle>Agregar Nuevo Formato</SubTitle>
 				<Input
 					type="text"
-					placeholder="Tipo MIME"
+					placeholder="Tipo MIME (ej: image/jpeg, application/pdf)"
 					value={newFormat.mimeType}
-					onChange={(e) => setNewFormat({ ...newFormat, mimeType: e.target.value })}
+					onChange={(e) =>
+						setNewFormat({ ...newFormat, mimeType: e.target.value })
+					}
 				/>
 				<Input
 					type="text"
-					placeholder="Descripción"
+					placeholder="Descripción (ej: JPG para fotos de perfil)"
 					value={newFormat.description}
-					onChange={(e) => setNewFormat({ ...newFormat, description: e.target.value })}
+					onChange={(e) =>
+						setNewFormat({ ...newFormat, description: e.target.value })
+					}
 				/>
-				<Button onClick={handleCreateFormat}>Agregar</Button>
+				<Button type="button" onClick={handleCreateFormat}>
+					Agregar
+				</Button>
 			</div>
 
 			<TableView<FileFormat>
@@ -181,10 +276,9 @@ const FileFormatManagement: React.FC = () => {
 				stickyHeader
 				zebra
 				hoverable
-				responsiveMode="auto"  // móvil: cards; desktop: tabla
-				// sin pagination → TableView no muestra footer; si quieres, puedes añadirlo más adelante
-				/>
-			</Container>
+				responsiveMode="auto" // móvil: cards; desktop: tabla
+			/>
+		</Container>
 	);
 };
 

@@ -1,6 +1,7 @@
 // src/ui/features/publications/organisms/createPublicationForm/CreatePublicationForm.tsx
 import React, { useState, useEffect } from 'react';
 import MainInput from '../../../../shared/atoms/inputs/MainInput';
+import TextEditor from '../../../../shared/atoms/inputs/TextEditor'; 
 import CareerSelector from '../../../../shared/molecules/selector/CareerSelector';
 import FilledButton from '../../../../shared/atoms/buttons/filledButton/FilledButton';
 import FileButton from '../../../../shared/atoms/buttons/fileButton/FileButton';
@@ -34,7 +35,6 @@ interface PublicationFormErrors {
 	title?: string;
 	content?: string;
 	tags?: string;
-	// careerId?: string; // la dejamos por si luego quieres volver a usarla
 	careerId?: string;
 }
 
@@ -48,7 +48,7 @@ const CreatePublicationForm: React.FC<Props> = ({
 	onUpdated,
 }) => {
 	const [title, setTitle] = useState('');
-	const [content, setContent] = useState('');
+	const [content, setContent] = useState('');  
 	const [tags, setTags] = useState('');
 	const [file, setFile] = useState<File | null>(null);
 	const [careerId, setCareer] = useState('');
@@ -85,7 +85,7 @@ const CreatePublicationForm: React.FC<Props> = ({
 	};
 
 	const handleContentChange = (value: string) => {
-		setContent(value);
+		setContent(value); 
 		setFieldErrors((prev) => ({ ...prev, content: undefined }));
 	};
 
@@ -96,7 +96,6 @@ const CreatePublicationForm: React.FC<Props> = ({
 
 	const handleCareerChange = (value: string) => {
 		setCareer(value);
-		// por ahora no mostramos error de carrera
 		setFieldErrors((prev) => ({ ...prev, careerId: undefined }));
 	};
 
@@ -108,10 +107,8 @@ const CreatePublicationForm: React.FC<Props> = ({
 
 		const errors: PublicationFormErrors = {
 			title: validatePublicationTitle(title),
-			content: validatePublicationBody(content),
+			content: validatePublicationBody(content), 
 			tags: validatePublicationTags(tags),
-			// ya no obligamos a seleccionar carrera
-			// careerId: careerId ? undefined : 'Selecciona una carrera para esta publicación.',
 		};
 
 		const hasErrors = Object.values(errors).some((err) => !!err);
@@ -123,18 +120,17 @@ const CreatePublicationForm: React.FC<Props> = ({
 
 		const fd = new FormData();
 		fd.append('title', title);
-		fd.append('content', content);
+		fd.append('content', content); 
 		if (file) fd.append('file', file);
 		fd.append(
 			'tags',
 			JSON.stringify(
 				tags
-					.split(',')
-					.map((t) => t.trim())
-					.filter(Boolean)
+				.split(',')
+				.map((t) => t.trim())
+				.filter(Boolean)
 			)
 		);
-		// solo enviamos careerId si está seteado
 		if (careerId) fd.append('careerId', careerId);
 
 		try {
@@ -187,13 +183,20 @@ const CreatePublicationForm: React.FC<Props> = ({
 					error={fieldErrors.title}
 				/>
 
-				<MainInput
+				<TextEditor
 					label="Contenido"
 					value={content}
 					onChange={handleContentChange}
 					placeholder="Describe brevemente el contenido del material…"
-					multiline
-					rows={4}
+					hint="Puedes usar negritas, cursivas y listas para estructurar mejor el contenido."
+					minHeight={180}
+					toolbarOptions={{
+						bold: true,
+						italic: true,
+						underline: true,
+						bulletList: true,
+						orderedList: true,
+					}}
 					error={fieldErrors.content}
 				/>
 
@@ -244,21 +247,10 @@ const CreatePublicationForm: React.FC<Props> = ({
 					careers={careers}
 					value={careerId}
 					onChange={handleCareerChange}
-					// required  // ❌ por ahora no obligatorio
 				/>
 			</PublicationFormBody>
 
 			<PublicationFormActions>
-				{/*			<FilledButton
-					variant="ghost"
-					colorType="secondary"
-					type="reset"
-					disabled={uploading}
-				>
-					Cancelar
-				</FilledButton>
-				  */
-				}
 				<Button />
 				<FilledButton
 					variant="solid"
@@ -270,9 +262,9 @@ const CreatePublicationForm: React.FC<Props> = ({
 						? uploading
 							? 'Guardando…'
 							: 'Guardar cambios'
-						: uploading
-							? 'Verificando…'
-							: 'Publicar'}
+							: uploading
+								? 'Verificando…'
+								: 'Publicar'}
 				</FilledButton>
 			</PublicationFormActions>
 		</form>

@@ -8,7 +8,7 @@ const IconButton: React.FC<IconButtonProps> = ({
 	colorType = 'primary',
 	sizeType = 'md',
 	shape = 'rounded',
-	href, // ← capturamos href explícitamente
+	href, 
 	...rest
 }) => {
 	const extraProps = href

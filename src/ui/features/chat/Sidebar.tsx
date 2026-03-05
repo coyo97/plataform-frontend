@@ -47,12 +47,10 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
-	// Vista inicial: chats (puedes cambiar a 'users' si prefieres)
 	const [view, setView] = useState<ChatView>('chats');
 	const [openDialog, setOpenDialog] = useState(false);
 	const [openCreate, setOpenCreate] = useState(false);
 
-	// Solo chats con mensajes + orden por último mensaje (desc)
 	const activeChats = useMemo(() => {
 		const list = (props.conversations ?? []).filter((c) => !!c.lastMessageAt);
 		return list.sort((a, b) => {
@@ -62,17 +60,22 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 		});
 	}, [props.conversations]);
 
-	// Usuarios ordenados alfabéticamente
 	const usersSorted = useMemo(
 		() => [...props.users].sort((a, b) => a.username.localeCompare(b.username)),
 		[props.users]
 	);
 
-	// Contadores para los tabs del Searchbox
 	const counters = {
 		chats: activeChats.length,
 		users: usersSorted.length,
 		groups: props.groups.length,
+	};
+
+	const getUnreadForUser = (userId: string): number => {
+		const convo = (props.conversations ?? []).find(
+			(c) => String(c.peer._id) === String(userId)
+		);
+		return convo?.unreadCount ?? 0;
 	};
 
 	return (
@@ -90,10 +93,18 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 				{/* TAB: Chats */}
 				{view === 'chats' && (
 					<>
-						<SectionTitle>Chats{counters.chats ? ` (${counters.chats})` : ''}</SectionTitle>
+						<SectionTitle>
+							Chats{counters.chats ? ` (${counters.chats})` : ''}
+						</SectionTitle>
 
 						{activeChats.length === 0 && (
-							<div style={{ padding: '8px 12px', opacity: 0.7, fontSize: 13 }}>
+							<div
+								style={{
+									padding: '8px 12px',
+									opacity: 0.7,
+									fontSize: 13,
+								}}
+							>
 								Aún no tienes conversaciones. Inicia una desde “Usuarios”.
 							</div>
 						)}
@@ -110,8 +121,9 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 								props.users.find((u) => u._id === _id)?.profilePicture ??
 								undefined;
 
-
 							const isOnline = props.onlineSet?.has(_id) ?? false;
+							const unreadCount = c.unreadCount ?? 0;
+							const subtitle = c.lastMessage?.content ?? '';
 
 							return (
 								<SidebarChatItem
@@ -119,7 +131,9 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 									item={{ _id, username, profile: { profilePicture } }}
 									isActive={isActive}
 									onClick={() => props.onSelectUser(_id)}
-									isOnline={isOnline} 
+									isOnline={isOnline}
+									subtitle={subtitle}
+									badge={unreadCount}
 								/>
 							);
 						})}
@@ -129,19 +143,28 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 				{/* TAB: Usuarios */}
 				{view === 'users' && (
 					<>
-						<SectionTitle>Usuarios{counters.users ? ` (${counters.users})` : ''}</SectionTitle>
+						<SectionTitle>
+							Usuarios{counters.users ? ` (${counters.users})` : ''}
+						</SectionTitle>
 
 						{usersSorted.map((u) => {
-							const profilePicture = u.profile?.profilePicture ?? u.profilePicture ?? undefined;
-							const isOnline = props.onlineSet?.has(u._id) ?? false; 
+							const profilePicture =
+								u.profile?.profilePicture ?? u.profilePicture ?? undefined;
+							const isOnline = props.onlineSet?.has(u._id) ?? false;
+							const unreadCount = getUnreadForUser(u._id);
 
 							return (
 								<SidebarChatItem
 									key={u._id}
-									item={{ _id: u._id, username: u.username, profile: { profilePicture } }}
+									item={{
+										_id: u._id,
+										username: u.username,
+										profile: { profilePicture },
+									}}
 									isActive={u._id === props.currentChatId}
 									onClick={() => props.onSelectUser(u._id)}
-									isOnline={isOnline} 
+									isOnline={isOnline}
+									badge={unreadCount}
 								/>
 							);
 						})}
@@ -151,14 +174,16 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 				{/* TAB: Grupos */}
 				{view === 'groups' && (
 					<>
-						<SectionTitle>Grupos{counters.groups ? ` (${counters.groups})` : ''}</SectionTitle>
+						<SectionTitle>
+							Grupos{counters.groups ? ` (${counters.groups})` : ''}
+						</SectionTitle>
 						{props.groups.map((g) => (
 							<SidebarChatItem
 								key={g._id}
 								item={{ _id: g._id, username: g.name }}
 								isActive={g._id === props.currentChatId}
 								onClick={() => props.onSelectGroup(g._id)}
-								// (sin dot de presencia para grupos)
+								// (sin dot de presencia ni badge para grupos por ahora)
 							/>
 						))}
 					</>
@@ -182,7 +207,10 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 			</Dialog>
 
 			{/* Dialog crear grupo */}
-			<CreateGroupDialog open={openCreate} onClose={() => setOpenCreate(false)} />
+			<CreateGroupDialog
+				open={openCreate}
+				onClose={() => setOpenCreate(false)}
+			/>
 		</>
 	);
 };

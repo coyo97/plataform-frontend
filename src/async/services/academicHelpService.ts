@@ -18,7 +18,6 @@ type HelpQuery = {
 	author?     : string;
 };
 
-/** Lista general con filtros dinámicos (NO incluye owner ni author). */
 export const fetchHelpRequests = async (q: HelpQuery = {}) => {
 	const qs = new URLSearchParams(
 		Object.entries(q).reduce((acc, [key, value]) => {
@@ -29,27 +28,32 @@ export const fetchHelpRequests = async (q: HelpQuery = {}) => {
 	).toString();
 
 	const { helps } = await get<{ helps: AcademicHelp[] }>(url(R.HELPS) + (qs ? `?${qs}` : ''));
-	return helps;
+	return (helps ?? []).map((h) => ({
+		...(h as AcademicHelp),
+		messagesCount: (h as any).messagesCount ?? 0,
+		votesCount: (h as any).votesCount ?? 0,
+	}));
 };
 
-/** Lista SOLO del usuario autenticado. */
 export const fetchMyHelpRequests = async () => {
-	const { helps } = await get<{ helps: AcademicHelp[] }>(url(R.MY_HELPS));
-	return helps;
+	const { helps } = await get<{ helps: any[] }>(url(R.MY_HELPS));
+
+	return (helps ?? []).map((h) => ({
+		...(h as AcademicHelp),
+		messagesCount: (h as any).messagesCount ?? 0,
+		votesCount   : (h as any).votesCount ?? 0,
+	}));
 };
 
-/** Obtener por ID */
 export const fetchHelpById = async (id: string) => {
 	const { help } = await get<{ help: AcademicHelp }>(url(R.HELP_BY_ID(id)));
 	return help;
 };
 
-/** Crear (FormData con archivo opcional) */
 export const createHelpRequest = async (fd: FormData) => {
 	const { help } = await post<{ help: AcademicHelp }>(url(R.HELPS), fd, true);
 	return help; // <- ahora el caller recibe AcademicHelp
 };
-/** Actualizar (SOLO autor) – FormData con archivo opcional */
 export const updateMyHelp = async (id: string, fd: FormData) => {
 	const { help } = await put<{ help: AcademicHelp }>(url(R.HELP_UPDATE(id)), fd, true);
 	return help; // <- devuelve AcademicHelp directo
@@ -73,8 +77,15 @@ export const postMessage = async (helpId: string, payload: { content: string; fi
 	return post(url(R.THREAD(helpId)), { content: payload.content });
 };
 
-export const voteMessage = (threadId: string, msgId: string) =>
-	put(url(R.THREAD_VOTE(threadId, msgId)), {});
+export const voteMessage = async (threadId: string, msgId: string) => {
+  return put<{
+    message: string;
+    voted: boolean;
+    votes: number;
+    msgId: string;
+  }>(url(R.THREAD_VOTE(threadId, msgId)), {});
+};
+
 
 export const markSolution = (threadId: string, msgId: string) =>
 	put(url(R.THREAD_SOLVE(threadId, msgId)), {});

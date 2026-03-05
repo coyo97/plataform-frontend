@@ -2,7 +2,7 @@
 import { get, post, put, del } from '../api';
 import getEnvVariables from '../../config/configEnvs';
 import * as R     from '../routes/facultyCareerRoutes';
-import type { Career } from '../../types/publication'; // o types/career.ts si lo separas
+import type { Career } from '../../types/publication'; 
 
 const { HOST, SERVICE } = getEnvVariables();
 const url = (p: string) => `${HOST}${SERVICE}${p}`;
@@ -11,13 +11,14 @@ export const list = async (): Promise<Career[]> => {
 	const { careers } = await get<{ careers: Career[] }>(url(R.CAREERS), {});
 	return careers;
 };
-/* ---------- Facultades ---------- */
 export const fetchFaculties = async () => {
 	const { faculties } = await get<{faculties:any[]}>(url(R.FACULTIES));
 	return faculties;
-};/* ---------- Carreras ------------- */
-export const fetchCareers = async () => {
-	const { careers } = await get<{careers:any[]}>(url(R.CAREERS));
+};
+
+export const fetchCareers = async (facultyId?: string) => {
+	const qs = facultyId ? `?facultyId=${facultyId}` : '';
+	const { careers } = await get<{careers:any[]}>(url(R.CAREERS) + qs);
 	return careers;
 };
 
@@ -40,3 +41,10 @@ export const updateFaculty = async (id:string, payload:{ name:string; dean?:stri
 
 export const deleteFaculty = async (id:string) =>
   del(url(R.FACULTY_BY_ID(id)));
+
+export const fetchMyCareers = async () => {
+	const { careers } = await get<{ careers:any[] }>(
+		url(R.CAREERS) + '?scope=my'
+	);
+	return careers;
+};

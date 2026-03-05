@@ -59,7 +59,7 @@ const TAB_CONFIG: Record<TabKey, { label: string; render: (ctx: { selectedRoleId
 	assign:  { label: 'Asignar Roles',       render: () => <AssignRolesToUser /> },
 	users:   { label: 'Usuarios con Roles',  render: () => <UserListWithRoles /> },
 	edit:    {
-		label: 'Editar Roles',
+		label: '',
 		render: ({ selectedRoleId }) =>
 			selectedRoleId
 				? <EditRole roleId={selectedRoleId} />

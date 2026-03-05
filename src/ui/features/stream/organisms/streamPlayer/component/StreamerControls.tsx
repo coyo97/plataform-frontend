@@ -198,26 +198,27 @@ const StreamerControls: React.FC<Props> = ({
 
 							{/* Finalizar */}
 							<Tooltip title="Finalizar transmisión • atajo: Q">
-								<span>
-									<IconButton
-										aria-label="Finalizar transmisión"
-										onClick={() => {
-											if (window.confirm('¿Seguro que deseas finalizar la transmisión?')) {
-												endStream();
-											}
-										}}
-										style={{
-											backgroundColor: '#E53935',
-											color: '#fff',
-											borderRadius: 8,
-											width: 44,
-											height: 44,
-										}}
-									>
-										<EndIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
+	<span>
+		<IconButton
+			aria-label="Finalizar transmisión"
+			onClick={() => {
+					endStream();
+						stopScreen();
+				}
+			}
+			style={{
+				backgroundColor: '#E53935',
+				color: '#fff',
+				borderRadius: 8,
+				width: 44,
+				height: 44,
+			}}
+		>
+			<EndIcon />
+		</IconButton>
+	</span>
+</Tooltip>
+
 						</SmartBox>
 					</SmartBox>
 

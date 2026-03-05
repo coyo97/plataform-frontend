@@ -11,11 +11,7 @@ import { AcademicHelp } from '../../../types/academicHelp';
 import AddIcon from '@mui/icons-material/Add';
 
 import Loader from '../../shared/atoms/feedback/loader/Loader';
-import { styles } from './homeAcademicHelp.styles';
-import IconButton from '../../shared/atoms/buttons/iconButton/IconButton';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import TuneIcon from '@mui/icons-material/Tune';
 
 import GridContainer from '../../shared/atoms/grid/GridContainer';
 import GridColumn from '../../shared/atoms/grid/GridColumn';
@@ -45,47 +41,60 @@ const HomeAcademicHelp = () => {
 	const [editing, setEditing] = useState<AcademicHelp | null>(null);
 	const onlyMine = (filters as any)?.owner === 'me';
 
-	const [permMsg, setPermMsg] = useState<string | null>(null);
-	  const [serverPerms, setServerPerms] = useState<string[] | null>(null);
-  const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
+	const [serverPerms, setServerPerms] = useState<string[] | null>(null);
+	const [loadingPerms, setLoadingPerms] = useState<boolean>(true);
 
-   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const perms = await getMyPermissions();
-        if (alive) setServerPerms(perms);
-      } catch {
-        if (alive) setServerPerms([]);
-      } finally {
-        if (alive) setLoadingPerms(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+	useEffect(() => {
+		let alive = true;
+		(async () => {
+			try {
+				const perms = await getMyPermissions();
+				if (alive) setServerPerms(perms);
+			} catch {
+				if (alive) setServerPerms([]);
+			} finally {
+				if (alive) setLoadingPerms(false);
+			}
+		})();
+		return () => {
+			alive = false;
+		};
+	}, []);
 
-  const canCreateHelp =
-    !loadingPerms &&
-    !!(
-      serverPerms?.includes('academic-help:create') ||
-      serverPerms?.includes('academic-helps:create')
-    );
+	const canCreateHelp =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('academic-help:create') ||
+			serverPerms?.includes('academic-helps:create')
+		);
 
-  const canEditHelp =
-    !loadingPerms &&
-    !!(
-      serverPerms?.includes('academic-help:update') ||
-      serverPerms?.includes('academic-helps:update')
-    );
+	const canEditHelp =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('academic-help:update') ||
+			serverPerms?.includes('academic-helps:update')
+		);
 
-  const canDeleteHelp =
-    !loadingPerms &&
-    !!(
-      serverPerms?.includes('academic-help:delete') ||
-      serverPerms?.includes('academic-helps:delete')
-    );
+	const canDeleteHelp =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('academic-help:delete') ||
+			serverPerms?.includes('academic-helps:delete')
+		);
+
+	const canViewMyHelps =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('my-academic-help:read') ||
+			serverPerms?.includes('my-academic-helps:read')
+		);
+
+	const canManageCatalog =
+		!loadingPerms &&
+		!!(
+			serverPerms?.includes('subjects:create') ||
+			serverPerms?.includes('units:create')
+		);
 
 	useEffect(() => {
 		const careerId  = sp.get('careerId')  || '';
@@ -106,7 +115,7 @@ const HomeAcademicHelp = () => {
 	}, [sp, setFilters]);
 
 	const handleNew = (h: AcademicHelp) => {
-		setHelps((prev) => [h, ...prev]); 
+		setHelps((prev) => [h, ...prev]);
 		setSnack(true);
 	};
 
@@ -122,7 +131,7 @@ const HomeAcademicHelp = () => {
 	const writeFiltersToUrl = (f: Record<string, string | undefined>) => {
 		const next = new URLSearchParams(searchParams);
 		['careerId','subjectId','cycleId','requestType','status','subject','owner']
-		.forEach(k => next.delete(k));
+			.forEach(k => next.delete(k));
 		Object.entries(f).forEach(([k,v]) => {
 			if (v && String(v).trim()) next.set(k, String(v));
 		});
@@ -146,9 +155,11 @@ const HomeAcademicHelp = () => {
 	const hasAdmin = userHasAdminRole();
 	const visibleLinks = navLinks.filter((l) => !l.adminOnly || hasAdmin);
 	const onEditRequested = (h: AcademicHelp) => setEditing(h);
-	const onUpdated = (h: AcademicHelp) => { setHelps(prev => prev.map(x => x._id === h._id ? h : x)); setEditing(null); };
+	const onUpdated = (h: AcademicHelp) => {
+		setHelps(prev => prev.map(x => x._id === h._id ? h : x));
+		setEditing(null);
+	};
 	const onDeleted = (id: string) => setHelps(prev => prev.filter(x => x._id !== id));
-
 
 	return (
 		<>
@@ -175,13 +186,16 @@ const HomeAcademicHelp = () => {
 				{/* ① CREATE – LEFT SIDEBAR */}
 				{isMobile ? (
 					<>
-						<Fab
-							color="secondary"
-							sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
-							onClick={() => setCreateOpen(true)}
-						>
-							<AddIcon />
-						</Fab>
+						{/* FAB solo si tiene permiso para crear ayuda */}
+						{canCreateHelp && (
+							<Fab
+								color="secondary"
+								sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1200 }}
+								onClick={() => setCreateOpen(true)}
+							>
+								<AddIcon />
+							</Fab>
+						)}
 
 						<Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
 							<CreateHelpSidebar
@@ -195,8 +209,9 @@ const HomeAcademicHelp = () => {
 								onEditingClose={() => setEditing(null)}
 								onUpdated={onUpdated}
 								onlyMine={onlyMine}
-								                canCreate={canCreateHelp}
-                onPermissionDenied={(msg) => setPermMsg(msg)}
+								canCreate={canCreateHelp}
+								canViewMyHelps={canViewMyHelps}
+								canManageCatalog={canManageCatalog}
 							/>
 						</Dialog>
 					</>
@@ -213,8 +228,9 @@ const HomeAcademicHelp = () => {
 							onEditingClose={() => setEditing(null)}
 							onUpdated={onUpdated}
 							onlyMine={onlyMine}
-							                canCreate={canCreateHelp}
-                onPermissionDenied={(msg) => setPermMsg(msg)}
+							canCreate={canCreateHelp}
+							canViewMyHelps={canViewMyHelps}
+							canManageCatalog={canManageCatalog}
 						/>
 					</GridColumn>
 				)}
@@ -228,9 +244,8 @@ const HomeAcademicHelp = () => {
 							list={helps}
 							onDeleted={onDeleted}
 							onEditRequested={onEditRequested}
-							             canEdit={canEditHelp}
-              canDelete={canDeleteHelp}
-              onPermissionDenied={(msg) => setPermMsg(msg)}
+							canEdit={canEditHelp}
+							canDelete={canDeleteHelp}
 						/>
 					)}
 				</GridColumn>
@@ -301,20 +316,8 @@ const HomeAcademicHelp = () => {
 					¡Ayuda publicada con éxito!
 				</Alert>
 			</Snackbar>
-			      <Snackbar
-        open={!!permMsg}
-        autoHideDuration={4000}
-        onClose={() => setPermMsg(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert severity="warning" variant="filled" onClose={() => setPermMsg(null)}>
-          {permMsg}
-        </Alert>
-      </Snackbar>
 		</>
-
 	);
-
 };
 
 export default HomeAcademicHelp;

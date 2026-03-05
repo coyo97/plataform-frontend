@@ -1,25 +1,62 @@
-// ui/features/academicHelp/layout/HelpLayout.tsx
+// ui/features/academicHelp/templetes/HelpLayout.tsx
 import React from 'react';
-import SmartBox from '../../../shared/atoms/box/SmartBox';
+import GridContainer from '../../../shared/atoms/grid/GridContainer';
+import GridColumn from '../../../shared/atoms/grid/GridColumn';
 
-const HelpLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-	<SmartBox
-		sx={{
-			height: t => `calc(100vh - ${t.mixins.toolbar.minHeight}px)`,
-			display: { xs: 'block', sm: 'grid' },
-		/* 260 – contenido – 260 */
-		gridTemplateColumns: {
-			xs: '1fr',
-			sm: '260px 1fr 260px',
-		},
-		gap: 3,
-		px: 2,
-		pt: 3,
-		overflowX: 'hidden',
-		}}
-	>
-		{children}
-	</SmartBox>
-);
+type Props = {
+	children: React.ReactNode;
+};
+
+const HelpLayout: React.FC<Props> = ({ children }) => {
+	const arrayChildren = React.Children.toArray(children);
+	const hasExtra = arrayChildren.length > 1;
+
+	return (
+		<GridContainer
+			variant="desktopFixed"
+			columns={{
+				xxs: 4,   // mobile base (match sistema móvil)
+				sm: 6,
+				md: 12,
+			}}
+			style={{
+				paddingTop: 16,
+				paddingBottom: 24,
+			}}
+		>
+			{/* Columna principal (contenido de la ayuda) */}
+			<GridColumn
+				span={{
+					xxs: 4, // en mobile ocupa todo el ancho
+					sm: 6, // en tablet ocupa casi todo
+					md: hasExtra ? 8 : 10, // si hay sidebar, 8/12; si no, más ancho
+					lg: hasExtra ? 8 : 10,
+				}}
+				self={{
+					xxs: 'stretch',
+					md: 'center',
+				}}
+				style={{ width: '100%' }}
+			>
+				{arrayChildren[0]}
+			</GridColumn>
+
+			{/* Columna extra (futuro sidebar / info adicional) */}
+			{hasExtra && (
+				<GridColumn
+					span={{
+						xxs: 4, // en mobile baja debajo del contenido
+						sm: 6,
+						md: 4, // en desktop actúa como sidebar
+						lg: 4,
+					}}
+				>
+					{arrayChildren.slice(1)}
+				</GridColumn>
+			)}
+		</GridContainer>
+	);
+};
+
 export default HelpLayout;
 

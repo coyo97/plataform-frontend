@@ -30,16 +30,16 @@ const Notifications: React.FC = () => {
 		.catch(console.error);
 	}, []);
 
-useEffect(() => {
-  if (!socket) return;
+	useEffect(() => {
+		if (!socket) return;
 
-  const cleanup = registerNotificationEvents(socket, (n) => {
-    setNotifications((prev) => [n, ...prev]);
-    showPush("Nueva notificación", { body: n.message });
-  });
+		const cleanup = registerNotificationEvents(socket, (n) => {
+			setNotifications((prev) => [n, ...prev]);
+			showPush("Nueva notificación", { body: n.message });
+		});
 
-  return cleanup;
-}, [socket]);
+		return cleanup;
+	}, [socket]);
 
 	const handleDelete = async (id: string) => {
 		try {
@@ -69,6 +69,20 @@ useEffect(() => {
 						else if (n.type === "publication_liked" && n.data?.publicationId) {
 							navigate(`/publications/${n.data.publicationId}`);
 						}
+						else if (n.type === "stream_started" && n.data?.streamId) {
+							navigate(`/stream-academi`);
+						}
+						else if (n.type === "academic_help_reply" && n.data?.helpId) {
+							navigate(`/academic-help/${n.data.helpId}`);
+						}
+						if (n.type === "academic_help_solution_marked" && n.data?.helpId) {
+							return navigate(`/academic-help/${n.data.helpId}`);
+						}
+
+						if (n.type === "academic_help_vote" && n.data?.helpId) {
+							return navigate(`/academic-help/${n.data.helpId}`);
+						}
+
 
 	};
 

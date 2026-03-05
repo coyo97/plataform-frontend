@@ -305,3 +305,34 @@ export const validateHelpBody: Validator<string> = combineValidators(
 	)
 );
 
+export const validateStreamTitle: Validator<string> = combineValidators(
+  required('El título del stream es obligatorio.'),
+  minLength(
+    10,
+    'El título debe tener al menos 10 caracteres. Intenta ser más descriptivo.'
+  ),
+  maxLength(
+    100,
+    'El título no debe superar los 100 caracteres.'
+  ),
+  notMatchesRegex(
+    CONTROL_CHARS_REGEX,
+    'El título contiene caracteres no válidos.'
+  )
+);
+
+export const validateStreamDescription: Validator<string> = combineValidators(
+  required('La descripción del stream es obligatoria.'),
+  minLength(
+    20,
+    'La descripción debe tener al menos 20 caracteres.'
+  ),
+  maxLength(
+    1000,
+    'La descripción es demasiado larga. Intenta resumir un poco.'
+  ),
+  notMatchesRegex(
+    CONTROL_CHARS_REGEX,
+    'La descripción contiene caracteres no válidos.'
+  )
+);

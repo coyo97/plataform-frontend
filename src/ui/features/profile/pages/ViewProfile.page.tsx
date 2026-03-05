@@ -14,16 +14,16 @@ import ProfileDetails from '../organisms/ProfileDetails/ProfileDetails';
 import FriendRequestsPage from '../../friends/pages/FriendRequests.page';
 import FriendsListPage from '../../friends/pages/FriendsList.page';
 import UserSearchPage from '../../friends/pages/UserSearch.page';
-import BlockedUsersList from '../../friends/pages/BlockedUsersList'; // NUEVO
+import BlockedUsersList from '../../friends/pages/BlockedUsersList';
 import { useProfile } from '../hooks/useProfile';
 
-type TabKey = 'solicitudes' | 'amigos' | 'buscar' | 'bloqueados'; // NUEVO
+type TabKey = 'solicitudes' | 'amigos' | 'buscar' | 'bloqueados';
 
 const TABS: { key: TabKey; label: string }[] = [
 	{ key: 'solicitudes', label: 'Solicitudes' },
 	{ key: 'amigos',      label: 'Amigos' },
 	{ key: 'buscar',      label: 'Buscar usuarios' },
-	{ key: 'bloqueados',  label: 'Bloqueados' }, // NUEVO
+	{ key: 'bloqueados',  label: 'Bloqueados' },
 ];
 
 function TabPanel(props: { value: TabKey; current: TabKey; children: React.ReactNode }) {
@@ -32,21 +32,44 @@ function TabPanel(props: { value: TabKey; current: TabKey; children: React.React
 	return <Box sx={{ mt: 2 }}>{children}</Box>;
 }
 
-const ViewProfilePage: React.FC = () => {
+interface ViewProfilePageProps {
+	canViewFriendRequests?: boolean;
+	canViewFriendsList?: boolean;
+	canSearchUsers?: boolean;
+	canViewBlockedUsers?: boolean;
+}
+
+const ViewProfilePage: React.FC<ViewProfilePageProps> = ({
+	canViewFriendRequests = true,
+	canViewFriendsList = true,
+	canSearchUsers = true,
+	canViewBlockedUsers = true,
+}) => {
 	const { profile, loading, error } = useProfile();
 	const [params, setParams] = useSearchParams();
 
-	const defaultTab: TabKey = 'solicitudes';
-	const currentParam = (params.get('tab') as TabKey) || defaultTab;
-	const currentTab: TabKey = TABS.some(t => t.key === currentParam) ? currentParam : defaultTab;
+	// Tabs visibles según permisos
+	const visibleTabs = TABS.filter((t) => {
+		if (t.key === 'solicitudes' && !canViewFriendRequests) return false;
+		if (t.key === 'amigos' && !canViewFriendsList) return false;
+		if (t.key === 'buscar' && !canSearchUsers) return false;
+		if (t.key === 'bloqueados' && !canViewBlockedUsers) return false;
+		return true;
+	});
+
+	const fallbackTab: TabKey = visibleTabs[0]?.key ?? 'buscar';
+
+	const currentParam = (params.get('tab') as TabKey) || fallbackTab;
+	const currentTab: TabKey =
+		visibleTabs.some((t) => t.key === currentParam) ? currentParam : fallbackTab;
 
 	const handleChange = (_: React.SyntheticEvent, idx: number) => {
-		const next = TABS[idx].key;
+		const next = visibleTabs[idx].key;
 		params.set('tab', next);
 		setParams(params, { replace: true });
 	};
 
-	const tabIndex = TABS.findIndex(t => t.key === currentTab);
+	const tabIndex = visibleTabs.findIndex((t) => t.key === currentTab);
 
 	if (loading) return <Loader />;
 	if (error)   return <Alert variant="outlined">{error}</Alert>;
@@ -58,7 +81,6 @@ const ViewProfilePage: React.FC = () => {
 			columns={{ xs: 4, sm: 8, md: 12 }}
 			style={{ padding: '24px' }}
 		>
-			{/* Columna principal: Perfil + Tabs (2/3 en desktop) */}
 			<GridColumn span={{ xs: 4, md: 8 }}>
 				<SmartBox center>
 					<ProfileDetails profile={profile} />
@@ -72,31 +94,41 @@ const ViewProfilePage: React.FC = () => {
 						scrollButtons="auto"
 						aria-label="Opciones de perfil"
 					>
-						{TABS.map((t) => (
-							<Tab key={t.key} label={t.label} aria-controls={`panel-${t.key}`} />
+						{visibleTabs.map((t) => (
+							<Tab
+								key={t.key}
+								label={t.label}
+								aria-controls={`panel-${t.key}`}
+							/>
 						))}
 					</Tabs>
 
-					<TabPanel value="solicitudes" current={currentTab}>
-						<FriendRequestsPage />
-					</TabPanel>
+					{/* Paneles protegidos por permisos */}
+					{canViewFriendRequests && (
+						<TabPanel value="solicitudes" current={currentTab}>
+							<FriendRequestsPage />
+						</TabPanel>
+					)}
 
-					<TabPanel value="amigos" current={currentTab}>
-						<FriendsListPage />
-					</TabPanel>
+					{canViewFriendsList && (
+						<TabPanel value="amigos" current={currentTab}>
+							<FriendsListPage />
+						</TabPanel>
+					)}
 
-					<TabPanel value="buscar" current={currentTab}>
-						<UserSearchPage />
-					</TabPanel>
+					{canSearchUsers && (
+						<TabPanel value="buscar" current={currentTab}>
+							<UserSearchPage />
+						</TabPanel>
+					)}
 
-					{/* NUEVO: Bloqueados */}
-					<TabPanel value="bloqueados" current={currentTab}>
-						<BlockedUsersList />
-					</TabPanel>
+					{canViewBlockedUsers && (
+						<TabPanel value="bloqueados" current={currentTab}>
+							<BlockedUsersList />
+						</TabPanel>
+					)}
 				</Paper>
 			</GridColumn>
-
-
 		</GridContainer>
 	);
 };

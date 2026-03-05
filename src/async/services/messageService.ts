@@ -27,10 +27,8 @@ export type ConversationSummary = {
 		fileType?: string;
 	} | null;
 	unreadCount: number;
-	// Si en el futuro mezclas DMs y grupos puedes añadir flags aquí
 };
 
-/* ---------- HTTP ---------- */
 export const fetchMessages = (
 	chatId: string,
 	isGroup: boolean,
@@ -42,7 +40,6 @@ export const fetchMessages = (
 		{ skip, limit },
 );
 
-/** Conversaciones (solo amigos) ordenadas por último mensaje DESC */
 export const fetchConversations = (skip = 0, limit = 30) =>
 	get<{ conversations: ConversationSummary[] }>(
 		URL(`${BASE}/conversations`),
@@ -93,31 +90,108 @@ export const fetchUnreadConversations = () =>
 			socket.emit('send-message', payload);
 		};
 
-		export const registerMessageEvents = (
-			socket: Socket,
-			setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-			chatIdRef: React.MutableRefObject<string>,
-		): () => void => {
-			const onNew = (msg: Message) => {
-				const id = chatIdRef.current;
-				if (
-					msg.sender._id === id ||
-					msg.receiver === id ||
-				(msg.isGroupMessage && msg.groupId === id)
-				) {
-					setMessages(prev => [...prev, msg]);
-				}
-			};
+export const registerMessageEvents = (
+	socket: Socket | undefined,
+	setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+	chatIdRef: React.MutableRefObject<string>,
+): () => void => {
+	const onNew = (msg: Message) => {
+		const id = chatIdRef.current;
 
-			const onDelete = ({ messageId }: { messageId: string }) =>
-				setMessages(prev => prev.filter(m => m._id !== messageId));
+		console.log('[WS][MESSAGE_NEW] incoming', {
+			msgId: msg._id,
+			isGroupMessage: msg.isGroupMessage,
+			groupId: (msg as any).groupId,
+			senderId: msg.sender?._id,
+			receiver: (msg as any).receiver,
+			currentChatId: id,
+		});
 
-			socket.on(WS_EVENTS.MESSAGE_NEW, onNew);
-			socket.on(WS_EVENTS.MESSAGE_DELETE, onDelete);
+		const matches =
+			msg.sender._id === id ||
+			(msg as any).receiver === id ||
+			(msg.isGroupMessage && (msg as any).groupId === id);
 
-			return () => {
-				socket.off(WS_EVENTS.MESSAGE_NEW, onNew);
-				socket.off(WS_EVENTS.MESSAGE_DELETE, onDelete);
-			};
+		if (!matches) {
+			console.log('[WS][MESSAGE_NEW] ignored (not for current chat)');
+			return;
+		}
+
+		console.log('[WS][MESSAGE_NEW] matches current chat → candidate to push');
+
+		const msgWithStatus: any = {
+			...msg,
+			status: (msg as any).status ?? 'sent',   
 		};
+
+		setMessages(prev => {
+			const already = prev.some(m => m._id === msg._id);
+
+			if (already) {
+				console.log(
+					'[WS][MESSAGE_NEW] SKIP duplicate message',
+					{ msgId: msg._id, prevLength: prev.length },
+				);
+				return prev;
+			}
+
+			const next = [...prev, msg];
+			console.log('[WS][MESSAGE_NEW] PUSH new message', {
+				msgId: msg._id,
+				prevLength: prev.length,
+				nextLength: next.length,
+			});
+			return next;
+		});
+	};
+
+	const onDelete = ({ messageId }: { messageId: string }) => {
+		console.log('[WS][MESSAGE_DELETE] incoming', { messageId });
+		setMessages(prev => {
+			const next = prev.filter(m => m._id !== messageId);
+			console.log('[WS][MESSAGE_DELETE] after delete', {
+				prevLength: prev.length,
+				nextLength: next.length,
+			});
+			return next;
+		});
+	};
+
+	if (!socket) {
+		console.warn('[WS][MESSAGE_EVENTS] socket is null, no listeners registered');
+		return () => {};
+	}
+
+	console.log('[WS][MESSAGE_EVENTS] registering listeners', {
+		currentChatId: chatIdRef.current,
+	});
+
+	socket.on(WS_EVENTS.MESSAGE_NEW, onNew);
+	socket.on(WS_EVENTS.MESSAGE_DELETE, onDelete);
+
+	return () => {
+		console.log('[WS][MESSAGE_EVENTS] unregistering listeners');
+		socket.off(WS_EVENTS.MESSAGE_NEW, onNew);
+		socket.off(WS_EVENTS.MESSAGE_DELETE, onDelete);
+	};
+};
+
+
+export const searchMessages = (
+	chatId: string,
+	isGroup: boolean,
+	query: string,
+	skip = 0,
+	limit = 20,
+) =>
+	get<{ messages: Message[] }>(
+		URL(`${BASE}/search`),
+		{
+			chatId,
+			isGroup,
+			q: query,
+			skip,
+			limit,
+		},
+	).then(r => r.messages);
 

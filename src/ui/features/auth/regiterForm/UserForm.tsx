@@ -115,7 +115,6 @@ const UserForm: React.FC = () => {
 			setError('');
 		};
 
-	// ---- Mapeo de errores de registro ----
 	const mapRegisterError = (err: any): string => {
 		const status = err?.status;
 		const msg = (err?.message || '').toLowerCase();

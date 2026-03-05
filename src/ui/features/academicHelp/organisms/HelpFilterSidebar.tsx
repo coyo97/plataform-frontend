@@ -8,9 +8,13 @@ import SmartBox      from '../../../shared/atoms/box/SmartBox';
 import { Switch, Typography, Divider, Box } from '@mui/material';
 
 import {
-	fetchFaculties, fetchCareers,
-	fetchSubjects,  fetchCycles
+	fetchFaculties,
+	fetchCareers as fetchCareersByFaculty, 
+	fetchSubjects,
+	fetchCycles,
 } from '../../../../async/services/catalogService';
+
+import { fetchCareers as fetchAllCareers } from '../../../../async/services/careerService';
 
 import { HelpFilters } from '../hook/useHelpFeed';
 import Text from '../../../shared/atoms/typography/Text';
@@ -37,29 +41,57 @@ const HelpFilterSidebar: React.FC<Props> = ({
 
 	const [showAdvanced, setShowAdvanced] = useState(false);
 
-	/* catálogos */
 	const [fac, setFac] = useState<any[]>([]);
 	const [car, setCar] = useState<any[]>([]);
 	const [sub, setSub] = useState<any[]>([]);
 	const [cyc, setCyc] = useState<any[]>([]);
 
+	const [allCar, setAllCar] = useState<any[]>([]);
+
 	useEffect(() => {
 		setLocal(current ?? {});
 	}, [current, open]);
 
+	// 🔹 Cargamos facultades, ciclos y TODAS las carreras al montar
 	useEffect(() => {
-		fetchFaculties().then(r => setFac(r.faculties));
-		fetchCycles   ().then(r => setCyc(r.cycles));
+		const load = async () => {
+			try {
+				const [fRes, cycRes, careersRes] = await Promise.all([
+					fetchFaculties(),
+					fetchCycles(),
+					fetchAllCareers().catch(() => [] as any[]),
+				]);
+
+				setFac(fRes.faculties || []);
+				setCyc(cycRes.cycles || []);
+
+				// careerService.fetchCareers() devuelve directamente el array
+				setAllCar(Array.isArray(careersRes) ? careersRes : []);
+			} catch (e) {
+				console.error('Error cargando catálogos en HelpFilterSidebar:', e);
+			}
+		};
+		load();
 	}, []);
 
+	// 🔹 Cuando cambia la facultad, filtramos carreras en memoria
 	useEffect(() => {
 		if (!local?.facultyId) {
 			setCar([]);
 			setSub([]);
 			return;
 		}
-		fetchCareers(local.facultyId).then(r => setCar(r.careers));
-	}, [local?.facultyId]);
+
+		const careersOfFaculty = allCar.filter(c => {
+			const raw = (c as any).facultyId;
+			if (!raw) return false;
+			if (typeof raw === 'string') return raw === local.facultyId;
+			return raw._id === local.facultyId;
+		});
+
+		setCar(careersOfFaculty);
+		// al cambiar de facultad, las asignaturas se limpian por el propio estado local (careerId/subjectId)
+	}, [local?.facultyId, allCar]);
 
 	useEffect(() => {
 		if (!local?.careerId) {
@@ -102,9 +134,9 @@ const HelpFilterSidebar: React.FC<Props> = ({
 					]}
 					onChange={v =>
 						setLocal({
-							...local,
-							requestType: (v || undefined) as HelpFilters['requestType'],
-						})
+						...local,
+						requestType: (v || undefined) as HelpFilters['requestType'],
+					})
 					}
 				/>
 
@@ -119,9 +151,9 @@ const HelpFilterSidebar: React.FC<Props> = ({
 					]}
 					onChange={v =>
 						setLocal({
-							...local,
-							status: (v as HelpFilters['status']) || undefined,
-						})
+						...local,
+						status: (v as HelpFilters['status']) || undefined,
+					})
 					}
 				/>
 

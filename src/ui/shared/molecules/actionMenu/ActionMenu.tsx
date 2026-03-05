@@ -77,12 +77,6 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
 		onClose?.();
 	};
 
-	const disabledStyle = {
-		opacity: 0.5,
-		cursor: 'not-allowed',
-		pointerEvents: 'auto' as const,
-	};
-
 	// Usamos un anchorEl válido para que MUI no se queje
 	const defaultAnchorEl =
 		typeof document !== 'undefined' ? (document.body as HTMLElement) : null;
@@ -95,12 +89,11 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
 			open
 			onClose={onClose}
 		>
-			{isOwner && (
+			{/* EDITAR: solo si es dueño Y tiene permiso real */}
+			{isOwner && canEdit && (
 				<MenuItem
 					key="edit"
 					onClick={handleEditClick}
-					aria-disabled={!canEdit}
-					sx={!canEdit ? disabledStyle : undefined}
 				>
 					<ListItemIcon>
 						<EditOutlinedIcon fontSize="small" />
@@ -109,12 +102,11 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
 				</MenuItem>
 			)}
 
-			{isOwner && (
+			{/* ELIMINAR: solo si es dueño Y tiene permiso real */}
+			{isOwner && canDelete && (
 				<MenuItem
 					key="delete"
 					onClick={handleDeleteClick}
-					aria-disabled={!canDelete}
-					sx={!canDelete ? disabledStyle : undefined}
 				>
 					<ListItemIcon>
 						<DeleteOutlineIcon fontSize="small" color="error" />
@@ -123,12 +115,13 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
 				</MenuItem>
 			)}
 
+			{/* Guardar / Reportar solo para NO dueños */}
 			{!isOwner && (
 				<MenuItem
 					key="save"
 					onClick={handleSaveClick}
 					aria-disabled={!canSave}
-					sx={!canSave ? disabledStyle : undefined}
+					sx={!canSave ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'auto' } : undefined}
 				>
 					<ListItemIcon>
 						<BookmarkBorderOutlinedIcon fontSize="small" />
@@ -142,7 +135,7 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
 					key="report"
 					onClick={handleReportClick}
 					aria-disabled={!canReport}
-					sx={!canReport ? disabledStyle : undefined}
+					sx={!canReport ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'auto' } : undefined}
 				>
 					<ListItemIcon>
 						<ReportGmailerrorredOutlinedIcon fontSize="small" />
